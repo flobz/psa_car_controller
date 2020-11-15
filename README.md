@@ -7,6 +7,8 @@ With this app  you will be able to :
  - start and stop the charge
  - set a charge threshold to limit the battery level to a certain percentage
  - set a stop hour to charge your vehicle only on off-peak hours
+ - control air conditioning
+ - control lights and horn if your vehicle is compatible (mine isn't) 
 
 ## I. Get all credendtials
 1. Backup MyPeugeot app

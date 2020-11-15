@@ -65,3 +65,12 @@ With this app  you will be able to :
     2.4 Change car charge threshold to 80 percent
     http://localhost:5000/charge_control?vin=YOURVIN&percentage=80 
            
+## API specficication
+The api spec is described here : [api_spec.md](api_spec.md).
+You can use all fonction from the doc, for example :
+```myp.api().get_car_last_position(myp.get_vehicle_id_with_vin("myvin"))```
+## More information
+To analyse the traffics between the app and psa server, you can use mitmproxy.
+You will need the client certificate present in the apk at asssets/MWPMYMA1.pem
+
+```mitmproxy --set client_certs=MWPMYMA1.pe```

@@ -70,7 +70,6 @@ def parse_args():
 if __name__ == "__main__":
     parser = parse_args()
     args = parser.parse_args()
-    print(args.__dict__)
     if args.config:
         myp = MyPSACC.loadconfig(name=args.config.name)
     else:

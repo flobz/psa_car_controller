@@ -46,10 +46,12 @@ With this app  you will be able to :
  3. If it works you will have VIN of your vehicles and there ids in the last line. The script generate a test.json file with all credentials needed.
  
  ## II. Use the app
-  1. start the app:
-   ``python3 server.py -f test.json`` 
+  1. Install requirements
+  ```pip3 install -r requirements.txt```
+  2. start the app:
+   ``python3 server.py -f test.json -c charge_control1.json`` 
   
-  2. Test it 
+  3. Test it 
   
     2.1 Get the car state :
     http://localhost:5000/get_vehiculeinfo/YOURVIN

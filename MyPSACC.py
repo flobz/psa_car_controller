@@ -144,6 +144,7 @@ class MyPSACC:
             "id"] + "/status?client_id=" + self.client_id, headers=MyPSACC.headers, data=body)
         data = res.json()
         return data
+
     def get_vehicles(self):
 
         res =self.api().get_vehicles_by_device()

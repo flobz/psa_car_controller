@@ -1,0 +1,8 @@
+oauth2_client
+Flask
+certifi
+urllib3
+six
+requests
+paho_mqtt
+python_dateutil

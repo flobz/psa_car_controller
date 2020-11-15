@@ -3,6 +3,7 @@ import threading
 from copy import copy
 from datetime import datetime, timedelta
 from hashlib import md5
+from time import sleep
 
 from MyPSACC import MyPSACC
 
@@ -76,16 +77,23 @@ class ChargeControl:
             print(f"charging status of {self.vin} is {status}")
             if status == "InProgress":
                 level = res.energy[0]["level"]
-                if (level >= self.percentage_threshold or stop_charge) and self.retry_count < 3:
+                if (level >= self.percentage_threshold and self.retry_count < 2) or stop_charge:
                     self.psacc.charge_now(self.vin,False)
                     self.retry_count += 1
+                    sleep(45)
+                    res = self.psacc.getVehiculeinfo(self.vin)
+                    status = res.energy[0]['charging']['status']
+                    if status == "InProgress":
+                        print(f"retry to stop the charge of {self.vin}")
+                        self.psacc.charge_now(self.vin, False)
+                        self.retry_count += 1
                 periodicity = 60 * 1
                 if self._next_stop_hour is not None:
                     next_in_second = (self._next_stop_hour- now).total_seconds()
                     if next_in_second < periodicity:
                         periodicity = next_in_second
-        else:
-            self.retry_count = 0
+            else:
+                self.retry_count = 0
         threading.Timer(periodicity, self.start).start()
 
     def get_dict(self):

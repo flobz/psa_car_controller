@@ -73,27 +73,30 @@ class ChargeControl:
 
         if self.percentage_threshold != 100 or stop_charge:
             res = self.psacc.getVehiculeinfo(self.vin)
-            status = res.energy[0]['charging']['status']
-            print(f"charging status of {self.vin} is {status}")
-            if status == "InProgress":
-                level = res.energy[0]["level"]
-                if (level >= self.percentage_threshold and self.retry_count < 2) or stop_charge:
-                    self.psacc.charge_now(self.vin,False)
-                    self.retry_count += 1
-                    sleep(45)
-                    res = self.psacc.getVehiculeinfo(self.vin)
-                    status = res.energy[0]['charging']['status']
-                    if status == "InProgress":
-                        print(f"retry to stop the charge of {self.vin}")
-                        self.psacc.charge_now(self.vin, False)
+            if res is not None:
+                status = res.energy[0]['charging']['status']
+                print(f"charging status of {self.vin} is {status}")
+                if status == "InProgress":
+                    level = res.energy[0]["level"]
+                    if (level >= self.percentage_threshold and self.retry_count < 2) or stop_charge:
+                        self.psacc.charge_now(self.vin,False)
                         self.retry_count += 1
-                periodicity = 60 * 1
-                if self._next_stop_hour is not None:
-                    next_in_second = (self._next_stop_hour- now).total_seconds()
-                    if next_in_second < periodicity:
-                        periodicity = next_in_second
+                        sleep(45)
+                        res = self.psacc.getVehiculeinfo(self.vin)
+                        status = res.energy[0]['charging']['status']
+                        if status == "InProgress":
+                            print(f"retry to stop the charge of {self.vin}")
+                            self.psacc.charge_now(self.vin, False)
+                            self.retry_count += 1
+                    periodicity = 60 * 1
+                    if self._next_stop_hour is not None:
+                        next_in_second = (self._next_stop_hour- now).total_seconds()
+                        if next_in_second < periodicity:
+                            periodicity = next_in_second
+                else:
+                    self.retry_count = 0
             else:
-                self.retry_count = 0
+                print(f"error when get vehicle info of {self.vin}")
         threading.Timer(periodicity, self.start).start()
 
     def get_dict(self):

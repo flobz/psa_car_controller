@@ -63,7 +63,7 @@ def charge_control():
 def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument("-f","--config", help="config file",type  = argparse.FileType('r'))
-    parser.add_argument("-c","--charge-control", help="enable charge control",const="charge_control.json", nargs='?')
+    parser.add_argument("-c","--charge-control", help="enable charge control",const="charge_config.json", nargs='?')
     parser.parse_args()
     return parser
 
@@ -87,5 +87,5 @@ if __name__ == "__main__":
     t1.start()
     saveconfig(myp)
     if args.charge_control:
-        chc = ChargeControls.load_config(myp)
+        chc = ChargeControls.load_config(myp,name=args.charge_control)
         chc.start()

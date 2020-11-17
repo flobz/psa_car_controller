@@ -9,6 +9,9 @@ With this app  you will be able to :
  - set a stop hour to charge your vehicle only on off-peak hours
  - control air conditioning
  - control lights and horn if your vehicle is compatible (mine isn't) 
+ 
+The api is documented [here](https://developer.groupe-psa.io/webapi/b2c/quickstart/connect/#article) but it is not totally up to date, and contains some errors. 
+
 
 ## I. Get all credentials
 We need to get all credentials from the MyPeugeot app data. To do that we will backup the app.
@@ -19,9 +22,13 @@ We will retrieve those information:
 1. Backup MyPeugeot app
 
     1.1 MyPeugeot app doesn't allow backup by default so you need to modify it.
-    To do that you can follow this guide: https://forum.xda-developers.com/android/software-hacking/guide-how-to-enable-adb-backup-app-t3495117  
-    The original app can be downloaded [here](https://apkpure.com/fr/mypeugeot-app/com.psa.mym.mypeugeot) for example.
-    
+    Basically you need to put to true two attributes in the AndroidManifest.xml :
+     - "android:allowBackup"
+     - "android:extractNativeLibs"
+     
+        To do that you can follow this guide: https://forum.xda-developers.com/android/software-hacking/guide-how-to-enable-adb-backup-app-t3495117  
+        The original app can be downloaded [here](https://apkpure.com/fr/mypeugeot-app/com.psa.mym.mypeugeot) for example.
+        
     1.2 Uninstall the original app
     
     1.3 Install the modified app

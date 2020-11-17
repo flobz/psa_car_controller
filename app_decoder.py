@@ -53,7 +53,7 @@ psacc = MyPSACC(None, client_id, client_secret, remote_refresh_token, customer_i
 psacc.connect(client_email, client_paswword)
 
 os.chdir(current_dir)
-psacc.saveconfig(name="test.json")
+psacc.save_config(name="test.json")
 res = psacc.get_vehicles()
 print(f"\nYour vehicles: {res}")
 

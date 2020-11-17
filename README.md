@@ -69,7 +69,7 @@ We will retrieve those information:
   3. Test it 
   
     2.1 Get the car state :
-    http://localhost:5000/get_vehiculeinfo/YOURVIN
+    http://localhost:5000/get_vehicleinfo/YOURVIN
     
     2.2 Stop charge
     http://localhost:5000/charge_now/YOURVIN/0

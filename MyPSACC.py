@@ -13,6 +13,7 @@ from requests import Response
 import psa_connectedcar as psac
 from psa_connectedcar import ApiClient
 from psa_connectedcar.rest import ApiException
+from MyLogger import logger
 
 oauhth_url = "https://idpcvs.peugeot.com/am/oauth2/access_token"
 remote_url = "https://api.groupe-psa.com/connectedcar/v4/virtualkey/remoteaccess/token?client_id="
@@ -33,7 +34,7 @@ class OpenIdCredentialManager(CredentialManager):
     @staticmethod
     def _is_token_expired(response: Response) -> bool:
         if response.status_code == HTTPStatus.UNAUTHORIZED.value:
-            print("token expired, renew")
+            logger.info("token expired, renew")
             try:
                 json_data = response.json()
                 return json_data.get('moreInformation') == 'Token is invalid'
@@ -42,8 +43,9 @@ class OpenIdCredentialManager(CredentialManager):
         else:
             return False
 
+
 class Oauth2PSACCApiConfig(psac.Configuration):
-    def set_refresh_callback(self,callback):
+    def set_refresh_callback(self, callback):
         self.refresh_callback = callback
 
 
@@ -54,15 +56,15 @@ class OauthAPIClient(ApiClient):
                  response_type=None, auth_settings=None, async_req=None,
                  _return_http_data_only=None, collection_formats=None,
                  _preload_content=True, _request_timeout=None):
-        for x in range(0,2):
+        for x in range(0, 2):
             try:
                 if not async_req:
                     return self._ApiClient__call_api(resource_path, method,
-                                           path_params, query_params, header_params,
-                                           body, post_params, files,
-                                           response_type, auth_settings,
-                                           _return_http_data_only, collection_formats,
-                                           _preload_content, _request_timeout)
+                                                     path_params, query_params, header_params,
+                                                     body, post_params, files,
+                                                     response_type, auth_settings,
+                                                     _return_http_data_only, collection_formats,
+                                                     _preload_content, _request_timeout)
                 else:
                     thread = self.pool.apply_async(self.__call_api, (resource_path,
                                                                      method, path_params, query_params,
@@ -78,6 +80,7 @@ class OauthAPIClient(ApiClient):
                     self.configuration.refresh_callback()
                 else:
                     raise e
+
 
 def correlation_id(date):
     date_str = date.strftime("%Y%m%d%H%M%S%f")[:-3]
@@ -96,7 +99,8 @@ class MyPSACC:
     def connect(self, user, password):
         self.manager.init_with_user_credentials(user, password, realm)
 
-    def __init__(self, refresh_token, client_id, client_secret, remote_refresh_token, customer_id, proxies=None, realm=realm):
+    def __init__(self, refresh_token, client_id, client_secret, remote_refresh_token, customer_id, proxies=None,
+                 realm=realm):
         self.service_information = ServiceInformation('',
                                                       oauhth_url,
                                                       client_id,
@@ -121,7 +125,7 @@ class MyPSACC:
     def refresh_token(self):
         self.manager._refresh_token()
 
-    def api(self) -> psac.VehiclesApi :
+    def api(self) -> psac.VehiclesApi:
         self.api_config.access_token = self.manager._access_token
         api_instance = psac.VehiclesApi(OauthAPIClient(self.api_config))
         return api_instance
@@ -135,11 +139,14 @@ class MyPSACC:
             self.api_config.proxy = proxies['http']
         self.manager.proxies = self._proxies
 
-    def getVehiculeinfo(self, vin):
+    def get_vehicle_info(self, vin):
         res = self.api().get_vehicle_status(self.get_vehicle_id_with_vin(vin))
+        # retry
+        if res is None:
+            res = self.api().get_vehicle_status(self.get_vehicle_id_with_vin(vin))
         return res
 
-    def newMonitor(self,vin,body):
+    def newMonitor(self, vin, body):
         res = self.manager.post("https://api.groupe-psa.com/connectedcar/v4/user/vehicles/" + self.vehicles_list[vin][
             "id"] + "/status?client_id=" + self.client_id, headers=MyPSACC.headers, data=body)
         data = res.json()
@@ -147,11 +154,11 @@ class MyPSACC:
 
     def get_vehicles(self):
 
-        res =self.api().get_vehicles_by_device()
+        res = self.api().get_vehicles_by_device()
         self.vehicles_list = {}
         for vehicle in res.embedded.vehicles:
             vin = vehicle.vin
-            self.vehicles_list[vin] = {"id":vehicle.id}
+            self.vehicles_list[vin] = {"id": vehicle.id}
         return self.vehicles_list
 
     def get_vehicle_id_with_vin(self, vin):
@@ -176,44 +183,44 @@ class MyPSACC:
                                 json={"grant_type": "refresh_token", "refresh_token": self.remote_refresh_token},
                                 headers=self.headers)
         data = res.json()
-        print(data)
+        logger.debug(f"refresh_remote_token: {data}")
         self.remote_access_token = data["access_token"]
         self.remote_refresh_token = data["refresh_token"]
         return data["access_token"], data["refresh_token"]
 
     def on_mqtt_connect(self, client, userdata, rc, a):
         try:
-            print("Connected with result code " + str(rc))
-            topics = ["psa/RemoteServices/to/cid/" + self.customer_id + "/#" ]
+            logger.info("Connected with result code " + str(rc))
+            topics = ["psa/RemoteServices/to/cid/" + self.customer_id + "/#"]
             for vin in self.getVIN():
                 topics.append("psa/RemoteServices/events/MPHRTServices/" + vin + "/#")
             for topic in topics:
                 client.subscribe(topic)
-                print("subscribe to "+topic)
+                logger.info("subscribe to " + topic)
         except:
             traceback.print_exc()
 
     def on_mqtt_disconnect(self, client, userdata, rc):
         try:
-            print("Disconnected with result code " + str(rc))
+            logger.info("Disconnected with result code " + str(rc))
             # Subscribing in on_connect() means that if we lose the connection and
             # reconnect then subscriptions will be renewed.
-            print(mqtt.error_string(rc))
+            logger.info(mqtt.error_string(rc))
         except:
             traceback.print_exc()
 
     def on_mqtt_message(self, client, userdata, msg):
-        print(msg.topic + " " + str(msg.payload))
+        logger.info(msg.topic + " " + str(msg.payload))
         try:
             data = json.loads(msg.payload)
             if data["return_code"] == 400:
                 self.manager._refresh_token()
                 self.refresh_remote_token()
-                print("retry last request")
+                logger.info("retry last request")
         except:
-            print("mqtt msg hasn't return code")
+            logger.info("mqtt msg hasn't return code")
 
-    def startmqtt(self):
+    def start_mqtt(self):
         self.refresh_remote_token()
         self.mqtt_client = mqtt.Client(clean_session=True, protocol=mqtt.MQTTv311)
         self.mqtt_client.tls_set_context()
@@ -224,6 +231,7 @@ class MyPSACC:
         self.mqtt_client.connect("mwa.mpsa.com", 8885, 60)
         self.mqtt_client.loop_start()
         return self.mqtt_client.is_connected()
+
     def mqtt_request(self, vin, req_parameters):
         date = datetime.now()
         date_f = "%Y-%m-%dT%H:%M:%SZ"
@@ -231,12 +239,12 @@ class MyPSACC:
         data = {"access_token": self.remote_access_token, "customer_id": self.customer_id,
                 "correlation_id": correlation_id(date), "req_date": date_str, "vin": vin,
                 "req_parameters": req_parameters}
-        print(f"send mqtt msg: {data}")
+        logger.info(f"send mqtt msg: {data}")
         return json.dumps(data)
 
     def get_charge_hour(self, vin):
         reg = r"PT([0-9]{1,2})H([0-9]{1,2})?"
-        data = self.getVehiculeinfo(vin)
+        data = self.get_vehicle_info(vin)
         hour_str = data.energy[0]['charging']['nextDelayedTime']
         hour = re.findall(reg, hour_str)[0]
         h = int(hour[0])
@@ -247,14 +255,14 @@ class MyPSACC:
         return h, m
 
     def get_charge_status(self, vin):
-        data = self.getVehiculeinfo(vin)
+        data = self.get_vehicle_info(vin)
         status = data["energy"][0]['charging']['status']
         return status
 
     def veh_charge_request(self, vin, hour, miinute, charge_type):
         # todo consider actual state before change the hour
         msg = self.mqtt_request(vin, {"program": {"hour": hour, "minute": miinute}, "type": charge_type})
-        print(msg)
+        logger.info(msg)
         self.mqtt_client.publish("psa/RemoteServices/from/cid/" + self.customer_id + "/VehCharge", msg)
 
     def change_charge_hour(self, vin, hour, miinute):
@@ -273,17 +281,17 @@ class MyPSACC:
 
     def horn(self, vin, count):
         msg = self.mqtt_request(vin, {"nb_horn": count, "action": "activate"})
-        print(msg)
+        logger.info(msg)
         self.mqtt_client.publish("psa/RemoteServices/from/cid/" + self.customer_id + "/Horn", msg)
 
     def lights(self, vin, duration: int):
         msg = self.mqtt_request(vin, {"action": "activate", "duration": duration})
-        print(msg)
+        logger.info(msg)
         self.mqtt_client.publish("psa/RemoteServices/from/cid/" + self.customer_id + "/Lights", msg)
 
     def wakeup(self, vin):
         msg = self.mqtt_request(vin, {"action": "state"})
-        print(msg)
+        logger.info(msg)
         self.mqtt_client.publish("psa/RemoteServices/from/cid/" + self.customer_id + "/VehCharge/state", msg)
         return True
 
@@ -294,7 +302,7 @@ class MyPSACC:
             value = "unlock"
 
         msg = self.mqtt_request(vin, {"action": value})
-        print(msg)
+        logger.info(msg)
         self.mqtt_client.publish("psa/RemoteServices/from/cid/" + self.customer_id + "/Doors", msg)
         return True
 
@@ -308,21 +316,20 @@ class MyPSACC:
             "program2": {"day": [0, 0, 0, 0, 0, 0, 0], "hour": 34, "minute": 7, "on": 0},
             "program3": {"day": [0, 0, 0, 0, 0, 0, 0], "hour": 34, "minute": 7, "on": 0},
             "program4": {"day": [0, 0, 0, 0, 0, 0, 0], "hour": 34, "minute": 7, "on": 0}}})
-        print(msg)
+        logger.info(msg)
         self.mqtt_client.publish("psa/RemoteServices/from/cid/" + self.customer_id + "/ThermalPrecond", msg)
         return True
 
-
-    def saveconfig(self,name="config.json",force=False):
+    def save_config(self, name="config.json", force=False):
         config_str = json.dumps(self, cls=MyPuegeotEncoder, sort_keys=True, indent=4).encode("utf8")
         new_hash = md5(config_str).hexdigest()
-        if force or self._confighash != new_hash :
+        if force or self._confighash != new_hash:
             with open(name, "wb") as f:
                 f.write(config_str)
             self._confighash = new_hash
-            print("save config change")
+            logger.info("save config change")
 
-    def loadconfig(name="config.json"):
+    def load_config(name="config.json"):
         with open(name, "r") as f:
             str = f.read()
             return MyPSACC(**json.loads(str))
@@ -334,9 +341,8 @@ class MyPuegeotEncoder(JSONEncoder):
         mpd["proxies"] = mpd["_proxies"]
         mpd["refresh_token"] = mp.manager.refresh_token
         mpd["client_secret"] = mp.service_information.client_secret
-        for el in ["service_information", "manager", "mqtt_client", "vehicles_list", "_proxies", "remote_access_token","_confighash","api_config"]:
+        for el in ["service_information", "manager", "mqtt_client", "vehicles_list", "_proxies", "remote_access_token",
+                   "_confighash", "api_config"]:
             if el in mpd:
                 mpd.pop(el)
         return mpd
-
-

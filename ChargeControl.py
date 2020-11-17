@@ -4,8 +4,8 @@ from copy import copy
 from datetime import datetime, timedelta
 from hashlib import md5
 from time import sleep
-
 from MyPSACC import MyPSACC
+from MyLogger import logger
 
 class ChargeControls:
     def __init__(self):
@@ -22,7 +22,7 @@ class ChargeControls:
             with open(name, "wb") as f:
                 f.write(config_str)
             self._confighash = new_hash
-            print("save config change")
+            logger.info("save config change")
 
     def load_config(psacc:MyPSACC, name="charge_config.json"):
         with open(name, "r") as f:
@@ -50,6 +50,7 @@ class ChargeControl:
         self.set_stop_hour(stop_hour)
         self.psacc = psacc
         self.retry_count = 0
+        self.thread = None
 
     def set_stop_hour(self,stop_hour):
         if stop_hour == [0, 0]:
@@ -72,7 +73,7 @@ class ChargeControl:
             stop_charge = False
 
         if self.percentage_threshold != 100 or stop_charge:
-            res = self.psacc.getVehiculeinfo(self.vin)
+            res = self.psacc.get_vehicle_info(self.vin)
             if res is not None:
                 status = res.energy[0]['charging']['status']
                 print(f"charging status of {self.vin} is {status}")
@@ -82,7 +83,7 @@ class ChargeControl:
                         self.psacc.charge_now(self.vin,False)
                         self.retry_count += 1
                         sleep(45)
-                        res = self.psacc.getVehiculeinfo(self.vin)
+                        res = self.psacc.get_vehicle_info(self.vin)
                         status = res.energy[0]['charging']['status']
                         if status == "InProgress":
                             print(f"retry to stop the charge of {self.vin}")
@@ -97,7 +98,8 @@ class ChargeControl:
                     self.retry_count = 0
             else:
                 print(f"error when get vehicle info of {self.vin}")
-        threading.Timer(periodicity, self.start).start()
+        self.thread = threading.Timer(periodicity, self.start)
+        self.thread.start()
 
     def get_dict(self):
         chd = copy(self.__dict__)

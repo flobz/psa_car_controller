@@ -19,7 +19,7 @@ oauhth_url = "https://idpcvs.peugeot.com/am/oauth2/access_token"
 remote_url = "https://api.groupe-psa.com/connectedcar/v4/virtualkey/remoteaccess/token?client_id="
 scopes = ['openid profile']
 realm = "clientsB2CPeugeot"
-
+MQTT_SERVER = "mwa.mpsa.com"
 
 class OpenIdCredentialManager(CredentialManager):
     def _grant_password_request(self, login: str, password: str, realm: str) -> dict:
@@ -146,6 +146,7 @@ class MyPSACC:
             res = self.api().get_vehicle_status(self.get_vehicle_id_with_vin(vin))
         return res
 
+    # monitor doesn't seem to work
     def newMonitor(self, vin, body):
         res = self.manager.post("https://api.groupe-psa.com/connectedcar/v4/user/vehicles/" + self.vehicles_list[vin][
             "id"] + "/status?client_id=" + self.client_id, headers=MyPSACC.headers, data=body)
@@ -202,23 +203,27 @@ class MyPSACC:
 
     def on_mqtt_disconnect(self, client, userdata, rc):
         try:
-            logger.info("Disconnected with result code " + str(rc))
+            logger.warn("Disconnected with result code " + str(rc))
             # Subscribing in on_connect() means that if we lose the connection and
             # reconnect then subscriptions will be renewed.
-            logger.info(mqtt.error_string(rc))
+            logger.warn(mqtt.error_string(rc))
         except:
             traceback.print_exc()
 
     def on_mqtt_message(self, client, userdata, msg):
-        logger.info(msg.topic + " " + str(msg.payload))
+        logger.info(f"mqtt msg {msg.topic} {str(msg.payload)}")
         try:
             data = json.loads(msg.payload)
-            if data["return_code"] == 400:
+            if data["return_code"] == "0":
+                return
+            elif data["return_code"] == "400":
                 self.manager._refresh_token()
                 self.refresh_remote_token()
                 logger.info("retry last request")
+            else:
+                logger.error(f'{data["return_code"]} : {data["reason"]}')
         except:
-            logger.info("mqtt msg hasn't return code")
+            logger.debug("mqtt msg hasn't return code")
 
     def start_mqtt(self):
         self.refresh_remote_token()
@@ -228,7 +233,7 @@ class MyPSACC:
         self.mqtt_client.on_message = self.on_mqtt_message
         self.mqtt_client.on_disconnect = self.on_mqtt_disconnect
         self.mqtt_client.username_pw_set("IMA_OAUTH_ACCESS_TOKEN", self.remote_access_token)
-        self.mqtt_client.connect("mwa.mpsa.com", 8885, 60)
+        self.mqtt_client.connect(MQTT_SERVER, 8885, 60)
         self.mqtt_client.loop_start()
         return self.mqtt_client.is_connected()
 
@@ -239,7 +244,7 @@ class MyPSACC:
         data = {"access_token": self.remote_access_token, "customer_id": self.customer_id,
                 "correlation_id": correlation_id(date), "req_date": date_str, "vin": vin,
                 "req_parameters": req_parameters}
-        logger.info(f"send mqtt msg: {data}")
+
         return json.dumps(data)
 
     def get_charge_hour(self, vin):

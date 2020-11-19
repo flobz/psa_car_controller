@@ -13,13 +13,16 @@ With this app  you will be able to :
 The api is documented [here](https://developer.groupe-psa.io/webapi/b2c/quickstart/connect/#article) but it is not totally up to date, and contains some errors. 
 
 
-## I. Get all credentials
-We need to get all credentials from the MyPeugeot app data. To do that we will backup the app.
-We will retrieve those information:
- - client-id and client-secret  for the api
- - remote refresh token for the control of the vehicle
+## I. Get credentials
+We need to get credentials from the MyPeugeot app. You have two solutions :  
+- You can extract all credentials from the application data after backup the app
+- You can extract some credentials from the apk, it's faster but you will not be able to remote control your vehicle
 
-1. Backup MyPeugeot app
+1. Solution 1 : Backup MyPeugeot app
+   
+   We will retrieve those information:
+     - client-id and client-secret  for the api
+     - remote refresh token for the control of the vehicle
 
     1.1 MyPeugeot app doesn't allow backup by default so you need to modify it.
     Basically you need to put to true two attributes in the AndroidManifest.xml :
@@ -42,8 +45,8 @@ We will retrieve those information:
     1.7 backup MyPeugeot app : 
     
     ``` adb backup -f backup.ab -noapk com.psa.mym.mypeugeot ```
-    
-2. Retrieve credentials in the backup
+
+    1.8. Retrieve credentials in the backup
 
     ```
    python3 app_decoder.py  backup.ab <backup_password>
@@ -57,27 +60,51 @@ We will retrieve those information:
     save config change
 
     Your vehicles: {'VINNUBMER': {'id': 'vehicule id'}} 
-      ``` 
- 3. If it works you will have VIN of your vehicles and there ids in the last line. The script generate a test.json file with all credentials needed.
+      ```
+    1.9 If it works you will have VIN of your vehicles and there ids in the last line. The script generate a test.json file with all credentials needed.
+ 
+2. Solution 2 : Extract credentials from the apk
+
+    2.1 Download the app on your computer, the original app can be downloaded [here](https://apkpure.com/fr/mypeugeot-app/com.psa.mym.mypeugeot) for example.
+    
+    2.2 Install pythons dependency ```pip install androguard```
+    
+    2.3  run the decoder script : ```python3 app_decoder.py <path to my apk file>```
+      
+        mypeugeot email: <write your mypeugeot email>
+        mypeugeot password: <write your mypeugeot password>
+        What is the car api realm : clientsB2CPeugeot, clientsB2CDS, clientsB2COpel, clientsB2CVauxhall
+        clientsB2CPeugeot
+        save config change
+    
+        Your vehicles: {'VINNUBMER': {'id': 'vehicule id'}}
+   
+   2.4 If it works you will have VIN of your vehicles and there ids in the last line. The script generate a test.json file with all credentials needed.
  
  ## II. Use the app
   1. Install requirements
   ```pip3 install -r requirements.txt```
   2. start the app:
+        
+        if you choose solution 1 :
    ``python3 server.py -f test.json -c charge_control1.json`` 
+        
+        if you choose solution 2 :
+   ``python3 server.py -f test.json`` 
+ 
   
   3. Test it 
   
     2.1 Get the car state :
     http://localhost:5000/get_vehicleinfo/YOURVIN
     
-    2.2 Stop charge
+    2.2 Stop charge (only for solution 1)
     http://localhost:5000/charge_now/YOURVIN/0
     
-    2.3 Set hour to stop the charge to 6am
+    2.3 Set hour to stop the charge to 6am (only for solution 1)
     http://localhost:5000/charge_control?vin=yourvin&hour=6&minute=0 
     
-    2.4 Change car charge threshold to 80 percent
+    2.4 Change car charge threshold to 80 percent (only for solution 1)
     http://localhost:5000/charge_control?vin=YOURVIN&percentage=80 
            
 ## API specficication

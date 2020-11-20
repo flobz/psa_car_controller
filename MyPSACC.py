@@ -16,6 +16,7 @@ from psa_connectedcar.rest import ApiException
 from MyLogger import logger
 
 oauhth_url = "https://idpcvs.peugeot.com/am/oauth2/access_token"
+authorize_service = "https://api.mpsa.com/api/connectedcar/v2/oauth/authorize"
 remote_url = "https://api.groupe-psa.com/connectedcar/v4/virtualkey/remoteaccess/token?client_id="
 scopes = ['openid profile']
 realm = "clientsB2CPeugeot"
@@ -101,7 +102,7 @@ class MyPSACC:
 
     def __init__(self, refresh_token, client_id, client_secret, remote_refresh_token, customer_id, proxies=None,
                  realm=realm):
-        self.service_information = ServiceInformation('',
+        self.service_information = ServiceInformation(authorize_service,
                                                       oauhth_url,
                                                       client_id,
                                                       client_secret,
@@ -154,7 +155,6 @@ class MyPSACC:
         return data
 
     def get_vehicles(self):
-
         res = self.api().get_vehicles_by_device()
         self.vehicles_list = {}
         for vehicle in res.embedded.vehicles:
@@ -261,7 +261,7 @@ class MyPSACC:
 
     def get_charge_status(self, vin):
         data = self.get_vehicle_info(vin)
-        status = data["energy"][0]['charging']['status']
+        status = data.energy[0]['charging']['status']
         return status
 
     def veh_charge_request(self, vin, hour, miinute, charge_type):

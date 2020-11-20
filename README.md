@@ -90,7 +90,7 @@ We need to get credentials from the MyPeugeot app. You have two solutions :
    ``python3 server.py -f test.json -c charge_control1.json`` 
         
         if you choose solution 2 :
-   ``python3 server.py -f test.json`` 
+   ``python3 server.py -f test.json --remote-disable`` 
  
   
   3. Test it 

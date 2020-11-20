@@ -75,6 +75,7 @@ def parse_args():
     parser.add_argument("-f", "--config", help="config file", type=argparse.FileType('r'))
     parser.add_argument("-c", "--charge-control", help="enable charge control", const="charge_config.json", nargs='?')
     parser.add_argument("-d", "--debug", help="enable debug", const=10, default=20, nargs='?')
+    parser.add_argument("--remote-disable",help="disable remote control")
     parser.parse_args()
     return parser
 
@@ -95,10 +96,14 @@ if __name__ == "__main__":
         client_paswword = input("mypeugeot password: ")
         myp.connect(client_email, client_paswword)
     logger.info(myp.get_vehicles())
-    myp.start_mqtt()
     t1 = Thread(target=app.run)
     t1.start()
+    if args.remote_disable:
+       logger.info("mqtt disabled")
+    else:
+        myp.start_mqtt()
+        if args.charge_control:
+            chc = ChargeControls.load_config(myp, name=args.charge_control)
+            chc.start()
     save_config(myp)
-    if args.charge_control:
-        chc = ChargeControls.load_config(myp, name=args.charge_control)
-        chc.start()
+

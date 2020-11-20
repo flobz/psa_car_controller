@@ -107,9 +107,9 @@ We need to get credentials from the MyPeugeot app. You have two solutions :
     2.4 Change car charge threshold to 80 percent (only for solution 1)
     http://localhost:5000/charge_control?vin=YOURVIN&percentage=80 
            
-## API specficication
-The api spec is described here : [api_spec.md](api_spec.md).
-You can use all fonction from the doc, for example :
+## API documentation
+The api documentation is described here : [api_spec.md](api_spec.md).
+You can use all functions from the doc, for example :
 ```myp.api().get_car_last_position(myp.get_vehicle_id_with_vin("myvin"))```
 ## More information
 To analyse the traffics between the app and psa server, you can use mitmproxy.

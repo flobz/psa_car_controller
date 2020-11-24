@@ -92,10 +92,7 @@ def correlation_id(date):
 
 class MyPSACC:
     vehicles_url = "https://idpcvs.peugeot.com/api/connectedcar/v2/oauth/authorize"
-    headers = {
-        "x-introspect-realm": realm,
-        "accept": "application/hal+json",
-    }
+
 
     def connect(self, user, password):
         self.manager.init_with_user_credentials(user, password, realm)
@@ -122,7 +119,10 @@ class MyPSACC:
         self.api_config.verify_ssl = False
         self.api_config.api_key['client_id'] = self.client_id
         self.api_config.api_key['x-introspect-realm'] = self.realm
-
+        self.headers = {
+                        "x-introspect-realm": realm,
+                        "accept": "application/hal+json",
+                    }
     def refresh_token(self):
         self.manager._refresh_token()
 

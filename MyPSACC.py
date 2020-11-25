@@ -342,12 +342,11 @@ class MyPSACC:
 
 class MyPuegeotEncoder(JSONEncoder):
     def default(self, mp: MyPSACC):
-        mpd = copy(mp.__dict__)
-        mpd["proxies"] = mpd["_proxies"]
+        data = copy(mp.__dict__)
+        mpd = {}
+        mpd["proxies"] = data["_proxies"]
         mpd["refresh_token"] = mp.manager.refresh_token
         mpd["client_secret"] = mp.service_information.client_secret
-        for el in ["service_information", "manager", "mqtt_client", "vehicles_list", "_proxies", "remote_access_token",
-                   "_confighash", "api_config"]:
-            if el in mpd:
-                mpd.pop(el)
+        for el in ["client_id", "realm", "remote_refresh_token","customer_id"]:
+            mpd[el] = data[el]
         return mpd

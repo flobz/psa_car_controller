@@ -3,22 +3,22 @@ import os
 import shutil
 import xml.etree.ElementTree as ET
 import base64
-
-
-
 from ChargeControl import ChargeControl, ChargeControls
 from MyPSACC import MyPSACC
 from sys import argv
 import tarfile
+import sys
 
 
 def getxmlvalue(root, name):
     for child in root.findall("*[@name='" + name + "']"):
         return child.text
 
-
 current_dir = os.getcwd()
 script_dir = dir_path = os.path.dirname(os.path.realpath(__file__))
+if sys.version_info < (3, 6):
+    raise RuntimeError("This application requres Python 3.6+")
+
 if argv[1].endswith(".apk"):
     from androguard.core.bytecodes.apk import APK
     a = APK(argv[1])
@@ -34,6 +34,9 @@ else:
         password = argv[2]
     else:
         password = ""
+    res = os.system("java --version")
+    if res != 0:
+        print("You need to install java on your computer : https://www.java.com/fr/download/")
 
     os.system(f"java -jar {script_dir}/abe-all.jar unpack {argv[1]} backup.tar {password}")
     my_tar = tarfile.open('backup.tar')

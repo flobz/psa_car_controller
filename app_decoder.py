@@ -41,25 +41,22 @@ else:
     os.system(f"java -jar {script_dir}/abe-all.jar unpack {argv[1]} backup.tar {password}")
     my_tar = tarfile.open('backup.tar')
     my_tar.extractall()
-
     dir = "apps/com.psa.mym.mypeugeot"
     os.chdir(dir + "/sp")
-
+    # get client id/secret
     psa_pref = "com.psa.mym.mypeugeot_preferences.xml"
     root = ET.parse(psa_pref).getroot()
     client_secret = getxmlvalue(root, "CEA_CLIENT_SECRET")
     client_id = getxmlvalue(root, "CEA_CLIENT_ID")
-
+    #get customer id
     remote_info_file = "BASIC_AUTH_CVS.xml"
     root = ET.parse(remote_info_file).getroot()
     customer_id_enc = getxmlvalue(root, "CRYPTED_CUSTOMER_ID")
     customer_id = base64.b64decode(customer_id_enc).decode('utf-8')
-
+    #get remote token
     root = ET.parse("HUTokenManager.xml").getroot()
     remote_enc = root[0].text
     remote_refresh_token = json.loads(base64.b64decode(remote_enc))["refresh_token"]
-
-
 
 client_email = input("mypeugeot email: ")
 client_paswword = input("mypeugeot password: ")

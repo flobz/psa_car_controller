@@ -31,6 +31,7 @@ We need to get credentials from the MyPeugeot app. You have two solutions :
      
         To do that you can follow this guide: https://forum.xda-developers.com/android/software-hacking/guide-how-to-enable-adb-backup-app-t3495117  
         The original app can be downloaded [here](https://apkpure.com/fr/mypeugeot-app/com.psa.mym.mypeugeot) for example.
+        You should download Mypeugeot 1.25.2, higher versions doesn't seems to work 
         
     1.2 Uninstall the original app
     

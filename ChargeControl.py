@@ -58,7 +58,7 @@ class ChargeControl:
         self.thread:threading.Timer = None
 
     def set_stop_hour(self,stop_hour):
-        if stop_hour == [0, 0]:
+        if stop_hour is None or stop_hour == [0, 0]:
             self._stop_hour = None
             self._next_stop_hour = None
         else:

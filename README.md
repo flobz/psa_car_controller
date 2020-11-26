@@ -1,6 +1,6 @@
 # Remote Control of PSA car
 ### This is a python program to control a psa car with connected_car v4 api. Using android app to retrieve credentials.
-I test it with a Peugeot e-208 but it should work with others PSA vehicles.
+I test it with a Peugeot e-208 but it works with others PSA vehicles (Citroen, Opel, Vauxhall, DS).
 
 With this app  you will be able to :
  - get the status of the car (battery level for electric vehicle, position ... )

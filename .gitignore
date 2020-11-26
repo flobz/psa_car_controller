@@ -136,3 +136,9 @@ dmypy.json
 
 # Cython debug symbols
 cython_debug/
+
+.idea/
+backup.ab
+charge_config1.json
+config.json
+test.json

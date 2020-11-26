@@ -202,7 +202,7 @@ class MyPSACC:
                 client.subscribe(topic)
                 logger.info("subscribe to " + topic)
         except:
-            traceback.print_exc()
+            logger.error(traceback.format_exc())
 
     def on_mqtt_disconnect(self, client, userdata, rc):
         try:
@@ -211,7 +211,7 @@ class MyPSACC:
             # reconnect then subscriptions will be renewed.
             logger.warn(mqtt.error_string(rc))
         except:
-            traceback.print_exc()
+            logger.error(traceback.format_exc())
 
     def on_mqtt_message(self, client, userdata, msg):
         logger.info(f"mqtt msg {msg.topic} {str(msg.payload)}")

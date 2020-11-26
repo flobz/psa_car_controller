@@ -112,4 +112,5 @@ class ChargeControl:
     def get_dict(self):
         chd = copy(self.__dict__)
         chd.pop("psacc")
+        chd.pop("thread")
         return chd

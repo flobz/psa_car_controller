@@ -97,7 +97,7 @@ client_email = input("mypeugeot email: ")
 client_paswword = input("mypeugeot password: ")
 client_realm = input("What is the car api realm : clientsB2CPeugeot, clientsB2CCitroen, clientsB2CDS, clientsB2COpel, clientsB2CVauxhall\n")
 psacc = MyPSACC(None, client_id, client_secret, remote_refresh_token, customer_id, realm=client_realm)
-psacc.connect(client_email, client_paswword, client_realm)
+psacc.connect(client_email, client_paswword)
 
 os.chdir(current_dir)
 psacc.save_config(name="test.json")

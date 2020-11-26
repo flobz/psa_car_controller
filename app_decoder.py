@@ -114,7 +114,7 @@ if not argv[1].endswith(".apk"):
     for vin,vehicle in res.items():
         chc = ChargeControl(None,vin,100,[0,0])
         charge_controls.list[vin] = chc
-    charge_controls.saveconfig(name="charge_config1.json")
+    charge_controls.save_config(name="charge_config1.json")
 
 
 

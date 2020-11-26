@@ -15,7 +15,7 @@ class ChargeControls:
         self.list: dict = {}
         self._confighash = None
 
-    def saveconfig(self,name="charge_config.json",force=False):
+    def save_config(self, name="charge_config.json", force=False):
         chd = {}
         for key, el in self.list.items():
             chd[el.vin] =  {"percentage_threshold": el.percentage_threshold, "stop_hour": el._stop_hour}

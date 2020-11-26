@@ -9,11 +9,35 @@ from sys import argv
 import tarfile
 import sys
 import traceback
+import re
 
 
 def getxmlvalue(root, name):
     for child in root.findall("*[@name='" + name + "']"):
         return child.text
+
+
+def find_app_path():
+    base_dir = 'apps/'
+    paths = os.listdir(base_dir)
+    if len(paths) > 0:
+        for path in paths:
+            pattern = re.compile('com.psa.mym.\\w*')
+            print(pattern.match(path))
+            if pattern.match(path) is not None:
+                return base_dir + path
+    return None
+
+
+def find_preferences_xml():
+    paths = os.listdir()
+    if len(paths) > 0:
+        for path in paths:
+            pattern = re.compile('com.psa.mym.\\w*_preferences.xml')
+            if pattern.match(path) is not None:
+                return path
+    return None
+
 
 current_dir = os.getcwd()
 script_dir = dir_path = os.path.dirname(os.path.realpath(__file__))
@@ -42,10 +66,10 @@ else:
     os.system(f"java -jar {script_dir}/abe-all.jar unpack {argv[1]} backup.tar {password}")
     my_tar = tarfile.open('backup.tar')
     my_tar.extractall()
-    dir = "apps/com.psa.mym.mypeugeot"
+    dir = find_app_path()
     os.chdir(dir + "/sp")
     # get client id/secret
-    psa_pref = "com.psa.mym.mypeugeot_preferences.xml"
+    psa_pref = find_preferences_xml()
     root = ET.parse(psa_pref).getroot()
     client_secret = getxmlvalue(root, "CEA_CLIENT_SECRET")
     client_id = getxmlvalue(root, "CEA_CLIENT_ID")

@@ -61,9 +61,9 @@ else:
     try:
         if "refresh_token" in remote_dec:
           remote_refresh_token = remote_dec["refresh_token"]
+        # Mypeugeot >= 1.26
         else:
           remote_refresh_token = next(iter(remote_dec.values()))["refresh_token"]
-    # Mypeugeot >= 1.26
     except:
         traceback.print_exc()
         print(remote_dec)
@@ -72,7 +72,7 @@ else:
 
 client_email = input("mypeugeot email: ")
 client_paswword = input("mypeugeot password: ")
-client_realm = input("What is the car api realm : clientsB2CPeugeot, clientsB2CDS, clientsB2COpel, clientsB2CVauxhall\n")
+client_realm = input("What is the car api realm : clientsB2CPeugeot, clientsB2CCitroen, clientsB2CDS, clientsB2COpel, clientsB2CVauxhall\n")
 psacc = MyPSACC(None, client_id, client_secret, remote_refresh_token, customer_id, realm=client_realm)
 psacc.connect(client_email, client_paswword)
 

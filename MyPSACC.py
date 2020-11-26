@@ -15,11 +15,15 @@ from psa_connectedcar import ApiClient
 from psa_connectedcar.rest import ApiException
 from MyLogger import logger
 
-oauhth_url = "https://idpcvs.peugeot.com/am/oauth2/access_token"
+oauhth_url = {"clientsB2CPeugeot":"https://idpcvs.peugeot.com/am/oauth2/access_token",
+              "clientsB2CCitroen":"https://idpcvs.citroen.com/am/oauth2/access_token",
+              "clientsB2CDS": "https://idpcvs.driveds.com/am/oauth2/access_token",
+              "clientsB2COpel":"https://idpcvs.opel.com/am/oauth2/access_token",
+              "clientsB2CVauxhall":"https://idpcvs.vauxhall.co.uk/am/oauth2/access_token"}
+
 authorize_service = "https://api.mpsa.com/api/connectedcar/v2/oauth/authorize"
 remote_url = "https://api.groupe-psa.com/connectedcar/v4/virtualkey/remoteaccess/token?client_id="
 scopes = ['openid profile']
-realm = "clientsB2CPeugeot"
 MQTT_SERVER = "mwa.mpsa.com"
 
 class OpenIdCredentialManager(CredentialManager):
@@ -95,12 +99,12 @@ class MyPSACC:
 
 
     def connect(self, user, password):
-        self.manager.init_with_user_credentials(user, password, realm)
+        self.manager.init_with_user_credentials(user, password, self.realm)
 
-    def __init__(self, refresh_token, client_id, client_secret, remote_refresh_token, customer_id, proxies=None,
-                 realm=realm):
+    def __init__(self, refresh_token, client_id, client_secret, remote_refresh_token, customer_id, realm, proxies=None):
+        self.realm = realm
         self.service_information = ServiceInformation(authorize_service,
-                                                      oauhth_url,
+                                                      oauhth_url[self.realm],
                                                       client_id,
                                                       client_secret,
                                                       scopes, False)
@@ -115,7 +119,6 @@ class MyPSACC:
         self.setProxies(proxies)
         self.customer_id = customer_id
         self._confighash = None
-        self.realm = realm
         self.api_config.verify_ssl = False
         self.api_config.api_key['client_id'] = self.client_id
         self.api_config.api_key['x-introspect-realm'] = self.realm

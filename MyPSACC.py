@@ -25,7 +25,6 @@ authorize_service = "https://api.mpsa.com/api/connectedcar/v2/oauth/authorize"
 remote_url = "https://api.groupe-psa.com/connectedcar/v4/virtualkey/remoteaccess/token?client_id="
 scopes = ['openid profile']
 MQTT_SERVER = "mwa.mpsa.com"
-default_ream = 'clientsB2CPeugeot'
 
 
 class OpenIdCredentialManager(CredentialManager):

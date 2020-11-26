@@ -99,9 +99,7 @@ if __name__ == "__main__":
     except OAuthError:
         client_email = input("mypeugeot email: ")
         client_paswword = input("mypeugeot password: ")
-        client_realm = input(
-            "What is the car api realm : clientsB2CPeugeot, clientsB2CDS, clientsB2COpel, clientsB2CVauxhall\n")
-        myp.connect(client_email, client_paswword, client_realm)
+        myp.connect(client_email, client_paswword)
     logger.info(myp.get_vehicles())
     t1 = Thread(target=app.run, kwargs={"host": args.listen, "port": int(args.port)})
     t1.start()

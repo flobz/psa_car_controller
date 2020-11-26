@@ -8,6 +8,7 @@ from MyPSACC import MyPSACC
 from sys import argv
 import tarfile
 import sys
+import traceback
 
 
 def getxmlvalue(root, name):
@@ -56,7 +57,18 @@ else:
     #get remote token
     root = ET.parse("HUTokenManager.xml").getroot()
     remote_enc = root[0].text
-    remote_refresh_token = json.loads(base64.b64decode(remote_enc))["refresh_token"]
+    remote_dec = json.loads(base64.b64decode(remote_enc))
+    try:
+        if "refresh_token" in remote_dec:
+          remote_refresh_token = remote_dec["refresh_token"]
+        else:
+          remote_refresh_token = next(iter(remote_dec.values()))["refresh_token"]
+    # Mypeugeot >= 1.26
+    except:
+        traceback.print_exc()
+        print(remote_dec)
+
+
 
 client_email = input("mypeugeot email: ")
 client_paswword = input("mypeugeot password: ")

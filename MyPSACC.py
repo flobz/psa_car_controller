@@ -15,12 +15,15 @@ from psa_connectedcar import ApiClient
 from psa_connectedcar.rest import ApiException
 from MyLogger import logger
 
-oauhth_url = "https://idpcvs.peugeot.com/am/oauth2/access_token"
+oauth_urls = {'clientsB2COpel': 'https://idpcvs.opel.com/am/oauth2/access_token',
+              'clientsB2CPeugeot': 'https://idpcvs.peugeot.com/am/oauth2/access_token',
+              'default': 'https://idpcvs.peugeot.com/am/oauth2/access_token'}
 authorize_service = "https://api.mpsa.com/api/connectedcar/v2/oauth/authorize"
 remote_url = "https://api.groupe-psa.com/connectedcar/v4/virtualkey/remoteaccess/token?client_id="
 scopes = ['openid profile']
-realm = "clientsB2CPeugeot"
 MQTT_SERVER = "mwa.mpsa.com"
+default_ream = 'clientsB2CPeugeot'
+
 
 class OpenIdCredentialManager(CredentialManager):
     def _grant_password_request(self, login: str, password: str, realm: str) -> dict:
@@ -93,14 +96,13 @@ def correlation_id(date):
 class MyPSACC:
     vehicles_url = "https://idpcvs.peugeot.com/api/connectedcar/v2/oauth/authorize"
 
-
-    def connect(self, user, password):
+    def connect(self, user, password, realm):
         self.manager.init_with_user_credentials(user, password, realm)
 
     def __init__(self, refresh_token, client_id, client_secret, remote_refresh_token, customer_id, proxies=None,
-                 realm=realm):
+                 realm=default_ream):
         self.service_information = ServiceInformation(authorize_service,
-                                                      oauhth_url,
+                                                      self.get_oauth_url(realm),
                                                       client_id,
                                                       client_secret,
                                                       scopes, False)
@@ -123,6 +125,13 @@ class MyPSACC:
                         "x-introspect-realm": realm,
                         "accept": "application/hal+json",
                     }
+
+    @staticmethod
+    def get_oauth_url(realm: str):
+        if realm in oauth_urls.keys():
+            return oauth_urls[realm]
+        return oauth_urls['default']
+
     def refresh_token(self):
         self.manager._refresh_token()
 

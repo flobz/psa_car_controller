@@ -78,8 +78,8 @@ def parse_args():
     parser.add_argument("-d", "--debug", help="enable debug", const=10, default=20, nargs='?')
     parser.add_argument("-l", "--listen", help="change server listen address", default="127.0.0.1")
     parser.add_argument("-p", "--port", help="change server listen address", default="5000")
-    parser.add_argument("-m", "--mail", help="change the email address", default="example@example.com")
-    parser.add_argument("-P", "--password", help="change the password", default="123456")
+    parser.add_argument("-m", "--mail", help="change the email address")
+    parser.add_argument("-P", "--password", help="change the password")
     parser.add_argument("--remote-disable",help="disable remote control")
     parser.parse_args()
     return parser

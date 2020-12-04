@@ -33,21 +33,24 @@ class PositionProperties(object):
     swagger_types = {
         'heading': 'float',
         'signal_quality': 'float',
-        'type': 'str'
+        'type': 'str',
+        'updated_at': 'datetime'
     }
 
     attribute_map = {
         'heading': 'heading',
         'signal_quality': 'signalQuality',
-        'type': 'type'
+        'type': 'type',
+        'updated_at': 'updatedAt'
     }
 
-    def __init__(self, heading=None, signal_quality=None, type=None):  # noqa: E501
+    def __init__(self, heading=None, signal_quality=None, type=None, updated_at=None):  # noqa: E501
         """PositionProperties - a model defined in Swagger"""  # noqa: E501
 
         self._heading = None
         self._signal_quality = None
         self._type = None
+        self._updated_at = None
         self.discriminator = None
 
         if heading is not None:
@@ -56,6 +59,8 @@ class PositionProperties(object):
             self.signal_quality = signal_quality
         if type is not None:
             self.type = type
+        if updated_at is not None:
+            self.updated_at = updated_at
 
     @property
     def heading(self):
@@ -129,6 +134,27 @@ class PositionProperties(object):
             )
 
         self._type = type
+
+    @property
+    def updated_at(self):
+        """Gets the updated_at of this PositionProperties.  # noqa: E501
+
+
+        :return: The updated_at of this PositionProperties.  # noqa: E501
+        :rtype: datetime
+        """
+        return self._updated_at
+
+    @updated_at.setter
+    def updated_at(self, updated_at):
+        """Sets the updated_at of this PositionProperties.
+
+
+        :param updated_at: The updated_at of this PositionProperties.  # noqa: E501
+        :type: datetime
+        """
+
+        self._updated_at = updated_at
 
     def to_dict(self):
         """Returns the model properties as a dict"""

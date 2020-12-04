@@ -70,42 +70,49 @@ class ChargeControl:
     def start(self):
         periodicity = ChargeControl.periodicity
         now = datetime.now()
-        if self._next_stop_hour is not None and self._next_stop_hour < now:
-            stop_charge = True
-            self._next_stop_hour += timedelta(days=1)
-            logger.info("it's time to stop the charge")
-        else :
-            stop_charge = False
+        try:
+            if self._next_stop_hour is not None and self._next_stop_hour < now:
+                stop_charge = True
+                self._next_stop_hour += timedelta(days=1)
+                logger.info("it's time to stop the charge")
+            else :
+                stop_charge = False
 
-        if self.percentage_threshold != 100 or stop_charge:
-            res = None
-            try:
-                res = self.psacc.get_vehicle_info(self.vin)
-            except ApiException:
-                logger.error(traceback.format_exc())
-            if res is not None:
-                status = res.energy[0]['charging']['status']
-                level = res.energy[0]["level"]
-                logger.info(f"charging status of {self.vin} is {status}, battery level: {level}")
-                if status == "InProgress":
-                    if (level >= self.percentage_threshold and self.retry_count < 2) or stop_charge:
-                        self.psacc.charge_now(self.vin,False)
-                        self.retry_count += 1
-                        sleep(ChargeControl.MQTT_TIMEOUT)
-                        res = self.psacc.get_vehicle_info(self.vin)
-                        status = res.energy[0]['charging']['status']
-                        if status == "InProgress":
-                            logger.warn(f"retry to stop the charge of {self.vin}")
-                            self.psacc.charge_now(self.vin, False)
+            if self.percentage_threshold != 100 or stop_charge:
+                res = None
+                try:
+                    res = self.psacc.get_vehicle_info(self.vin)
+                except ApiException:
+                    logger.error(traceback.format_exc())
+                if res is not None:
+                    status = res.energy[0]['charging']['status']
+                    level = res.energy[0]["level"]
+                    logger.info(f"charging status of {self.vin} is {status}, battery level: {level}")
+                    if status == "InProgress":
+                        # force update if the car doesn't send info during 10 minutes
+                        last_update = datetime.strptime(res.energy[0]['updatedAt'], "%Y-%m-%dT%H:%M:%SZ")
+                        if (datetime.utcnow() - last_update).total_seconds() > 60 * 10:
+                            self.psacc.wakeup(self.vin)
+                        if (level >= self.percentage_threshold and self.retry_count < 2) or stop_charge:
+                            self.psacc.charge_now(self.vin,False)
                             self.retry_count += 1
-                    if self._next_stop_hour is not None:
-                        next_in_second = (self._next_stop_hour- now).total_seconds()
-                        if next_in_second < periodicity:
-                            periodicity = next_in_second
+                            sleep(ChargeControl.MQTT_TIMEOUT)
+                            res = self.psacc.get_vehicle_info(self.vin)
+                            status = res.energy[0]['charging']['status']
+                            if status == "InProgress":
+                                logger.warn(f"retry to stop the charge of {self.vin}")
+                                self.psacc.charge_now(self.vin, False)
+                                self.retry_count += 1
+                        if self._next_stop_hour is not None:
+                            next_in_second = (self._next_stop_hour- now).total_seconds()
+                            if next_in_second < periodicity:
+                                periodicity = next_in_second
+                    else:
+                        self.retry_count = 0
                 else:
-                    self.retry_count = 0
-            else:
-                logger.error(f"error when get vehicle info of {self.vin}")
+                    logger.error(f"error when get vehicle info of {self.vin}")
+        except:
+            logger.error(traceback.format_exc())
         self.thread = threading.Timer(periodicity, self.start)
         self.thread.start()
 

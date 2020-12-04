@@ -31,58 +31,58 @@ class Position(object):
                             and the value is json key in definition.
     """
     swagger_types = {
-        'created_at': 'datetime',
+        'type': 'str',
         'geometry': 'Point',
-        'properties': 'PositionProperties',
-        'type': 'str'
+        'properties': 'PositionProperties'
     }
 
     attribute_map = {
-        'created_at': 'createdAt',
+        'type': 'type',
         'geometry': 'geometry',
-        'properties': 'properties',
-        'type': 'type'
+        'properties': 'properties'
     }
 
-    def __init__(self, created_at=None, geometry=None, properties=None, type='Feature'):  # noqa: E501
+    def __init__(self, type='Feature', geometry=None, properties=None):  # noqa: E501
         """Position - a model defined in Swagger"""  # noqa: E501
 
-        self._created_at = None
+        self._type = None
         self._geometry = None
         self._properties = None
-        self._type = None
         self.discriminator = None
 
-        if created_at is not None:
-            self.created_at = created_at
-        if geometry is not None:
-            self.geometry = geometry
-        self.properties = properties
         if type is not None:
             self.type = type
+        if geometry is not None:
+            self.geometry = geometry
+        if properties is not None:
+            self.properties = properties
 
     @property
-    def created_at(self):
-        """Gets the created_at of this Position.  # noqa: E501
+    def type(self):
+        """Gets the type of this Position.  # noqa: E501
 
-        Date when the resource has been created.  # noqa: E501
 
-        :return: The created_at of this Position.  # noqa: E501
-        :rtype: datetime
+        :return: The type of this Position.  # noqa: E501
+        :rtype: str
         """
-        return self._created_at
+        return self._type
 
-    @created_at.setter
-    def created_at(self, created_at):
-        """Sets the created_at of this Position.
+    @type.setter
+    def type(self, type):
+        """Sets the type of this Position.
 
-        Date when the resource has been created.  # noqa: E501
 
-        :param created_at: The created_at of this Position.  # noqa: E501
-        :type: datetime
+        :param type: The type of this Position.  # noqa: E501
+        :type: str
         """
+        allowed_values = ["Feature"]  # noqa: E501
+        if type not in allowed_values:
+            raise ValueError(
+                "Invalid value for `type` ({0}), must be one of {1}"  # noqa: E501
+                .format(type, allowed_values)
+            )
 
-        self._created_at = created_at
+        self._type = type
 
     @property
     def geometry(self):
@@ -123,37 +123,8 @@ class Position(object):
         :param properties: The properties of this Position.  # noqa: E501
         :type: PositionProperties
         """
-        if properties is None:
-            raise ValueError("Invalid value for `properties`, must not be `None`")  # noqa: E501
 
         self._properties = properties
-
-    @property
-    def type(self):
-        """Gets the type of this Position.  # noqa: E501
-
-
-        :return: The type of this Position.  # noqa: E501
-        :rtype: str
-        """
-        return self._type
-
-    @type.setter
-    def type(self, type):
-        """Sets the type of this Position.
-
-
-        :param type: The type of this Position.  # noqa: E501
-        :type: str
-        """
-        allowed_values = ["Feature"]  # noqa: E501
-        if type not in allowed_values:
-            raise ValueError(
-                "Invalid value for `type` ({0}), must be one of {1}"  # noqa: E501
-                .format(type, allowed_values)
-            )
-
-        self._type = type
 
     def to_dict(self):
         """Returns the model properties as a dict"""

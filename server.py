@@ -8,6 +8,7 @@ from ChargeControl import ChargeControls
 from MyLogger import my_logger
 from MyPSACC import *
 from flask import Flask, request, jsonify
+from flask import Response as FlaskResponse
 import argparse
 from MyLogger import logger
 
@@ -49,6 +50,11 @@ def wakeup(vin):
 def preconditioning(vin, activate):
     return jsonify(myp.preconditioning(vin, activate))
 
+@app.route('/position/<string:vin>')
+def get_position(vin):
+    res = myp.get_vehicle_info(vin)
+    longitude, latitude = res.last_position.geometry.coordinates
+    return jsonify({"longitude":longitude,"latitude":latitude,"url":f"http://maps.google.com/maps?q={latitude},{longitude}"})
 
 def save_config(mypeugeot: MyPSACC):
     myp.save_config()
@@ -70,6 +76,9 @@ def charge_control():
     chc.save_config()
     return jsonify(charge_control.get_dict())
 
+@app.route('/positions')
+def get_recorded_position():
+    return FlaskResponse(myp.get_recorded_position(), mimetype='application/json')
 
 def parse_args():
     parser = argparse.ArgumentParser()
@@ -78,6 +87,7 @@ def parse_args():
     parser.add_argument("-d", "--debug", help="enable debug", const=10, default=20, nargs='?')
     parser.add_argument("-l", "--listen", help="change server listen address", default="127.0.0.1")
     parser.add_argument("-p", "--port", help="change server listen address", default="5000")
+    parser.add_argument("-r", "--record-position", help="save vehicle position to db", action='store_true')
     parser.add_argument("--remote-disable",help="disable remote control")
     parser.parse_args()
     return parser
@@ -85,7 +95,7 @@ def parse_args():
 
 if __name__ == "__main__":
     if sys.version_info < (3, 6):
-        raise RuntimeError("This application requres Python 3.6+")
+        raise RuntimeError("This application requires Python 3.6+")
     parser = parse_args()
     args = parser.parse_args()
     my_logger(handler_level=args.debug)
@@ -94,6 +104,8 @@ if __name__ == "__main__":
         myp = MyPSACC.load_config(name=args.config.name)
     else:
         myp = MyPSACC.load_config()
+    if args.record_position:
+        myp.set_record(True)
     try:
         myp.manager._refresh_token()
     except OAuthError:

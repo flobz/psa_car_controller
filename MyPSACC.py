@@ -7,6 +7,8 @@ from datetime import datetime
 from http import HTTPStatus
 from json import JSONEncoder
 from hashlib import md5
+from time import sleep
+
 from oauth2_client.credentials_manager import CredentialManager, ServiceInformation
 import paho.mqtt.client as mqtt
 from requests import Response
@@ -14,6 +16,9 @@ import psa_connectedcar as psac
 from psa_connectedcar import ApiClient
 from psa_connectedcar.rest import ApiException
 from MyLogger import logger
+from threading import Semaphore, Timer
+from functools import wraps
+
 
 oauhth_url = {"clientsB2CPeugeot":"https://idpcvs.peugeot.com/am/oauth2/access_token",
               "clientsB2CCitroen":"https://idpcvs.citroen.com/am/oauth2/access_token",
@@ -25,6 +30,28 @@ authorize_service = "https://api.mpsa.com/api/connectedcar/v2/oauth/authorize"
 remote_url = "https://api.groupe-psa.com/connectedcar/v4/virtualkey/remoteaccess/token?client_id="
 scopes = ['openid profile']
 MQTT_SERVER = "mwa.mpsa.com"
+MQTT_REQ_TOPIC = "psa/RemoteServices/from/cid/"
+MQTT_RESP_TOPIC = "psa/RemoteServices/to/cid/"
+MQTT_EVENT_TOPIC = "psa/RemoteServices/events/MPHRTServices/"
+MQTT_TOKEN_TTL = 890
+
+def rate_limit(limit, every):
+    def limit_decorator(fn):
+        semaphore = Semaphore(limit)
+
+        @wraps(fn)
+        def wrapper(*args, **kwargs):
+            semaphore.acquire()
+            try:
+                return fn(*args, **kwargs)
+            finally:  # don't catch but ensure semaphore release
+                timer = Timer(every, semaphore.release)
+                timer.setDaemon(True)  # allows the timer to be canceled on exit
+                timer.start()
+
+        return wrapper
+
+    return limit_decorator
 
 class OpenIdCredentialManager(CredentialManager):
     def _grant_password_request(self, login: str, password: str, realm: str) -> dict:
@@ -126,6 +153,9 @@ class MyPSACC:
                         "x-introspect-realm": realm,
                         "accept": "application/hal+json",
                     }
+        self.remote_token_last_update = None
+        self._record_enabled = False
+
     def refresh_token(self):
         self.manager._refresh_token()
 
@@ -148,6 +178,8 @@ class MyPSACC:
         # retry
         if res is None:
             res = self.api().get_vehicle_status(self.get_vehicle_id_with_vin(vin))
+        if self._record_enabled:
+            self.record_position(vin, res)
         return res
 
     # monitor doesn't seem to work
@@ -182,7 +214,12 @@ class MyPSACC:
         self.remote_refresh_token = data["refresh_token"]
         return res
 
-    def refresh_remote_token(self):
+    def refresh_remote_token(self, force=False):
+        self.manager._refresh_token()
+        if not force and self.remote_token_last_update is not None:
+            last_update: datetime = self.remote_token_last_update
+            if (datetime.now()-last_update).total_seconds() < MQTT_TOKEN_TTL:
+                return
         res = self.manager.post(remote_url + self.client_id,
                                 json={"grant_type": "refresh_token", "refresh_token": self.remote_refresh_token},
                                 headers=self.headers)
@@ -190,14 +227,15 @@ class MyPSACC:
         logger.debug(f"refresh_remote_token: {data}")
         self.remote_access_token = data["access_token"]
         self.remote_refresh_token = data["refresh_token"]
+        self.remote_token_last_update = datetime.now()
         return data["access_token"], data["refresh_token"]
 
     def on_mqtt_connect(self, client, userdata, rc, a):
         try:
             logger.info("Connected with result code " + str(rc))
-            topics = ["psa/RemoteServices/to/cid/" + self.customer_id + "/#"]
+            topics = [MQTT_RESP_TOPIC + self.customer_id + "/#"]
             for vin in self.getVIN():
-                topics.append("psa/RemoteServices/events/MPHRTServices/" + vin + "/#")
+                topics.append(MQTT_EVENT_TOPIC+ vin + "/#")
             for topic in topics:
                 client.subscribe(topic)
                 logger.info("subscribe to " + topic)
@@ -215,18 +253,24 @@ class MyPSACC:
 
     def on_mqtt_message(self, client, userdata, msg):
         logger.info(f"mqtt msg {msg.topic} {str(msg.payload)}")
-        try:
-            data = json.loads(msg.payload)
-            if data["return_code"] == "0":
-                return
-            elif data["return_code"] == "400":
-                self.manager._refresh_token()
-                self.refresh_remote_token()
-                logger.info("retry last request")
-            else:
-                logger.error(f'{data["return_code"]} : {data["reason"]}')
-        except:
-            logger.debug("mqtt msg hasn't return code")
+        data = json.loads(msg.payload)
+        if msg.topic.startswith(MQTT_RESP_TOPIC):
+            try:
+                if data["return_code"] == "0":
+                    return
+                elif data["return_code"] == "400":
+                    self.refresh_remote_token(force=True)
+                    logger.error("retry last request, token was expired")
+                else:
+                    logger.error(f'{data["return_code"]} : {data["reason"]}')
+            except:
+                logger.debug("mqtt msg hasn't return code")
+        elif msg.topic.startswith(MQTT_EVENT_TOPIC):
+            # fix charge beginning without status api being updated
+            if data["charging_state"]['remaining_time'] != 0 and data["charging_state"]['rate'] == 0:
+                logger.info("charge begin")
+                sleep(60)
+                self.wakeup(data["vin"])
 
     def start_mqtt(self):
         self.refresh_remote_token()
@@ -241,7 +285,8 @@ class MyPSACC:
         return self.mqtt_client.is_connected()
 
     def mqtt_request(self, vin, req_parameters):
-        date = datetime.now()
+        self.refresh_token()
+        date = datetime.utcnow()
         date_f = "%Y-%m-%dT%H:%M:%SZ"
         date_str = date.strftime(date_f)
         data = {"access_token": self.remote_access_token, "customer_id": self.customer_id,
@@ -271,7 +316,7 @@ class MyPSACC:
         # todo consider actual state before change the hour
         msg = self.mqtt_request(vin, {"program": {"hour": hour, "minute": miinute}, "type": charge_type})
         logger.info(msg)
-        self.mqtt_client.publish("psa/RemoteServices/from/cid/" + self.customer_id + "/VehCharge", msg)
+        self.mqtt_client.publish(MQTT_REQ_TOPIC + self.customer_id + "/VehCharge", msg)
 
     def change_charge_hour(self, vin, hour, miinute):
         # todo consider actual state before change the hour
@@ -290,17 +335,19 @@ class MyPSACC:
     def horn(self, vin, count):
         msg = self.mqtt_request(vin, {"nb_horn": count, "action": "activate"})
         logger.info(msg)
-        self.mqtt_client.publish("psa/RemoteServices/from/cid/" + self.customer_id + "/Horn", msg)
+        self.mqtt_client.publish(MQTT_REQ_TOPIC + self.customer_id + "/Horn", msg)
 
     def lights(self, vin, duration: int):
         msg = self.mqtt_request(vin, {"action": "activate", "duration": duration})
         logger.info(msg)
-        self.mqtt_client.publish("psa/RemoteServices/from/cid/" + self.customer_id + "/Lights", msg)
+        self.mqtt_client.publish(MQTT_REQ_TOPIC + self.customer_id + "/Lights", msg)
 
+    @rate_limit(3, 60 * 20)
     def wakeup(self, vin):
+        logger.info("ask wakeup to "+vin)
         msg = self.mqtt_request(vin, {"action": "state"})
         logger.info(msg)
-        self.mqtt_client.publish("psa/RemoteServices/from/cid/" + self.customer_id + "/VehCharge/state", msg)
+        self.mqtt_client.publish(MQTT_REQ_TOPIC + self.customer_id + "/VehCharge/state", msg)
         return True
 
     def lock_door(self, vin, lock: bool):
@@ -311,7 +358,7 @@ class MyPSACC:
 
         msg = self.mqtt_request(vin, {"action": value})
         logger.info(msg)
-        self.mqtt_client.publish("psa/RemoteServices/from/cid/" + self.customer_id + "/Doors", msg)
+        self.mqtt_client.publish(MQTT_REQ_TOPIC + self.customer_id + "/Doors", msg)
         return True
 
     def preconditioning(self, vin, activate: bool):
@@ -325,11 +372,11 @@ class MyPSACC:
             "program3": {"day": [0, 0, 0, 0, 0, 0, 0], "hour": 34, "minute": 7, "on": 0},
             "program4": {"day": [0, 0, 0, 0, 0, 0, 0], "hour": 34, "minute": 7, "on": 0}}})
         logger.info(msg)
-        self.mqtt_client.publish("psa/RemoteServices/from/cid/" + self.customer_id + "/ThermalPrecond", msg)
+        self.mqtt_client.publish(MQTT_REQ_TOPIC + self.customer_id + "/ThermalPrecond", msg)
         return True
 
     def save_config(self, name="config.json", force=False):
-        config_str = json.dumps(self, cls=MyPuegeotEncoder, sort_keys=True, indent=4).encode("utf8")
+        config_str = json.dumps(self, cls=MyPeugeotEncoder, sort_keys=True, indent=4).encode("utf8")
         new_hash = md5(config_str).hexdigest()
         if force or self._confighash != new_hash:
             with open(name, "wb") as f:
@@ -337,13 +384,51 @@ class MyPSACC:
             self._confighash = new_hash
             logger.info("save config change")
 
+    @staticmethod
     def load_config(name="config.json"):
         with open(name, "r") as f:
             str = f.read()
             return MyPSACC(**json.loads(str))
 
+    def set_record(self,value:bool):
+        self._record_enabled = value
 
-class MyPuegeotEncoder(JSONEncoder):
+    def record_position(self,vin, res:psac.models.status.Status):
+        import sqlite3
+        conn = sqlite3.connect('info.db')
+        conn.execute(
+            "CREATE TABLE IF NOT EXISTS position (Timestamp DATETIME PRIMARY KEY, VIN TEXT, longitude REAL, latitude REAL);")
+
+        longitude = res.last_position.geometry.coordinates[0]
+        latitude = res.last_position.geometry.coordinates[1]
+        date = res.last_position.properties.updated_at
+        e = None
+        try:
+            conn.execute("INSERT INTO position(Timestamp,VIN,longitude,latitude) VALUES(?,?,?,?)",
+                         (date, vin, longitude, latitude))
+            conn.commit()
+        except sqlite3.IntegrityError:
+            logger.debug("position already saved")
+        finally:
+            conn.close()
+
+    def get_recorded_position(self):
+        import sqlite3
+        from geojson import Feature, Point, FeatureCollection
+        from geojson import dumps as geo_dumps
+        conn = sqlite3.connect('info.db')
+        conn.row_factory = sqlite3.Row
+        res = conn.execute('SELECT * FROM position ORDER BY Timestamp');
+        features_list = []
+        for row in res:
+            print(row)
+            feature = Feature(geometry=Point((row["longitude"], row["latitude"])),
+                              properties={"vin": row["vin"], "date": row["Timestamp"]})
+            features_list.append(feature)
+        feature_collection = FeatureCollection(features_list)
+        return geo_dumps(feature_collection, sort_keys=True)
+
+class MyPeugeotEncoder(JSONEncoder):
     def default(self, mp: MyPSACC):
         data = copy(mp.__dict__)
         mpd = {}

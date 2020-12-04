@@ -88,6 +88,8 @@ def parse_args():
     parser.add_argument("-l", "--listen", help="change server listen address", default="127.0.0.1")
     parser.add_argument("-p", "--port", help="change server listen address", default="5000")
     parser.add_argument("-r", "--record-position", help="save vehicle position to db", action='store_true')
+    parser.add_argument("-m", "--mail", help="change the email address")
+    parser.add_argument("-P", "--password", help="change the password")
     parser.add_argument("--remote-disable",help="disable remote control")
     parser.parse_args()
     return parser
@@ -109,8 +111,12 @@ if __name__ == "__main__":
     try:
         myp.manager._refresh_token()
     except OAuthError:
-        client_email = input("mypeugeot email: ")
-        client_paswword = input("mypeugeot password: ")
+        if args.mail and args.password:
+            client_email = args.mail
+            client_paswword = args.password
+        else:
+            client_email = input("mypeugeot email: ")
+            client_paswword = input("mypeugeot password: ")
         myp.connect(client_email, client_paswword)
     logger.info(myp.get_vehicles())
     t1 = Thread(target=app.run,kwargs={"host":args.listen,"port":int(args.port)})

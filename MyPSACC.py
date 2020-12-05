@@ -215,11 +215,11 @@ class MyPSACC:
         return res
 
     def refresh_remote_token(self, force=False):
-        self.manager._refresh_token()
         if not force and self.remote_token_last_update is not None:
             last_update: datetime = self.remote_token_last_update
             if (datetime.now()-last_update).total_seconds() < MQTT_TOKEN_TTL:
                 return
+        self.manager._refresh_token()
         res = self.manager.post(remote_url + self.client_id,
                                 json={"grant_type": "refresh_token", "refresh_token": self.remote_refresh_token},
                                 headers=self.headers)
@@ -250,6 +250,7 @@ class MyPSACC:
             logger.warn(mqtt.error_string(rc))
         except:
             logger.error(traceback.format_exc())
+        self.mqtt_client.username_pw_set("IMA_OAUTH_ACCESS_TOKEN", self.remote_access_token)
 
     def on_mqtt_message(self, client, userdata, msg):
         logger.info(f"mqtt msg {msg.topic} {str(msg.payload)}")

@@ -81,6 +81,12 @@ def charge_control():
 def get_recorded_position():
     return FlaskResponse(myp.get_recorded_position(), mimetype='application/json')
 
+@app.after_request
+def after_request(response):
+    header = response.headers
+    header['Access-Control-Allow-Origin'] = '*'
+    return response
+
 def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument("-f", "--config", help="config file", type=argparse.FileType('r'))

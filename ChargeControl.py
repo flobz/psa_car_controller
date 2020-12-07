@@ -35,6 +35,7 @@ class ChargeControls:
             for vin, el in chd.items():
                 charge_control_list.list[vin] = ChargeControl(psacc,vin,**el)
             return charge_control_list
+
     def get(self,vin):
         try:
             return self.list[vin]

@@ -231,7 +231,7 @@ class MyPSACC:
             self.remote_token_last_update = datetime.now()
             return data["access_token"], data["refresh_token"]
         else:
-            logger.error("can't refresh_remote_token: "+data)
+            logger.error(f"can't refresh_remote_token: {data}")
 
     def on_mqtt_connect(self, client, userdata, rc, a):
         try:

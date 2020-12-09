@@ -253,25 +253,28 @@ class MyPSACC:
         self.mqtt_client.username_pw_set("IMA_OAUTH_ACCESS_TOKEN", self.remote_access_token)
 
     def on_mqtt_message(self, client, userdata, msg):
-        logger.info(f"mqtt msg {msg.topic} {str(msg.payload)}")
-        data = json.loads(msg.payload)
-        if msg.topic.startswith(MQTT_RESP_TOPIC):
-            try:
-                if data["return_code"] == "0":
-                    return
-                elif data["return_code"] == "400":
-                    self.refresh_remote_token(force=True)
-                    logger.error("retry last request, token was expired")
+        try:
+            logger.info(f"mqtt msg {msg.topic} {str(msg.payload)}")
+            data = json.loads(msg.payload)
+            if msg.topic.startswith(MQTT_RESP_TOPIC):
+                if "return_code" in data:
+                    if data["return_code"] == "0":
+                        return
+                    elif data["return_code"] == "400":
+                        self.refresh_remote_token(force=True)
+                        logger.error("retry last request, token was expired")
+                    else:
+                        logger.error(f'{data["return_code"]} : {data["reason"]}')
                 else:
-                    logger.error(f'{data["return_code"]} : {data["reason"]}')
-            except:
-                logger.debug("mqtt msg hasn't return code")
-        elif msg.topic.startswith(MQTT_EVENT_TOPIC):
-            # fix charge beginning without status api being updated
-            if data["charging_state"]['remaining_time'] != 0 and data["charging_state"]['rate'] == 0:
-                logger.info("charge begin")
-                sleep(60)
-                self.wakeup(data["vin"])
+                    logger.debug("mqtt msg hasn't return code")
+            elif msg.topic.startswith(MQTT_EVENT_TOPIC):
+                # fix charge beginning without status api being updated
+                if data["charging_state"]['remaining_time'] != 0 and data["charging_state"]['rate'] == 0:
+                    logger.info("charge begin")
+                    sleep(60)
+                    self.wakeup(data["vin"])
+        except:
+            logger.error(traceback.format_exc())
 
     def start_mqtt(self):
         self.refresh_remote_token()

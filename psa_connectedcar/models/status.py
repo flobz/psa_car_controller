@@ -43,7 +43,8 @@ class Status(object):
         'preconditionning': 'Preconditioning',
         'privacy': 'Privacy',
         'safety': 'Safety',
-        'service': 'ServiceType'
+        'service': 'ServiceType',
+        'timed_odometer': 'VehicleOdometer'
     }
 
     attribute_map = {
@@ -59,10 +60,11 @@ class Status(object):
         'preconditionning': 'preconditionning',
         'privacy': 'privacy',
         'safety': 'safety',
-        'service': 'service'
+        'service': 'service',
+        'timed_odometer': 'timed.odometer'
     }
 
-    def __init__(self, embedded=None, links=None, battery=None, doors_state=None, energy=None, environment=None, ignition=None, kinetic=None, last_position=None, preconditionning=None, privacy=None, safety=None, service=None):  # noqa: E501
+    def __init__(self, embedded=None, links=None, battery=None, doors_state=None, energy=None, environment=None, ignition=None, kinetic=None, last_position=None, preconditionning=None, privacy=None, safety=None, service=None, timed_odometer=None):  # noqa: E501
         """Status - a model defined in Swagger"""  # noqa: E501
 
         self._embedded = None
@@ -78,6 +80,7 @@ class Status(object):
         self._privacy = None
         self._safety = None
         self._service = None
+        self._timed_odometer = None
         self.discriminator = None
 
         if embedded is not None:
@@ -105,6 +108,8 @@ class Status(object):
             self.safety = safety
         if service is not None:
             self.service = service
+        if timed_odometer is not None:
+            self.timed_odometer = timed_odometer
 
     @property
     def embedded(self):
@@ -382,6 +387,27 @@ class Status(object):
         """
 
         self._service = service
+
+    @property
+    def timed_odometer(self):
+        """Gets the timed_odometer of this Status.  # noqa: E501
+
+
+        :return: The timed_odometer of this Status.  # noqa: E501
+        :rtype: VehicleOdometer
+        """
+        return self._timed_odometer
+
+    @timed_odometer.setter
+    def timed_odometer(self, timed_odometer):
+        """Sets the timed_odometer of this Status.
+
+
+        :param timed_odometer: The timed_odometer of this Status.  # noqa: E501
+        :type: VehicleOdometer
+        """
+
+        self._timed_odometer = timed_odometer
 
     def to_dict(self):
         """Returns the model properties as a dict"""

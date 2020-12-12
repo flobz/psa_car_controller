@@ -174,10 +174,10 @@ class MyPSACC:
         self.manager.proxies = self._proxies
 
     def get_vehicle_info(self, vin):
-        res = self.api().get_vehicle_status(self.get_vehicle_id_with_vin(vin))
+        res = self.api().get_vehicle_status(self.get_vehicle_id_with_vin(vin), extension=["odometer"])
         # retry
         if res is None:
-            res = self.api().get_vehicle_status(self.get_vehicle_id_with_vin(vin))
+            res = self.api().get_vehicle_status(self.get_vehicle_id_with_vin(vin), extension=["odometer"])
         if self._record_enabled:
             self.record_position(vin, res)
         return res
@@ -404,15 +404,15 @@ class MyPSACC:
         import sqlite3
         conn = sqlite3.connect('info.db')
         conn.execute(
-            "CREATE TABLE IF NOT EXISTS position (Timestamp DATETIME PRIMARY KEY, VIN TEXT, longitude REAL, latitude REAL);")
-
+            "CREATE TABLE IF NOT EXISTS position (Timestamp DATETIME PRIMARY KEY, VIN TEXT, longitude REAL, latitude REAL, mileage REAL, level INTEGER);")
         longitude = res.last_position.geometry.coordinates[0]
         latitude = res.last_position.geometry.coordinates[1]
         date = res.last_position.properties.updated_at
-        e = None
+        mileage = res.timed_odometer.mileage
+        level = res.energy[0]["level"]
         try:
-            conn.execute("INSERT INTO position(Timestamp,VIN,longitude,latitude) VALUES(?,?,?,?)",
-                         (date, vin, longitude, latitude))
+            conn.execute("INSERT INTO position(Timestamp,VIN,longitude,latitude,mileage,level) VALUES(?,?,?,?,?,?)",
+                         (date, vin, longitude, latitude, mileage, level))
             conn.commit()
         except sqlite3.IntegrityError:
             logger.debug("position already saved")
@@ -430,7 +430,7 @@ class MyPSACC:
         for row in res:
             print(row)
             feature = Feature(geometry=Point((row["longitude"], row["latitude"])),
-                              properties={"vin": row["vin"], "date": row["Timestamp"]})
+                              properties={"vin": row["vin"], "date": row["Timestamp"], "mileage": row["mileage"], "level": row["level"]})
             features_list.append(feature)
         feature_collection = FeatureCollection(features_list)
         return geo_dumps(feature_collection, sort_keys=True)

@@ -6,3 +6,4 @@ six
 requests
 paho_mqtt
 python_dateutil
+geojson

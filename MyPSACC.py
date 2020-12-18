@@ -1,5 +1,6 @@
 import json
 import re
+import sqlite3
 import traceback
 import uuid
 from copy import copy
@@ -12,13 +13,17 @@ from time import sleep
 from oauth2_client.credentials_manager import CredentialManager, ServiceInformation
 import paho.mqtt.client as mqtt
 from requests import Response
+from typing import List
+
 import psa_connectedcar as psac
+from Trips import Trips
 from psa_connectedcar import ApiClient
 from psa_connectedcar.rest import ApiException
 from MyLogger import logger
 from threading import Semaphore, Timer
 from functools import wraps
 
+from web.figures import convert_datetime
 
 oauhth_url = {"clientsB2CPeugeot":"https://idpcvs.peugeot.com/am/oauth2/access_token",
               "clientsB2CCitroen":"https://idpcvs.citroen.com/am/oauth2/access_token",
@@ -419,7 +424,8 @@ class MyPSACC:
         finally:
             conn.close()
 
-    def get_recorded_position(self):
+    @staticmethod
+    def get_recorded_position():
         import sqlite3
         from geojson import Feature, Point, FeatureCollection
         from geojson import dumps as geo_dumps
@@ -435,6 +441,41 @@ class MyPSACC:
         feature_collection = FeatureCollection(features_list)
         return geo_dumps(feature_collection, sort_keys=True)
 
+    @staticmethod
+    def get_trips() -> List[Trips]:
+        sqlite3.register_converter("DATETIME", convert_datetime)
+        conn = sqlite3.connect('info.db', detect_types=sqlite3.PARSE_DECLTYPES | sqlite3.PARSE_COLNAMES)
+        conn.row_factory = sqlite3.Row
+        res = conn.execute('SELECT * FROM position ORDER BY Timestamp').fetchall()
+        start = res[0]
+        end = res[1]
+        trips = []
+        tr = Trips()
+        battery_power = 46
+        for next_el in res[2:]:
+            distance = next_el["mileage"] - end["mileage"]  # km
+            if distance == 0:
+                tr.distance = end["mileage"] - start["mileage"]  # km
+                if tr.distance > 0:
+                    tr.start_at = start["Timestamp"]
+                    tr.end_at = end["Timestamp"]
+                    tr.add_points(end["longitude"], end["latitude"])
+                    tr.duration = (end["Timestamp"] - start["Timestamp"]).total_seconds() / 3600
+                    tr.speed_average = tr.distance / tr.duration
+                    print(start["level"] - end["level"])
+                    tr.consumption = (start["level"] - end["level"]) / 100 * battery_power  # kw
+                    tr.consumption_km = 100 * tr.consumption / tr.distance  # kw/100 km
+                    print(
+                        f"{start['Timestamp']}  {tr.distance:.1f}km {tr.duration:.2f}h {tr.speed_average:.2f} km/h {tr.consumption:.2f} kw {tr.consumption_km:.2f}kw/100km")
+                    trips.append(tr)
+                start = next_el
+                tr = Trips()
+            else:
+                tr.add_points(end["longitude"], end["latitude"])
+            end = next_el
+        return trips
+
+
 class MyPeugeotEncoder(JSONEncoder):
     def default(self, mp: MyPSACC):
         data = copy(mp.__dict__)
@@ -442,6 +483,8 @@ class MyPeugeotEncoder(JSONEncoder):
         mpd["proxies"] = data["_proxies"]
         mpd["refresh_token"] = mp.manager.refresh_token
         mpd["client_secret"] = mp.service_information.client_secret
-        for el in ["client_id", "realm", "remote_refresh_token","customer_id"]:
+        for el in ["client_id", "realm", "remote_refresh_token", "customer_id"]:
             mpd[el] = data[el]
         return mpd
+
+

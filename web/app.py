@@ -5,8 +5,7 @@ import dash_bootstrap_components as dbc
 from flask import Flask
 import locale
 
-from werkzeug import run_simple
-from werkzeug.middleware.dispatcher import DispatcherMiddleware
+from werkzeug import run_simple, DispatcherMiddleware
 
 from MyLogger import logger
 from MyPSACC import MyPSACC

@@ -16,15 +16,15 @@ The api is documented [here](https://developer.groupe-psa.io/webapi/b2c/quicksta
 ## I. Get credentials
 We need to get credentials from the MyPeugeot app. You have two solutions :  
 - You can extract all credentials from the application data after backup the app
-- You can extract some credentials from the apk, it's faster but you will not be able to remote control your vehicle
+- You can extract some credentials from the apk, it's faster, but you will not be able to remote control your vehicle
 
 1. Solution 1 : Backup MyPeugeot app
    
-   We will retrieve those information:
+   We will retrieve these informations:
      - client-id and client-secret  for the api
      - remote refresh token for the control of the vehicle
 
-    1.1 MyPeugeot app doesn't allow backup by default so you need to modify it.
+    1.1 MyPeugeot app doesn't allow backup by default, so you need to modify it.
     Basically you need to put to true two attributes in the AndroidManifest.xml :
      - "android:allowBackup"
      - "android:extractNativeLibs"
@@ -84,16 +84,22 @@ We need to get credentials from the MyPeugeot app. You have two solutions :
  
  ## II. Use the app
   1. Install requirements
-  ```pip3 install -r requirements.txt```
+        - On debian based distribution you can install some requirement from repos: 
+          
+           ```sudo apt-get install python3-typing-extensions python3-pandas python3-plotly python3-paho-mqtt  python3-six python3-dateutil python3-brotli  libblas-dev  liblapack-dev gfortran```
+        
+        - For everyone :
+          ```pip3 install -r requirements.txt```
+            
   2. start the app:
         
-        if you choose solution 1 :
-   ``python3 server.py -f test.json -c charge_config1.json`` 
-        
-        if you choose solution 2 :
-   ``python3 server.py -f test.json --remote-disable`` 
- 
-  
+       - if you choose solution 1 :
+    ``python3 server.py -f test.json -c charge_config1.json`` 
+     You can add the -r argument to record the position of the vehicle and retrieve this information in a dashboard.
+     
+       - if you choose solution 2 :
+            ``python3 server.py -f test.json --remote-disable``
+     
   3. Test it 
   
     2.1 Get the car state :
@@ -107,7 +113,10 @@ We need to get credentials from the MyPeugeot app. You have two solutions :
     
     2.4 Change car charge threshold to 80 percent (only for solution 1)
     http://localhost:5000/charge_control?vin=YOURVIN&percentage=80 
-           
+
+    2.5 See the dashboard (only if record is enabled)
+    http://localhost:5000
+
 ## API documentation
 The api documentation is described here : [api_spec.md](api_spec.md).
 You can use all functions from the doc, for example :
@@ -116,4 +125,4 @@ You can use all functions from the doc, for example :
 To analyse the traffics between the app and psa server, you can use mitmproxy.
 You will need the client certificate present in the apk at asssets/MWPMYMA1.pem
 
-```mitmproxy --set client_certs=MWPMYMA1.pe```
+```mitmproxy --set client_certs=MWPMYMA1.pem```

@@ -2,13 +2,16 @@
 import atexit
 import sys
 from threading import Thread
+
 from oauth2_client.credentials_manager import OAuthError
+
+import web.app
 from ChargeControl import ChargeControls
 from MyLogger import my_logger
 import argparse
 from MyLogger import logger
 from MyPSACC import MyPSACC
-from web.app import app, save_config
+from web.app import start_app, save_config
 
 parser = argparse.ArgumentParser()
 
@@ -24,6 +27,7 @@ def parse_args():
     parser.add_argument("-m", "--mail", help="change the email address")
     parser.add_argument("-P", "--password", help="change the password")
     parser.add_argument("--remote-disable", help="disable remote control")
+    parser.add_argument("-b", "--base-path", help="base path for app",default="/")
     parser.parse_args()
     return parser
 
@@ -36,14 +40,14 @@ if __name__ == "__main__":
     my_logger(handler_level=args.debug)
     logger.info("server start")
     if args.config:
-        app.myp = MyPSACC.load_config(name=args.config.name)
+        web.app.myp = MyPSACC.load_config(name=args.config.name)
     else:
-        app.myp = MyPSACC.load_config()
-    atexit.register(app.myp.save_config)
+        web.app.myp = MyPSACC.load_config()
+    atexit.register(web.app.save_config)
     if args.record_position:
-        app.myp.set_record(True)
+        web.app.myp.set_record(True)
     try:
-        app.myp.manager._refresh_token()
+        web.app.myp.manager._refresh_token()
     except OAuthError:
         if args.mail and args.password:
             client_email = args.mail
@@ -51,15 +55,15 @@ if __name__ == "__main__":
         else:
             client_email = input("mypeugeot email: ")
             client_password = input("mypeugeot password: ")
-        app.myp.connect(client_email, client_password)
-    logger.info(app.myp.get_vehicles())
-    t1 = Thread(target=app.run, kwargs={"host": args.listen, "port": int(args.port)})
+        web.app.myp.connect(client_email, client_password)
+    logger.info(web.app.myp.get_vehicles())
+    t1 = Thread(target=start_app, args=["My car info", args.base_path, args.debug, args.listen, int(args.port)])
     t1.start()
     if args.remote_disable:
         logger.info("mqtt disabled")
     else:
-        app.myp.start_mqtt()
+        web.app.myp.start_mqtt()
         if args.charge_control:
-            app.chc = ChargeControls.load_config(app.myp, name=args.charge_control)
-            app.chc.start()
-    save_config(app.myp)
+            web.app.chc = ChargeControls.load_config(web.app.myp, name=args.charge_control)
+            web.app.chc.start()
+    save_config(web.app.myp)

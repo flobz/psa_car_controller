@@ -1,167 +1,47 @@
-import json
 import threading
-import traceback
-from datetime import datetime, timezone
+
 import dash
 import dash_bootstrap_components as dbc
-from dash.dependencies import Output, Input
-import dash_core_components as dcc
-import dash_html_components as html
+from flask import Flask
 import locale
+
+from werkzeug import run_simple
+from werkzeug.middleware.dispatcher import DispatcherMiddleware
+
 from MyLogger import logger
-from flask import jsonify, request, Response as FlaskResponse
-
-from web import figures
-
 from MyPSACC import MyPSACC
 
-try:
-    locale = locale.getlocale()[0].split("_")[0]
-    locale_url = [f"https://cdn.plot.ly/plotly-locale-{locale}-latest.js"]
-    dash_app = dash.Dash(external_stylesheets=[dbc.themes.BOOTSTRAP], external_scripts=locale_url, title="My car info")
-except:
-    logger.warn("Can't get language")
-    dash_app = dash.Dash(external_stylesheets=[dbc.themes.BOOTSTRAP])
+app = None
+dash_app = None
+dispatcher = None
 
-app = dash_app.server
+
+def start_app(title, base_path, debug: bool, host, port):
+    global app, dash_app, dispatcher
+    try:
+        lang = locale.getlocale()[0].split("_")[0]
+        locale_url = [f"https://cdn.plot.ly/plotly-locale-{lang}-latest.js"]
+    except:
+        locale_url = None
+        logger.warn("Can't get language")
+    app = Flask(__name__)
+    app.config["DEBUG"] = debug
+    if base_path == "/":
+        application = DispatcherMiddleware(app)
+        requests_pathname_prefix = None
+    else:
+        application = DispatcherMiddleware(Flask('dummy_app'), {base_path: app})
+        requests_pathname_prefix = base_path + "/"
+    dash_app = dash.Dash(external_stylesheets=[dbc.themes.BOOTSTRAP], external_scripts=locale_url, title=title,
+                         server=app, requests_pathname_prefix=requests_pathname_prefix)
+    import web.callback
+    return run_simple(host, port, application, use_reloader=debug, use_debugger=debug)
+
+
 myp = None
 chc = None
-
-
-@dash_app.callback(Output('trips_map', 'figure'),
-                   Output('consumption_fig', 'figure'),
-                   Output('consumption_fig_by_speed', 'figure'),
-                   Output('consumption', 'children'),
-                   Output('tab_trips', 'children'),
-                   Input('date-slider', 'value'))
-def display_value(value):
-    min = datetime.fromtimestamp(value[0], tz=timezone.utc)
-    max = datetime.fromtimestamp(value[1], tz=timezone.utc)
-    filtered_trips = []
-    for trip in trips:
-        if min <= trip.start_at <= max:
-            filtered_trips.append(trip)
-    figures.get_figures(filtered_trips)
-    consumption = "Average consumption: {:.1f} kW/100km".format(float(figures.consumption_df.mean(numeric_only=True)))
-    return figures.trips_map, figures.consumption_fig, figures.consumption_fig_by_speed, consumption, figures.table_fig
-
-
-@app.route('/getvehicles')
-def getvehicules():
-    return jsonify(myp.getVIN())
-
-
-@app.route('/get_vehicleinfo/<string:vin>')
-def get_vehicle_Info(vin):
-    response = app.response_class(
-        response=json.dumps(myp.get_vehicle_info(vin).to_dict(), default=str),
-        status=200,
-        mimetype='application/json'
-    )
-    return response
-
-
-@app.route('/charge_now/<string:vin>/<int:charge>')
-def charge_now(vin, charge):
-    return jsonify(myp.charge_now(vin, charge != 0))
-
-
-@app.route('/charge_hour')
-def change_charge_hour():
-    return jsonify(myp.change_charge_hour(request.form['vin'], request.form['hour'], request.form['minute']))
-
-
-@app.route('/wakeup/<string:vin>')
-def wakeup(vin):
-    return jsonify(myp.wakeup(vin))
-
-
-@app.route('/preconditioning/<string:vin>/<int:activate>')
-def preconditioning(vin, activate):
-    return jsonify(myp.preconditioning(vin, activate))
-
-
-@app.route('/position/<string:vin>')
-def get_position(vin):
-    res = myp.get_vehicle_info(vin)
-    longitude, latitude = res.last_position.geometry.coordinates
-    return jsonify(
-        {"longitude": longitude, "latitude": latitude, "url": f"http://maps.google.com/maps?q={latitude},{longitude}"})
-
-
-# Set a battery threshold and schedule an hour to stop the charge
-@app.route('/charge_control')
-def charge_control():
-    logger.info(request)
-    vin = request.args['vin']
-    charge_control = chc.get(vin)
-    if charge_control is None:
-        return jsonify("error: VIN not in list")
-    if 'hour' in request.args or 'minute' in request.args:
-        charge_control.set_stop_hour([int(request.args["hour"]), int(request.args["minute"])])
-    if 'percentage' in request.args:
-        charge_control.percentage_threshold = int(request.args['percentage'])
-    save_config()
-    return jsonify(charge_control.get_dict())
-
-
-@app.route('/positions')
-def get_recorded_position():
-    return FlaskResponse(myp.get_recorded_position(), mimetype='application/json')
-
-
-@app.after_request
-def after_request(response):
-    header = response.headers
-    header['Access-Control-Allow-Origin'] = '*'
-    return response
 
 
 def save_config(my_peugeot: MyPSACC):
     my_peugeot.save_config()
     threading.Timer(30, save_config, args=[my_peugeot]).start()
-
-
-try:
-    trips = MyPSACC.get_trips()
-    min_date = trips[0].start_at
-    max_date = trips[-1].start_at
-    min_millis = figures.unix_time_millis(min_date)
-    max_millis = figures.unix_time_millis(max_date)
-    step = (max_millis - min_millis) / 100
-    figures.get_figures(trips)
-    data_div = html.Div([dcc.RangeSlider(
-        id='date-slider',
-        min=min_millis,
-        max=max_millis,
-        step=step,
-        marks=figures.get_marks_from_start_end(min_date,
-                                               max_date),
-        value=[min_millis, max_millis],
-    ),
-        html.Div([
-            dbc.Tabs([
-                dbc.Tab(label="Summary", tab_id="summary", children=[
-                    html.H2(id="consumption",
-                            children=figures.info),
-                    dcc.Graph(figure=figures.consumption_fig, id="consumption_fig"),
-                    dcc.Graph(figure=figures.consumption_fig_by_speed, id="consumption_fig_by_speed")
-                ]),
-                dbc.Tab(label="Trips", tab_id="trips", id="tab_trips", children=[figures.table_fig]),
-                dbc.Tab(label="Map", tab_id="map", children=[
-                    dcc.Graph(figure=figures.trips_map, id="trips_map", style={"height": '90vh'})]),
-            ],
-                id="tabs",
-                active_tab="summary",
-            ),
-            html.Div(id="tab-content", className="p-4"),
-        ])])
-except:
-    logger.error("Failed to generate figure, there is probably not enough data yet")
-    logger.error(traceback.format_exc())
-    data_div = dbc.Alert("No data to show", color="danger")
-
-dash_app.layout = dbc.Container(fluid=True, children=[
-    html.H1('My car info'),
-    data_div
-])

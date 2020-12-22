@@ -1,12 +1,15 @@
-from datetime import datetime
+from copy import deepcopy
 from typing import List
+
+import dash_table
 import numpy as np
-import pytz
+from dash_table.Format import Format, Scheme, Symbol
 from dateutil.relativedelta import relativedelta
 from pandas import DataFrame
 import plotly.express as px
 import plotly.graph_objects as go
-from Trips import Trips
+from Trip import Trip
+from pandas import options as pandas_options
 
 
 def unix_time_millis(dt):
@@ -36,18 +39,16 @@ def get_marks_from_start_end(start, end):
         return marks
 
 
-def convert_datetime(st):
-    return datetime.strptime(st.decode("utf-8"), "%Y-%m-%d %H:%M:%S+00:00").replace(tzinfo=pytz.UTC)
-
-
 consumption_fig = None
 consumption_df = None
 trips_map = None
 consumption_fig_by_speed = None
+table_fig = None
+pandas_options.display.float_format = '${:.2f}'.format
 
 
-def get_figures(trips: List[Trips]):
-    global consumption_fig, consumption_df, trips_map, consumption_fig_by_speed
+def get_figures(trips: List[Trip]):
+    global consumption_fig, consumption_df, trips_map, consumption_fig_by_speed, table_fig
     lats = []
     lons = []
     names = []
@@ -60,6 +61,19 @@ def get_figures(trips: List[Trips]):
         lons = np.append(lons, None)
         names = np.append(names, None)
 
+    # table
+    nb_format = Format(precision=2, scheme=Scheme.fixed, symbol=Symbol.yes)
+    table_fig = dash_table.DataTable(
+        id='trips-table',
+        sort_action='native',
+        columns=[{'id': 'start_at', 'name': 'start at', 'type': 'datetime'},
+                 {'id': 'duration', 'name': 'duration', 'type': 'numeric', 'format': deepcopy(nb_format).symbol_suffix(" min").precision(0)},
+                 {'id': 'speed_average', 'name': 'average speed', 'type': 'numeric', 'format': deepcopy(nb_format).symbol_suffix(" km/h")},
+                 {'id': 'consumption_km', 'name': 'average consumption', 'type': 'numeric', 'format': deepcopy(nb_format).symbol_suffix(" kw/100km")},
+                 {'id': 'distance', 'name': 'distance', 'type': 'numeric', 'format': nb_format.symbol_suffix(" km")}],
+        data=[tr.get_info() for tr in trips],
+    )
+    # map
     trips_map = px.line_mapbox(lat=lats, lon=lons, hover_name=names,
                                mapbox_style="stamen-terrain", zoom=12)
     consumption_df = DataFrame.from_records([tr.get_consumption() for tr in trips])
@@ -75,6 +89,3 @@ def get_figures(trips: List[Trips]):
         go.Scatter(mode="markers", x=consum_df_by_speed["speed"], y=consum_df_by_speed["value"],
                    name="Trips"))
     consumption_fig_by_speed.update_layout(xaxis_title="average Speed km/h", yaxis_title="Consumption kW/100Km")
-
-
-

@@ -10,20 +10,20 @@ from json import JSONEncoder
 from hashlib import md5
 from time import sleep
 
+import pytz
 from oauth2_client.credentials_manager import CredentialManager, ServiceInformation
 import paho.mqtt.client as mqtt
 from requests import Response
 from typing import List
 
 import psa_connectedcar as psac
-from Trips import Trips
+from Trip import Trip
 from psa_connectedcar import ApiClient
 from psa_connectedcar.rest import ApiException
 from MyLogger import logger
 from threading import Semaphore, Timer
 from functools import wraps
-
-from web.figures import convert_datetime
+import sqlite3
 
 oauhth_url = {"clientsB2CPeugeot":"https://idpcvs.peugeot.com/am/oauth2/access_token",
               "clientsB2CCitroen":"https://idpcvs.citroen.com/am/oauth2/access_token",
@@ -406,7 +406,6 @@ class MyPSACC:
         self._record_enabled = value
 
     def record_position(self,vin, res:psac.models.status.Status):
-        import sqlite3
         conn = sqlite3.connect('info.db')
         conn.execute(
             "CREATE TABLE IF NOT EXISTS position (Timestamp DATETIME PRIMARY KEY, VIN TEXT, longitude REAL, latitude REAL, mileage REAL, level INTEGER);")
@@ -442,7 +441,7 @@ class MyPSACC:
         return geo_dumps(feature_collection, sort_keys=True)
 
     @staticmethod
-    def get_trips() -> List[Trips]:
+    def get_trips() -> List[Trip]:
         sqlite3.register_converter("DATETIME", convert_datetime)
         conn = sqlite3.connect('info.db', detect_types=sqlite3.PARSE_DECLTYPES | sqlite3.PARSE_COLNAMES)
         conn.row_factory = sqlite3.Row
@@ -450,11 +449,13 @@ class MyPSACC:
         start = res[0]
         end = res[1]
         trips = []
-        tr = Trips()
+        tr = Trip()
         battery_power = 46
         for next_el in res[2:]:
             distance = next_el["mileage"] - end["mileage"]  # km
-            if distance == 0:
+            duration = (next_el["Timestamp"] - end["Timestamp"]).total_seconds()/3600
+            speed = distance/duration
+            if distance == 0 or speed < 1: # check the speed to handle missing point
                 tr.distance = end["mileage"] - start["mileage"]  # km
                 if tr.distance > 0:
                     tr.start_at = start["Timestamp"]
@@ -469,7 +470,7 @@ class MyPSACC:
                         f"{start['Timestamp']}  {tr.distance:.1f}km {tr.duration:.2f}h {tr.speed_average:.2f} km/h {tr.consumption:.2f} kw {tr.consumption_km:.2f}kw/100km")
                     trips.append(tr)
                 start = next_el
-                tr = Trips()
+                tr = Trip()
             else:
                 tr.add_points(end["longitude"], end["latitude"])
             end = next_el
@@ -488,3 +489,5 @@ class MyPeugeotEncoder(JSONEncoder):
         return mpd
 
 
+def convert_datetime(st):
+    return datetime.strptime(st.decode("utf-8"), "%Y-%m-%d %H:%M:%S+00:00").replace(tzinfo=pytz.UTC)

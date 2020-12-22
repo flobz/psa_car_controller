@@ -1,4 +1,6 @@
 from typing import List
+
+from dateutil.tz import tzlocal
 from geojson import Feature, Point, FeatureCollection, MultiLineString
 from geojson import dumps as geo_dumps
 
@@ -48,6 +50,6 @@ class Trip:
                                                                "average consumption": self.consumption_km})
 
     def get_info(self):
-        res = {"start_at": self.start_at.strftime("%x %X"), "end_at": self.end_at.strftime("%x %X"), "duration": self.duration*60,
+        res = {"start_at": self.start_at.astimezone(None).strftime("%x %X"), "end_at": self.end_at.astimezone(None).strftime("%x %X"), "duration": self.duration*60,
                "speed_average": self.speed_average, "consumption_km": self.consumption_km, "distance": self.distance}
         return res

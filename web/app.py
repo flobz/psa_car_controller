@@ -1,5 +1,6 @@
 import json
 import threading
+import traceback
 from datetime import datetime, timezone
 import dash
 import dash_bootstrap_components as dbc
@@ -13,6 +14,7 @@ from flask import jsonify, request, Response as FlaskResponse
 from web import figures
 
 from MyPSACC import MyPSACC
+
 try:
     locale = locale.getlocale()[0].split("_")[0]
     locale_url = [f"https://cdn.plot.ly/plotly-locale-{locale}-latest.js"]
@@ -30,6 +32,7 @@ chc = None
                    Output('consumption_fig', 'figure'),
                    Output('consumption_fig_by_speed', 'figure'),
                    Output('consumption', 'children'),
+                   Output('tab_trips', 'children'),
                    Input('date-slider', 'value'))
 def display_value(value):
     min = datetime.fromtimestamp(value[0], tz=timezone.utc)
@@ -38,10 +41,9 @@ def display_value(value):
     for trip in trips:
         if min <= trip.start_at <= max:
             filtered_trips.append(trip)
-    print(len(filtered_trips))
     figures.get_figures(filtered_trips)
-    consumption = "Average consumption: {:.1f} kW/100km".format(float(figures.consumption_df.mean()))
-    return figures.trips_map, figures.consumption_fig, figures.consumption_fig_by_speed, consumption
+    consumption = "Average consumption: {:.1f} kW/100km".format(float(figures.consumption_df.mean(numeric_only=True)))
+    return figures.trips_map, figures.consumption_fig, figures.consumption_fig_by_speed, consumption, figures.table_fig
 
 
 @app.route('/getvehicles')
@@ -120,36 +122,46 @@ def save_config(my_peugeot: MyPSACC):
     threading.Timer(30, save_config, args=[my_peugeot]).start()
 
 
-trips = MyPSACC.get_trips()
-figures.get_figures(trips)
+try:
+    trips = MyPSACC.get_trips()
+    min_date = trips[0].start_at
+    max_date = trips[-1].start_at
+    min_millis = figures.unix_time_millis(min_date)
+    max_millis = figures.unix_time_millis(max_date)
+    step = (max_millis - min_millis) / 100
+    figures.get_figures(trips)
+    data_div = html.Div([dcc.RangeSlider(
+        id='date-slider',
+        min=min_millis,
+        max=max_millis,
+        step=step,
+        marks=figures.get_marks_from_start_end(min_date,
+                                               max_date),
+        value=[min_millis, max_millis],
+    ),
+        html.Div([
+            dbc.Tabs([
+                dbc.Tab(label="Summary", tab_id="summary", children=[
+                    html.H2(id="consumption",
+                            children=figures.info),
+                    dcc.Graph(figure=figures.consumption_fig, id="consumption_fig"),
+                    dcc.Graph(figure=figures.consumption_fig_by_speed, id="consumption_fig_by_speed")
+                ]),
+                dbc.Tab(label="Trips", tab_id="trips", id="tab_trips", children=[figures.table_fig]),
+                dbc.Tab(label="Map", tab_id="map", children=[
+                    dcc.Graph(figure=figures.trips_map, id="trips_map", style={"height": '90vh'})]),
+            ],
+                id="tabs",
+                active_tab="summary",
+            ),
+            html.Div(id="tab-content", className="p-4"),
+        ])])
+except:
+    logger.error("Failed to generate figure, there is probably not enough data yet")
+    logger.error(traceback.format_exc())
+    data_div = dbc.Alert("No data to show", color="danger")
+
 dash_app.layout = dbc.Container(fluid=True, children=[
     html.H1('My car info'),
-    dcc.RangeSlider(
-        id='date-slider',
-        min=figures.unix_time_millis(figures.consumption_df["date"].min()),
-        max=figures.unix_time_millis(figures.consumption_df["date"].max()),
-        step=None,
-        marks=figures.get_marks_from_start_end(figures.consumption_df["date"].min(),
-                                               figures.consumption_df["date"].max()),
-        value=[figures.unix_time_millis(figures.consumption_df["date"].min()),
-               figures.unix_time_millis(figures.consumption_df["date"].max())],
-    ),
-    html.Div([
-        dbc.Tabs([
-            dbc.Tab(label="Summary", tab_id="summary", children=[
-                html.H2(id="consumption",
-                        children="Average consumption: {:.1f} kW/100km".format(
-                            float(figures.consumption_df.mean()))),
-                dcc.Graph(figure=figures.consumption_fig, id="consumption_fig"),
-                dcc.Graph(figure=figures.consumption_fig_by_speed, id="consumption_fig_by_speed")
-            ]),
-            dbc.Tab(label="Trips", tab_id="trips", children=[figures.table_fig]),
-            dbc.Tab(label="Map", tab_id="map", children=[
-                dcc.Graph(figure=figures.trips_map, id="trips_map", style={"height": '90vh'})]),
-            ],
-            id="tabs",
-            active_tab="summary",
-        ),
-        html.Div(id="tab-content", className="p-4"),
-    ]),
+    data_div
 ])

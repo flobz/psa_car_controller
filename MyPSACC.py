@@ -1,6 +1,5 @@
 import json
 import re
-import sqlite3
 import traceback
 import uuid
 from copy import copy
@@ -25,11 +24,11 @@ from threading import Semaphore, Timer
 from functools import wraps
 import sqlite3
 
-oauhth_url = {"clientsB2CPeugeot":"https://idpcvs.peugeot.com/am/oauth2/access_token",
-              "clientsB2CCitroen":"https://idpcvs.citroen.com/am/oauth2/access_token",
+oauhth_url = {"clientsB2CPeugeot": "https://idpcvs.peugeot.com/am/oauth2/access_token",
+              "clientsB2CCitroen": "https://idpcvs.citroen.com/am/oauth2/access_token",
               "clientsB2CDS": "https://idpcvs.driveds.com/am/oauth2/access_token",
-              "clientsB2COpel":"https://idpcvs.opel.com/am/oauth2/access_token",
-              "clientsB2CVauxhall":"https://idpcvs.vauxhall.co.uk/am/oauth2/access_token"}
+              "clientsB2COpel": "https://idpcvs.opel.com/am/oauth2/access_token",
+              "clientsB2CVauxhall": "https://idpcvs.vauxhall.co.uk/am/oauth2/access_token"}
 
 authorize_service = "https://api.mpsa.com/api/connectedcar/v2/oauth/authorize"
 remote_url = "https://api.groupe-psa.com/connectedcar/v4/virtualkey/remoteaccess/token?client_id="
@@ -39,6 +38,7 @@ MQTT_REQ_TOPIC = "psa/RemoteServices/from/cid/"
 MQTT_RESP_TOPIC = "psa/RemoteServices/to/cid/"
 MQTT_EVENT_TOPIC = "psa/RemoteServices/events/MPHRTServices/"
 MQTT_TOKEN_TTL = 890
+
 
 def rate_limit(limit, every):
     def limit_decorator(fn):
@@ -57,6 +57,7 @@ def rate_limit(limit, every):
         return wrapper
 
     return limit_decorator
+
 
 class OpenIdCredentialManager(CredentialManager):
     def _grant_password_request(self, login: str, password: str, realm: str) -> dict:
@@ -129,7 +130,6 @@ def correlation_id(date):
 class MyPSACC:
     vehicles_url = "https://idpcvs.peugeot.com/api/connectedcar/v2/oauth/authorize"
 
-
     def connect(self, user, password):
         self.manager.init_with_user_credentials(user, password, self.realm)
 
@@ -155,9 +155,9 @@ class MyPSACC:
         self.api_config.api_key['client_id'] = self.client_id
         self.api_config.api_key['x-introspect-realm'] = self.realm
         self.headers = {
-                        "x-introspect-realm": realm,
-                        "accept": "application/hal+json",
-                    }
+            "x-introspect-realm": realm,
+            "accept": "application/hal+json",
+        }
         self.remote_token_last_update = None
         self._record_enabled = False
 
@@ -222,7 +222,7 @@ class MyPSACC:
     def refresh_remote_token(self, force=False):
         if not force and self.remote_token_last_update is not None:
             last_update: datetime = self.remote_token_last_update
-            if (datetime.now()-last_update).total_seconds() < MQTT_TOKEN_TTL:
+            if (datetime.now() - last_update).total_seconds() < MQTT_TOKEN_TTL:
                 return
         self.manager._refresh_token()
         res = self.manager.post(remote_url + self.client_id,
@@ -243,7 +243,7 @@ class MyPSACC:
             logger.info("Connected with result code " + str(rc))
             topics = [MQTT_RESP_TOPIC + self.customer_id + "/#"]
             for vin in self.getVIN():
-                topics.append(MQTT_EVENT_TOPIC+ vin + "/#")
+                topics.append(MQTT_EVENT_TOPIC + vin + "/#")
             for topic in topics:
                 client.subscribe(topic)
                 logger.info("subscribe to " + topic)
@@ -356,7 +356,7 @@ class MyPSACC:
 
     @rate_limit(3, 60 * 20)
     def wakeup(self, vin):
-        logger.info("ask wakeup to "+vin)
+        logger.info("ask wakeup to " + vin)
         msg = self.mqtt_request(vin, {"action": "state"})
         logger.info(msg)
         self.mqtt_client.publish(MQTT_REQ_TOPIC + self.customer_id + "/VehCharge/state", msg)
@@ -402,10 +402,10 @@ class MyPSACC:
             str = f.read()
             return MyPSACC(**json.loads(str))
 
-    def set_record(self,value:bool):
+    def set_record(self, value: bool):
         self._record_enabled = value
 
-    def record_position(self,vin, res:psac.models.status.Status):
+    def record_position(self, vin, res: psac.models.status.Status):
         conn = sqlite3.connect('info.db')
         conn.execute(
             "CREATE TABLE IF NOT EXISTS position (Timestamp DATETIME PRIMARY KEY, VIN TEXT, longitude REAL, latitude REAL, mileage REAL, level INTEGER);")
@@ -433,9 +433,9 @@ class MyPSACC:
         res = conn.execute('SELECT * FROM position ORDER BY Timestamp');
         features_list = []
         for row in res:
-            print(row)
             feature = Feature(geometry=Point((row["longitude"], row["latitude"])),
-                              properties={"vin": row["vin"], "date": row["Timestamp"], "mileage": row["mileage"], "level": row["level"]})
+                              properties={"vin": row["vin"], "date": row["Timestamp"], "mileage": row["mileage"],
+                                          "level": row["level"]})
             features_list.append(feature)
         feature_collection = FeatureCollection(features_list)
         return geo_dumps(feature_collection, sort_keys=True)
@@ -451,28 +451,32 @@ class MyPSACC:
         trips = []
         tr = Trip()
         battery_power = 46
-        for next_el in res[2:]:
-            distance = next_el["mileage"] - end["mileage"]  # km
-            duration = (next_el["Timestamp"] - end["Timestamp"]).total_seconds()/3600
-            speed = distance/duration
-            if distance == 0 or speed < 1: # check the speed to handle missing point
-                tr.distance = end["mileage"] - start["mileage"]  # km
-                if tr.distance > 0:
-                    tr.start_at = start["Timestamp"]
-                    tr.end_at = end["Timestamp"]
-                    tr.add_points(end["longitude"], end["latitude"])
-                    tr.duration = (end["Timestamp"] - start["Timestamp"]).total_seconds() / 3600
-                    tr.speed_average = tr.distance / tr.duration
-                    print(start["level"] - end["level"])
-                    tr.consumption = (start["level"] - end["level"]) / 100 * battery_power  # kw
-                    tr.consumption_km = 100 * tr.consumption / tr.distance  # kw/100 km
-                    print(
-                        f"{start['Timestamp']}  {tr.distance:.1f}km {tr.duration:.2f}h {tr.speed_average:.2f} km/h {tr.consumption:.2f} kw {tr.consumption_km:.2f}kw/100km")
-                    trips.append(tr)
-                start = next_el
+        for x in range(0,len(res)-2):
+            next_el = res[x+2]
+            if end["mileage"] - start["mileage"] == 0 or \
+                    (end["Timestamp"] - start["Timestamp"]).total_seconds() / 3600 > 3:
+                start = end
                 tr = Trip()
             else:
-                tr.add_points(end["longitude"], end["latitude"])
+                distance = next_el["mileage"] - end["mileage"]  # km
+                duration = (next_el["Timestamp"] - end["Timestamp"]).total_seconds() / 3600
+                if (distance == 0 and duration > 0.08) or duration > 2:  # check the speed to handle missing point
+                    tr.distance = end["mileage"] - start["mileage"]  # km
+                    if tr.distance > 0:
+                        tr.start_at = start["Timestamp"]
+                        tr.end_at = end["Timestamp"]
+                        tr.add_points(end["longitude"], end["latitude"])
+                        tr.duration = (end["Timestamp"] - start["Timestamp"]).total_seconds() / 3600
+                        tr.speed_average = tr.distance / tr.duration
+                        tr.consumption = (start["level"] - end["level"]) / 100 * battery_power  # kw
+                        tr.consumption_km = 100 * tr.consumption / tr.distance  # kw/100 km
+                        logger.debug(
+                            f"Trip: {start['Timestamp']}  {tr.distance:.1f}km {tr.duration:.2f}h {tr.speed_average:.2f} km/h {tr.consumption:.2f} kw {tr.consumption_km:.2f}kw/100km")
+                        trips.append(tr)
+                    start = next_el
+                    tr = Trip()
+                else:
+                    tr.add_points(end["longitude"], end["latitude"])
             end = next_el
         return trips
 

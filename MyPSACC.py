@@ -9,7 +9,6 @@ from json import JSONEncoder
 from hashlib import md5
 from time import sleep
 
-import pytz
 from oauth2_client.credentials_manager import CredentialManager, ServiceInformation
 import paho.mqtt.client as mqtt
 from requests import Response
@@ -23,6 +22,8 @@ from MyLogger import logger
 from threading import Semaphore, Timer
 from functools import wraps
 import sqlite3
+
+from web.db import conn
 
 oauhth_url = {"clientsB2CPeugeot": "https://idpcvs.peugeot.com/am/oauth2/access_token",
               "clientsB2CCitroen": "https://idpcvs.citroen.com/am/oauth2/access_token",
@@ -407,9 +408,6 @@ class MyPSACC:
 
     @staticmethod
     def record_position(vin, res: psac.models.status.Status):
-        conn = sqlite3.connect('info.db')
-        conn.execute(
-            "CREATE TABLE IF NOT EXISTS position (Timestamp DATETIME PRIMARY KEY, VIN TEXT, longitude REAL, latitude REAL, mileage REAL, level INTEGER);")
         longitude = res.last_position.geometry.coordinates[0]
         latitude = res.last_position.geometry.coordinates[1]
         date = res.last_position.properties.updated_at
@@ -421,16 +419,11 @@ class MyPSACC:
             conn.commit()
         except sqlite3.IntegrityError:
             logger.debug("position already saved")
-        finally:
-            conn.close()
 
     @staticmethod
     def get_recorded_position():
-        import sqlite3
         from geojson import Feature, Point, FeatureCollection
         from geojson import dumps as geo_dumps
-        conn = sqlite3.connect('info.db')
-        conn.row_factory = sqlite3.Row
         res = conn.execute('SELECT * FROM position ORDER BY Timestamp');
         features_list = []
         for row in res:
@@ -443,9 +436,6 @@ class MyPSACC:
 
     @staticmethod
     def get_trips() -> List[Trip]:
-        sqlite3.register_converter("DATETIME", convert_datetime)
-        conn = sqlite3.connect('info.db', detect_types=sqlite3.PARSE_DECLTYPES | sqlite3.PARSE_COLNAMES)
-        conn.row_factory = sqlite3.Row
         res = conn.execute('SELECT * FROM position ORDER BY Timestamp').fetchall()
         start = res[0]
         end = res[1]
@@ -494,5 +484,3 @@ class MyPeugeotEncoder(JSONEncoder):
         return mpd
 
 
-def convert_datetime(st):
-    return datetime.strptime(st.decode("utf-8"), "%Y-%m-%d %H:%M:%S+00:00").replace(tzinfo=pytz.UTC)

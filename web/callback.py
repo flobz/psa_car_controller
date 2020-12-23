@@ -88,7 +88,7 @@ def charge_control():
         charge_control.set_stop_hour([int(request.args["hour"]), int(request.args["minute"])])
     if 'percentage' in request.args:
         charge_control.percentage_threshold = int(request.args['percentage'])
-    save_config()
+    save_config(myp)
     return jsonify(charge_control.get_dict())
 
 
@@ -154,7 +154,4 @@ dash_app.layout = dbc.Container(fluid=True, children=[
     html.H1('My car info'),
     data_div
 ])
-conn = sqlite3.connect('info.db')
-conn.create_function("update_trips",0,update_trips)
-conn.execute("CREATE TRIGGER IF NOT EXISTS update_trigger AFTER INSERT ON position BEGIN SELECT update_trips(); END;")
-conn.commit()
+

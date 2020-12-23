@@ -1,9 +1,6 @@
 import sqlite3
 from datetime import datetime
-
 import pytz
-
-from web.callback import update_trips
 
 
 def convert_datetime(st):
@@ -15,6 +12,6 @@ conn = sqlite3.connect('info.db', detect_types=sqlite3.PARSE_DECLTYPES | sqlite3
 conn.row_factory = sqlite3.Row
 conn.execute("CREATE TABLE IF NOT EXISTS position (Timestamp DATETIME PRIMARY KEY, VIN TEXT, longitude REAL, "
              "latitude REAL, mileage REAL, level INTEGER);")
-conn.create_function("update_trips",0,update_trips)
-conn.execute("CREATE TRIGGER IF NOT EXISTS update_trigger AFTER INSERT ON position BEGIN SELECT update_trips(); END;")
 conn.commit()
+
+

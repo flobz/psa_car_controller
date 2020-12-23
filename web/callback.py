@@ -1,5 +1,4 @@
 import json
-import sqlite3
 import traceback
 from datetime import datetime, timezone
 import dash_bootstrap_components as dbc
@@ -9,10 +8,12 @@ import dash_html_components as html
 from MyLogger import logger
 from flask import jsonify, request, Response as FlaskResponse
 
+from MyPSACC import MyPSACC
+from psa_connectedcar.models import trips
 from web import figures
 
-from MyPSACC import MyPSACC
 from web.app import app, dash_app, myp, chc, save_config
+from web.db import conn
 
 
 @dash_app.callback(Output('trips_map', 'figure'),
@@ -103,6 +104,7 @@ def after_request(response):
     header['Access-Control-Allow-Origin'] = '*'
     return response
 
+
 def update_trips():
     global trips
     logger.info("update_trips")
@@ -110,6 +112,7 @@ def update_trips():
         trips = MyPSACC.get_trips()
     except:
         logger.error("update_trips: "+traceback.format_exc())
+
 
 try:
     update_trips()
@@ -155,3 +158,6 @@ dash_app.layout = dbc.Container(fluid=True, children=[
     data_div
 ])
 
+conn.create_function("update_trips", 0, update_trips)
+conn.execute("CREATE TRIGGER IF NOT EXISTS update_trigger AFTER INSERT ON position BEGIN SELECT update_trips(); END;")
+conn.commit()

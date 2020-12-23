@@ -13,7 +13,7 @@ from MyPSACC import MyPSACC
 from web import figures
 
 from web.app import app, dash_app, myp, chc, save_config
-from web.db import get_db
+import web.db
 
 
 @dash_app.callback(Output('trips_map', 'figure'),
@@ -158,7 +158,4 @@ dash_app.layout = dbc.Container(fluid=True, children=[
     data_div
 ])
 
-conn = get_db()
-conn.create_function("update_trips", 0, update_trips)
-conn.execute("CREATE TEMP TRIGGER IF NOT EXISTS update_trigger AFTER INSERT ON position BEGIN SELECT update_trips(); END;")
-conn.commit()
+web.db.update_callback = update_trips

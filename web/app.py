@@ -34,7 +34,7 @@ def start_app(title, base_path, debug: bool, host, port):
     dash_app = dash.Dash(external_stylesheets=[dbc.themes.BOOTSTRAP], external_scripts=locale_url, title=title,
                          server=app, requests_pathname_prefix=requests_pathname_prefix)
     import web.callback
-    return run_simple(host, port, application, use_reloader=debug, use_debugger=debug)
+    return run_simple(host, port, application, use_reloader=False, use_debugger=debug)
 
 
 myp = None

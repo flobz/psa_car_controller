@@ -160,5 +160,5 @@ dash_app.layout = dbc.Container(fluid=True, children=[
 
 conn = get_db()
 conn.create_function("update_trips", 0, update_trips)
-conn.execute("CREATE TEMP TRIGGER IF NOT EXISTS update_trigger AFTER INSERT ON main.position BEGIN SELECT update_trips(); END;")
+conn.execute("CREATE TEMP TRIGGER IF NOT EXISTS update_trigger AFTER INSERT ON position BEGIN SELECT update_trips(); END;")
 conn.commit()

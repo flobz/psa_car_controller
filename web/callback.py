@@ -1,4 +1,5 @@
 import json
+import sqlite3
 import traceback
 from datetime import datetime, timezone
 import dash_bootstrap_components as dbc
@@ -33,7 +34,7 @@ def display_value(value):
 
 
 @app.route('/getvehicles')
-def getvehicules():
+def get_vehicules():
     return jsonify(myp.getVIN())
 
 
@@ -102,9 +103,16 @@ def after_request(response):
     header['Access-Control-Allow-Origin'] = '*'
     return response
 
+def update_trips():
+    global trips
+    logger.info("update_trips")
+    try:
+        trips = MyPSACC.get_trips()
+    except:
+        logger.error("update_trips: "+traceback.format_exc())
 
 try:
-    trips = MyPSACC.get_trips()
+    update_trips()
     min_date = trips[0].start_at
     max_date = trips[-1].start_at
     min_millis = figures.unix_time_millis(min_date)
@@ -146,3 +154,7 @@ dash_app.layout = dbc.Container(fluid=True, children=[
     html.H1('My car info'),
     data_div
 ])
+conn = sqlite3.connect('info.db')
+conn.create_function("update_trips",0,update_trips)
+conn.execute("CREATE TRIGGER IF NOT EXISTS update_trigger AFTER INSERT ON position BEGIN SELECT update_trips(); END;")
+conn.commit()

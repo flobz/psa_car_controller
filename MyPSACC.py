@@ -405,7 +405,8 @@ class MyPSACC:
     def set_record(self, value: bool):
         self._record_enabled = value
 
-    def record_position(self, vin, res: psac.models.status.Status):
+    @staticmethod
+    def record_position(vin, res: psac.models.status.Status):
         conn = sqlite3.connect('info.db')
         conn.execute(
             "CREATE TABLE IF NOT EXISTS position (Timestamp DATETIME PRIMARY KEY, VIN TEXT, longitude REAL, latitude REAL, mileage REAL, level INTEGER);")

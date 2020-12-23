@@ -43,7 +43,7 @@ if __name__ == "__main__":
         web.app.myp = MyPSACC.load_config(name=args.config.name)
     else:
         web.app.myp = MyPSACC.load_config()
-    atexit.register(web.app.save_config)
+    atexit.register(web.app.myp.save_config)
     if args.record_position:
         web.app.myp.set_record(True)
     try:

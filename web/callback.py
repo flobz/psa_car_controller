@@ -89,7 +89,7 @@ def charge_control():
         charge_control.set_stop_hour([int(request.args["hour"]), int(request.args["minute"])])
     if 'percentage' in request.args:
         charge_control.percentage_threshold = int(request.args['percentage'])
-    save_config(myp)
+    myp.save_config()
     return jsonify(charge_control.get_dict())
 
 

@@ -418,9 +418,11 @@ class MyPSACC:
             conn.execute("INSERT INTO position(Timestamp,VIN,longitude,latitude,mileage,level) VALUES(?,?,?,?,?,?)",
                          (date, vin, longitude, latitude, mileage, level))
             conn.commit()
-            conn.close()
+            logger.info(f"new position recorded for {vin}")
         except sqlite3.IntegrityError:
             logger.debug("position already saved")
+        finally:
+            conn.close()
 
     @staticmethod
     def get_recorded_position():

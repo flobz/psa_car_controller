@@ -63,7 +63,7 @@ else:
     res = os.system("java --version")
     if res != 0:
         print("You need to install java on your computer : https://www.java.com/fr/download/")
-
+        exit(1)
     os.system(f"java -jar {script_dir}/abe-all.jar unpack {argv[1]} backup.tar {password}")
     my_tar = tarfile.open('backup.tar')
     my_tar.extractall()
@@ -80,7 +80,13 @@ else:
     customer_id_enc = getxmlvalue(root, "CRYPTED_CUSTOMER_ID")
     customer_id = base64.b64decode(customer_id_enc).decode('utf-8')
     #get remote token
-    root = ET.parse("HUTokenManager.xml").getroot()
+    try:
+        root = ET.parse("HUTokenManager.xml").getroot()
+    except FileNotFoundError:
+        traceback.print_exc()
+        print("Do a remote request (start preconditioning for example) to generate a remote refresh token, "
+              "make a new backup and relaunch this script")
+        exit(1)
     remote_enc = root[0].text
     remote_dec = json.loads(base64.b64decode(remote_enc))
     try:
@@ -109,8 +115,11 @@ print(f"\nYour vehicles: {res}")
 
 
 if not argv[1].endswith(".apk"):
-    os.remove("backup.tar")
-    shutil.rmtree('apps')
+    try:
+        os.remove("backup.tar")
+        shutil.rmtree('apps')
+    except:
+        print("Error when deleting temp files")
     charge_controls = ChargeControls()
     for vin,vehicle in res.items():
         chc = ChargeControl(None,vin,100,[0,0])

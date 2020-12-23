@@ -60,7 +60,7 @@ else:
         password = argv[2]
     else:
         password = ""
-    res = os.system("java --version")
+    res = os.system("java -version")
     if res != 0:
         print("You need to install java on your computer : https://www.java.com/fr/download/")
 

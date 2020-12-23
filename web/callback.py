@@ -13,6 +13,7 @@ from MyPSACC import MyPSACC
 from web import figures
 
 from web.app import app, dash_app, myp, chc, save_config
+from web.db import get_db
 
 
 @dash_app.callback(Output('trips_map', 'figure'),
@@ -157,7 +158,7 @@ dash_app.layout = dbc.Container(fluid=True, children=[
     data_div
 ])
 
-conn = sqlite3.connect('info.db', detect_types=sqlite3.PARSE_DECLTYPES | sqlite3.PARSE_COLNAMES)
+conn = get_db()
 conn.create_function("update_trips", 0, update_trips)
-conn.execute("CREATE TEMP TRIGGER IF NOT EXISTS update_trigger AFTER INSERT ON position BEGIN SELECT update_trips(); END;")
+conn.execute("CREATE TEMP TRIGGER IF NOT EXISTS update_trigger AFTER INSERT ON main.position BEGIN SELECT update_trips(); END;")
 conn.commit()

@@ -23,7 +23,7 @@ from threading import Semaphore, Timer
 from functools import wraps
 import sqlite3
 
-from web.db import conn
+from web.db import get_db
 
 oauhth_url = {"clientsB2CPeugeot": "https://idpcvs.peugeot.com/am/oauth2/access_token",
               "clientsB2CCitroen": "https://idpcvs.citroen.com/am/oauth2/access_token",
@@ -414,9 +414,11 @@ class MyPSACC:
         mileage = res.timed_odometer.mileage
         level = res.energy[0]["level"]
         try:
+            conn = get_db()
             conn.execute("INSERT INTO position(Timestamp,VIN,longitude,latitude,mileage,level) VALUES(?,?,?,?,?,?)",
                          (date, vin, longitude, latitude, mileage, level))
             conn.commit()
+            conn.close()
         except sqlite3.IntegrityError:
             logger.debug("position already saved")
 
@@ -424,6 +426,7 @@ class MyPSACC:
     def get_recorded_position():
         from geojson import Feature, Point, FeatureCollection
         from geojson import dumps as geo_dumps
+        conn = get_db()
         res = conn.execute('SELECT * FROM position ORDER BY Timestamp');
         features_list = []
         for row in res:
@@ -432,10 +435,12 @@ class MyPSACC:
                                           "level": row["level"]})
             features_list.append(feature)
         feature_collection = FeatureCollection(features_list)
+        conn.close()
         return geo_dumps(feature_collection, sort_keys=True)
 
     @staticmethod
     def get_trips() -> List[Trip]:
+        conn = get_db()
         res = conn.execute('SELECT * FROM position ORDER BY Timestamp').fetchall()
         start = res[0]
         end = res[1]

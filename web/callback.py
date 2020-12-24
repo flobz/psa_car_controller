@@ -115,6 +115,7 @@ def update_trips():
 
 
 try:
+    web.db.callback_fct = update_trips
     update_trips()
     min_date = trips[0].start_at
     max_date = trips[-1].start_at
@@ -158,4 +159,3 @@ dash_app.layout = dbc.Container(fluid=True, children=[
     data_div
 ])
 
-web.db.update_callback = update_trips

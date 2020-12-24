@@ -15,6 +15,7 @@ from web import figures
 from web.app import app, dash_app, myp, chc, save_config
 import web.db
 
+trips = None
 
 @dash_app.callback(Output('trips_map', 'figure'),
                    Output('consumption_fig', 'figure'),

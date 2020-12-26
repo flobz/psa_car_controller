@@ -9,45 +9,6 @@ from MyPSACC import MyPSACC
 from MyLogger import logger
 from psa_connectedcar.rest import ApiException
 
-
-class ChargeControls:
-
-    def __init__(self):
-        self.list: dict = {}
-        self._confighash = None
-
-    def save_config(self, name="charge_config.json", force=False):
-        chd = {}
-        for key, el in self.list.items():
-            chd[el.vin] =  {"percentage_threshold": el.percentage_threshold, "stop_hour": el._stop_hour}
-        config_str = json.dumps(chd, sort_keys=True, indent=4).encode('utf-8')
-        new_hash = md5(config_str).hexdigest()
-        if force or self._confighash != new_hash :
-            with open(name, "wb") as f:
-                f.write(config_str)
-            self._confighash = new_hash
-            logger.info("save config change")
-
-    def load_config(psacc:MyPSACC, name="charge_config.json"):
-        with open(name, "r") as f:
-            str = f.read()
-            chd =  json.loads(str)
-            charge_control_list = ChargeControls()
-            for vin, el in chd.items():
-                charge_control_list.list[vin] = ChargeControl(psacc,vin,**el)
-            return charge_control_list
-
-    def get(self,vin):
-        try:
-            return self.list[vin]
-        except KeyError:
-            return None
-
-    def start(self):
-        for vin, charge_control in self.list.items():
-            charge_control.start()
-
-
 class ChargeControl:
     periodicity = 120
     MQTT_TIMEOUT = 60
@@ -123,5 +84,43 @@ class ChargeControl:
         chd.pop("psacc")
         chd.pop("thread")
         return chd
+
+
+class ChargeControls:
+
+    def __init__(self):
+        self.list: dict = {}
+        self._confighash = None
+
+    def save_config(self, name="charge_config.json", force=False):
+        chd = {}
+        for key, el in self.list.items():
+            chd[el.vin] =  {"percentage_threshold": el.percentage_threshold, "stop_hour": el._stop_hour}
+        config_str = json.dumps(chd, sort_keys=True, indent=4).encode('utf-8')
+        new_hash = md5(config_str).hexdigest()
+        if force or self._confighash != new_hash :
+            with open(name, "wb") as f:
+                f.write(config_str)
+            self._confighash = new_hash
+            logger.info("save config change")
+
+    def load_config(psacc:MyPSACC, name="charge_config.json"):
+        with open(name, "r") as f:
+            str = f.read()
+            chd =  json.loads(str)
+            charge_control_list = ChargeControls()
+            for vin, el in chd.items():
+                charge_control_list.list[vin] = ChargeControl(psacc,vin,**el)
+            return charge_control_list
+
+    def get(self,vin) -> ChargeControl:
+        try:
+            return self.list[vin]
+        except KeyError:
+            return None
+
+    def start(self):
+        for vin, charge_control in self.list.items():
+            charge_control.start()
 
 

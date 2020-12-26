@@ -68,6 +68,7 @@ def get_figures(trips: List[Trip]):
     table_fig = dash_table.DataTable(
         id='trips-table',
         sort_action='native',
+        sort_by=[{'column_id': 'start_at', 'direction': 'desc'}],
         columns=[{'id': 'start_at', 'name': 'start at', 'type': 'datetime'},
                  {'id': 'duration', 'name': 'duration', 'type': 'numeric',
                   'format': deepcopy(nb_format).symbol_suffix(" min").precision(0)},

@@ -7,6 +7,7 @@ import locale
 
 from werkzeug import run_simple, DispatcherMiddleware
 
+from ChargeControl import ChargeControls
 from MyLogger import logger
 from MyPSACC import MyPSACC
 
@@ -38,7 +39,7 @@ def start_app(title, base_path, debug: bool, host, port):
 
 
 myp = None
-chc = None
+chc: ChargeControls = None
 
 
 def save_config(my_peugeot: MyPSACC):

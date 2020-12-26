@@ -1,18 +1,18 @@
 import json
-import sqlite3
 import traceback
 from datetime import datetime, timezone
 import dash_bootstrap_components as dbc
 from dash.dependencies import Output, Input
 import dash_core_components as dcc
 import dash_html_components as html
+
 from MyLogger import logger
 from flask import jsonify, request, Response as FlaskResponse
 
 from MyPSACC import MyPSACC
 from web import figures
 
-from web.app import app, dash_app, myp, chc, save_config
+from web.app import app, dash_app, myp, chc
 import web.db
 
 trips = None
@@ -86,11 +86,11 @@ def charge_control():
     charge_control = chc.get(vin)
     if charge_control is None:
         return jsonify("error: VIN not in list")
-    if 'hour' in request.args or 'minute' in request.args:
+    if 'hour' in request.args and 'minute' in request.args:
         charge_control.set_stop_hour([int(request.args["hour"]), int(request.args["minute"])])
     if 'percentage' in request.args:
         charge_control.percentage_threshold = int(request.args['percentage'])
-    myp.save_config()
+    chc.save_config()
     return jsonify(charge_control.get_dict())
 
 

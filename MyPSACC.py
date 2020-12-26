@@ -413,16 +413,24 @@ class MyPSACC:
         date = res.last_position.properties.updated_at
         mileage = res.timed_odometer.mileage
         level = res.energy[0]["level"]
-        try:
-            conn = get_db()
-            conn.execute("INSERT INTO position(Timestamp,VIN,longitude,latitude,mileage,level) VALUES(?,?,?,?,?,?)",
-                         (date, vin, longitude, latitude, mileage, level))
-            conn.commit()
-            logger.info(f"new position recorded for {vin}")
-        except sqlite3.IntegrityError:
-            logger.debug("position already saved")
-        finally:
-            conn.close()
+        charging_status = res.energy[0]['charging']['status']
+        if mileage == 0: # fix a bug of the api
+            logger.error(f"The api return a wrong mileage for {vin} : {mileage}")
+        else:
+            try:
+                conn = get_db()
+                conn.execute("INSERT INTO position(Timestamp,VIN,longitude,latitude,mileage,level) VALUES(?,?,?,?,?,?)",
+                             (date, vin, longitude, latitude, mileage, level))
+                conn.commit()
+                logger.info(f"new position recorded for {vin}")
+            except sqlite3.IntegrityError:
+                logger.debug("position already saved")
+            finally:
+                conn.close()
+        if charging_status is "InProgress":
+            #create a new line
+            pass
+        elif charging_status is "Stopped" or "Finnished"
 
     @staticmethod
     def get_recorded_position():

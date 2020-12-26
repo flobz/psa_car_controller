@@ -427,10 +427,12 @@ class MyPSACC:
                 logger.debug("position already saved")
             finally:
                 conn.close()
+        #todo handle battery status
         if charging_status is "InProgress":
             #create a new line
             pass
-        elif charging_status is "Stopped" or "Finnished"
+        elif charging_status is "Stopped" or "Finished":
+            pass
 
     @staticmethod
     def get_recorded_position():

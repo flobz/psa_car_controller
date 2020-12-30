@@ -11,6 +11,7 @@ argparse
 flask
 dash_bootstrap_components
 geojson
+reverse_geocode
 
 #swagger req
 certifi >= 14.05.14

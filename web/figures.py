@@ -1,6 +1,7 @@
 from copy import deepcopy
 from typing import List
 
+import dash_bootstrap_components as dbc
 import dash_table
 import numpy as np
 from dash_table.Format import Format, Scheme, Symbol
@@ -46,10 +47,11 @@ consumption_fig_by_speed = None
 table_fig = None
 pandas_options.display.float_format = '${:.2f}'.format
 info = ""
+battery_info = dbc.Alert("No data to show", color="danger")
 
 
-def get_figures(trips: List[Trip]):
-    global consumption_fig, consumption_df, trips_map, consumption_fig_by_speed, table_fig, info
+def get_figures(trips: List[Trip], charging: List[dict]):
+    global consumption_fig, consumption_df, trips_map, consumption_fig_by_speed, table_fig, info, battery_info
     lats = []
     lons = []
     names = []
@@ -94,5 +96,15 @@ def get_figures(trips: List[Trip]):
         go.Scatter(mode="markers", x=consum_df_by_speed["speed"], y=consum_df_by_speed["consumption"],
                    name="Trips"))
     consumption_fig_by_speed.update_layout(xaxis_title="average Speed km/h", yaxis_title="Consumption kWh/100Km")
-    info = "Average consumption: {:.1f} kW/100km".format(
-        float(consumption_df.mean(numeric_only=True)))
+    kw_per_km = float(consumption_df.mean(numeric_only=True))
+    info = "Average consumption: {:.1f} kW/100km".format(kw_per_km)
+
+    # charging
+    charging_data = DataFrame.from_records(charging)
+    co2_per_kw = charging_data["co2"].sum() / charging_data["kw"].sum()
+    co2_per_km = co2_per_kw * kw_per_km / 100
+    charge_speed = 3600 * charging_data["kw"].mean() / \
+                   (charging_data["stop_at"] - charging_data["start_at"]).mean().total_seconds()
+    battery_info = "Average gC02/kW: {:.1f}\n" \
+                   "Average gC02/km: {:1f}\n" \
+                   "Average Charge SPEED {:1f} gC02/kW".format(co2_per_kw, co2_per_km, charge_speed)

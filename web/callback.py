@@ -16,12 +16,15 @@ from web.app import app, dash_app, myp, chc
 import web.db
 
 trips = None
+chargings = None
+
 
 @dash_app.callback(Output('trips_map', 'figure'),
                    Output('consumption_fig', 'figure'),
                    Output('consumption_fig_by_speed', 'figure'),
                    Output('consumption', 'children'),
                    Output('tab_trips', 'children'),
+                   Output('tab_battery', 'children'),
                    Input('date-slider', 'value'))
 def display_value(value):
     min = datetime.fromtimestamp(value[0], tz=timezone.utc)
@@ -30,7 +33,8 @@ def display_value(value):
     for trip in trips:
         if min <= trip.start_at <= max:
             filtered_trips.append(trip)
-    figures.get_figures(filtered_trips)
+    filtered_chargings = MyPSACC.get_chargings(min,max)
+    figures.get_figures(filtered_trips,filtered_chargings)
     consumption = "Average consumption: {:.1f} kW/100km".format(float(figures.consumption_df.mean(numeric_only=True)))
     return figures.trips_map, figures.consumption_fig, figures.consumption_fig_by_speed, consumption, figures.table_fig
 
@@ -107,23 +111,25 @@ def after_request(response):
 
 
 def update_trips():
-    global trips
-    logger.info("update_trips")
+    global trips, chargings
+    logger.info("update_data")
     try:
         trips = MyPSACC.get_trips()
+        chargings = MyPSACC.get_chargings()
     except:
-        logger.error("update_trips: "+traceback.format_exc())
+        logger.error("update_trips: " + traceback.format_exc())
 
 
 try:
     web.db.callback_fct = update_trips
     update_trips()
+
     min_date = trips[0].start_at
     max_date = trips[-1].start_at
     min_millis = figures.unix_time_millis(min_date)
     max_millis = figures.unix_time_millis(max_date)
     step = (max_millis - min_millis) / 100
-    figures.get_figures(trips)
+    figures.get_figures(trips, chargings)
     data_div = html.Div([dcc.RangeSlider(
         id='date-slider',
         min=min_millis,
@@ -142,6 +148,7 @@ try:
                     dcc.Graph(figure=figures.consumption_fig_by_speed, id="consumption_fig_by_speed")
                 ]),
                 dbc.Tab(label="Trips", tab_id="trips", id="tab_trips", children=[figures.table_fig]),
+                dbc.Tab(label="Battery", tab_id="battery", id="tab_battery", children=[figures.battery_info]),
                 dbc.Tab(label="Map", tab_id="map", children=[
                     dcc.Graph(figure=figures.trips_map, id="trips_map", style={"height": '90vh'})]),
             ],
@@ -159,4 +166,3 @@ dash_app.layout = dbc.Container(fluid=True, children=[
     html.H1('My car info'),
     data_div
 ])
-

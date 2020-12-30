@@ -19,8 +19,8 @@ def get_db():
     conn.row_factory = sqlite3.Row
     conn.execute("CREATE TABLE IF NOT EXISTS position (Timestamp DATETIME PRIMARY KEY, VIN TEXT, longitude REAL, "
                  "latitude REAL, mileage REAL, level INTEGER);")
-    conn.execute("CREATE TABLE IF NOT EXISTS battery (start_at DATETIME PRIMARY KEY,stop_at DATETIME, start_level, "
-                 "end_level)")
+    conn.execute("CREATE TABLE IF NOT EXISTS battery (start_at DATETIME PRIMARY KEY,stop_at DATETIME,VIN TEXT, "
+                 "start_level INTEGER, end_level INTEGER, co2 INTEGER, kw INTEGER);")
     conn.create_function("update_trips", 0, update_callback)
     conn.execute("CREATE TEMP TRIGGER IF NOT EXISTS update_trigger AFTER INSERT ON position BEGIN "
                  "SELECT update_trips(); END;")

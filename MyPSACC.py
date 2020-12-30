@@ -16,6 +16,7 @@ from typing import List
 
 import psa_connectedcar as psac
 from Trip import Trip
+from ecomix import Ecomix
 from psa_connectedcar import ApiClient
 from psa_connectedcar.rest import ApiException
 from MyLogger import logger
@@ -24,6 +25,8 @@ from functools import wraps
 import sqlite3
 
 from web.db import get_db
+
+BATTERY_POWER = 46
 
 oauhth_url = {"clientsB2CPeugeot": "https://idpcvs.peugeot.com/am/oauth2/access_token",
               "clientsB2CCitroen": "https://idpcvs.citroen.com/am/oauth2/access_token",
@@ -185,7 +188,7 @@ class MyPSACC:
         if res is None:
             res = self.api().get_vehicle_status(self.get_vehicle_id_with_vin(vin), extension=["odometer"])
         if self._record_enabled:
-            self.record_position(vin, res)
+            self.record_info(vin, res)
         return res
 
     # monitor doesn't seem to work
@@ -311,7 +314,7 @@ class MyPSACC:
     def get_charge_hour(self, vin):
         reg = r"PT([0-9]{1,2})H([0-9]{1,2})?"
         data = self.get_vehicle_info(vin)
-        hour_str = data.energy[0]['charging']['nextDelayedTime']
+        hour_str = data.energy[0].charging.next_delayed_time
         hour = re.findall(reg, hour_str)[0]
         h = int(hour[0])
         if hour[1] == '':
@@ -322,7 +325,7 @@ class MyPSACC:
 
     def get_charge_status(self, vin):
         data = self.get_vehicle_info(vin)
-        status = data.energy[0]['charging']['status']
+        status = data.energy[0].charging.status
         return status
 
     def veh_charge_request(self, vin, hour, miinute, charge_type):
@@ -407,32 +410,50 @@ class MyPSACC:
         self._record_enabled = value
 
     @staticmethod
-    def record_position(vin, res: psac.models.status.Status):
-        longitude = res.last_position.geometry.coordinates[0]
-        latitude = res.last_position.geometry.coordinates[1]
-        date = res.last_position.properties.updated_at
-        mileage = res.timed_odometer.mileage
-        level = res.energy[0]["level"]
-        charging_status = res.energy[0]['charging']['status']
-        if mileage == 0: # fix a bug of the api
+    def record_info(vin, status: psac.models.status.Status):
+        longitude = status.last_position.geometry.coordinates[0]
+        latitude = status.last_position.geometry.coordinates[1]
+        date = status.last_position.properties.updated_at
+        mileage = status.timed_odometer.mileage
+        level = status.energy[0].level
+        charging_status = status.energy[0].charging.status
+        conn = get_db()
+        if mileage == 0:  # fix a bug of the api
             logger.error(f"The api return a wrong mileage for {vin} : {mileage}")
         else:
             try:
-                conn = get_db()
                 conn.execute("INSERT INTO position(Timestamp,VIN,longitude,latitude,mileage,level) VALUES(?,?,?,?,?,?)",
                              (date, vin, longitude, latitude, mileage, level))
                 conn.commit()
                 logger.info(f"new position recorded for {vin}")
             except sqlite3.IntegrityError:
                 logger.debug("position already saved")
-            finally:
-                conn.close()
-        #todo handle battery status
-        if charging_status is "InProgress":
-            #create a new line
-            pass
-        elif charging_status is "Stopped" or "Finished":
-            pass
+        # todo handle battery status
+        charge_date = status.energy[0].updated_at
+        if charging_status == "InProgress":
+            try:
+                in_progress = conn.execute("SELECT stop_at FROM battery WHERE VIN=? ORDER BY start_at DESC limit 1", (vin,)).fetchone()[0] is None
+            except TypeError:
+                in_progress = False
+            if not in_progress:
+                res = conn.execute("INSERT INTO battery(start_at,start_level,VIN) VALUES(?,?,?)",
+                                      (charge_date, level, vin))
+                conn.commit()
+        else:
+            try:
+                start_at, stop_at, start_level = conn.execute("SELECT start_at, stop_at, start_level, from battery WHERE VIN=?  ORDER BY start_at "
+                                                 "DESC limit 1", (vin,)).fetchone()
+                in_progress = stop_at is None
+                if in_progress:
+                    co2_per_kw = Ecomix.get_co2_per_kw(start_at, stop_at, latitude, longitude)
+                    kw = (level-start_level)/100*BATTERY_POWER
+                    res = conn.execute("UPDATE battery set stop_at=?, end_level=?, co2=?, kw=? WHERE start_at=? and VIN=?",
+                                          (charge_date, level, co2_per_kw, kw, start_at, vin))
+                    conn.commit()
+            except:
+                logger.debug("Error when saving status " + traceback.format_exc())
+                pass
+        conn.close()
 
     @staticmethod
     def get_recorded_position():
@@ -458,9 +479,8 @@ class MyPSACC:
         end = res[1]
         trips = []
         tr = Trip()
-        battery_power = 46
-        for x in range(0,len(res)-2):
-            next_el = res[x+2]
+        for x in range(0, len(res) - 2):
+            next_el = res[x + 2]
             if end["mileage"] - start["mileage"] == 0 or \
                     (end["Timestamp"] - start["Timestamp"]).total_seconds() / 3600 > 3:
                 start = end
@@ -476,7 +496,7 @@ class MyPSACC:
                         tr.add_points(end["longitude"], end["latitude"])
                         tr.duration = (end["Timestamp"] - start["Timestamp"]).total_seconds() / 3600
                         tr.speed_average = tr.distance / tr.duration
-                        tr.consumption = (start["level"] - end["level"]) / 100 * battery_power  # kw
+                        tr.consumption = (start["level"] - end["level"]) / 100 * BATTERY_POWER  # kw
                         tr.consumption_km = 100 * tr.consumption / tr.distance  # kw/100 km
                         logger.debug(
                             f"Trip: {start['Timestamp']}  {tr.distance:.1f}km {tr.duration:.2f}h {tr.speed_average:.2f} km/h {tr.consumption:.2f} kw {tr.consumption_km:.2f}kw/100km")
@@ -488,6 +508,19 @@ class MyPSACC:
             end = next_el
         return trips
 
+    @staticmethod
+    def get_chargings(min=None, max=None):
+        conn = get_db()
+        if min is not None:
+            if max is not None:
+                res = conn.execute("select * from battery WHERE start_at>=? and start_at<=?",(min,max)).fetchall()
+            else:
+                res = conn.execute("select * from battery WHERE start_at>=?",(min,)).fetchall()
+        elif max is not None:
+            res = conn.execute("select * from battery WHERE start_at<=?", (max,)).fetchall()
+        else:
+            res = conn.execute("select * from battery").fetchall()
+        return tuple(map(dict,res))
 
 class MyPeugeotEncoder(JSONEncoder):
     def default(self, mp: MyPSACC):
@@ -499,5 +532,3 @@ class MyPeugeotEncoder(JSONEncoder):
         for el in ["client_id", "realm", "remote_refresh_token", "customer_id"]:
             mpd[el] = data[el]
         return mpd
-
-

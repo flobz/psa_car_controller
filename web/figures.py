@@ -106,8 +106,11 @@ def get_figures(trips: List[Trip], charging: List[dict]):
     except ZeroDivisionError:
         co2_per_kw = 0
     co2_per_km = co2_per_kw * kw_per_km / 100
-    charge_speed = 3600 * charging_data["kw"].mean() / \
+    try:
+        charge_speed = 3600 * charging_data["kw"].mean() / \
                    (charging_data["stop_at"] - charging_data["start_at"]).mean().total_seconds()
+    except TypeError: #when there is no data yet:
+        charge_speed=0
     battery_info = "Average gC02/kW: {:.1f}\n" \
                    "Average gC02/km: {:1f}\n" \
                    "Average Charge SPEED {:1f} gC02/kW".format(co2_per_kw, co2_per_km, charge_speed)

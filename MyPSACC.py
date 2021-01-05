@@ -441,7 +441,7 @@ class MyPSACC:
                 conn.commit()
         else:
             try:
-                start_at, stop_at, start_level = conn.execute("SELECT start_at, stop_at, start_level, from battery WHERE VIN=?  ORDER BY start_at "
+                start_at, stop_at, start_level = conn.execute("SELECT start_at, stop_at, start_level from battery WHERE VIN=? ORDER BY start_at "
                                                  "DESC limit 1", (vin,)).fetchone()
                 in_progress = stop_at is None
                 if in_progress:

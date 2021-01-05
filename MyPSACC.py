@@ -1,5 +1,6 @@
 import json
 import re
+import threading
 import traceback
 import uuid
 from copy import copy
@@ -298,7 +299,14 @@ class MyPSACC:
         self.mqtt_client.username_pw_set("IMA_OAUTH_ACCESS_TOKEN", self.remote_access_token)
         self.mqtt_client.connect(MQTT_SERVER, 8885, 60)
         self.mqtt_client.loop_start()
+        self.__keep_mqtt()
         return self.mqtt_client.is_connected()
+
+    def __keep_mqtt(self): # avoid token expiration
+        timeout = 3600 * 24 # 1 day
+        if (datetime.now() - self.remote_token_last_update).total_seconds() > timeout:
+            self.refresh_remote_token()
+        threading.Timer(timeout, self.__keep_mqtt).start()
 
     def mqtt_request(self, vin, req_parameters):
         self.refresh_token()

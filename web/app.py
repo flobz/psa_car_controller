@@ -6,7 +6,10 @@ from flask import Flask
 import locale
 
 from werkzeug import run_simple
-from werkzeug.middleware.dispatcher import DispatcherMiddleware
+try:
+    from werkzeug.middleware.dispatcher import DispatcherMiddleware
+except:
+    from werkzeug import DispatcherMiddleware
 
 from ChargeControl import ChargeControls
 from MyLogger import logger

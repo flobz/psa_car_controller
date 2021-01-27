@@ -10,6 +10,7 @@ from json import JSONEncoder
 from hashlib import md5
 from time import sleep
 
+import requests
 from oauth2_client.credentials_manager import CredentialManager, ServiceInformation
 import paho.mqtt.client as mqtt
 from requests import Response
@@ -138,7 +139,7 @@ class MyPSACC:
     def connect(self, user, password):
         self.manager.init_with_user_credentials(user, password, self.realm)
 
-    def __init__(self, refresh_token, client_id, client_secret, remote_refresh_token, customer_id, realm, proxies=None):
+    def __init__(self, refresh_token, client_id, client_secret, remote_refresh_token, customer_id, realm, proxies=None, weather_api = None):
         self.realm = realm
         self.service_information = ServiceInformation(authorize_service,
                                                       oauhth_url[self.realm],
@@ -162,9 +163,11 @@ class MyPSACC:
         self.headers = {
             "x-introspect-realm": realm,
             "accept": "application/hal+json",
+            "User-Agent": "okhttp/4.8.0",
         }
         self.remote_token_last_update = None
         self._record_enabled = False
+        self.weather_api = weather_api
 
     def refresh_token(self):
         self.manager._refresh_token()
@@ -195,7 +198,7 @@ class MyPSACC:
     # monitor doesn't seem to work
     def newMonitor(self, vin, body):
         res = self.manager.post("https://api.groupe-psa.com/connectedcar/v4/user/vehicles/" + self.vehicles_list[vin][
-            "id"] + "/status?client_id=" + self.client_id, headers=MyPSACC.headers, data=body)
+            "id"] + "/status?client_id=" + self.client_id, headers=self.headers, data=body)
         data = res.json()
         return data
 
@@ -302,8 +305,8 @@ class MyPSACC:
         self.__keep_mqtt()
         return self.mqtt_client.is_connected()
 
-    def __keep_mqtt(self): # avoid token expiration
-        timeout = 3600 * 24 # 1 day
+    def __keep_mqtt(self):  # avoid token expiration
+        timeout = 3600 * 24  # 1 day
         if (datetime.now() - self.remote_token_last_update).total_seconds() > timeout:
             self.refresh_remote_token()
         threading.Timer(timeout, self.__keep_mqtt).start()
@@ -417,46 +420,72 @@ class MyPSACC:
     def set_record(self, value: bool):
         self._record_enabled = value
 
-    @staticmethod
-    def record_info(vin, status: psac.models.status.Status):
+    def record_info(self, vin, status: psac.models.status.Status):
         longitude = status.last_position.geometry.coordinates[0]
         latitude = status.last_position.geometry.coordinates[1]
         date = status.last_position.properties.updated_at
         mileage = status.timed_odometer.mileage
         level = status.energy[0].level
         charging_status = status.energy[0].charging.status
+        moving = status.kinetic.moving
         conn = get_db()
         if mileage == 0:  # fix a bug of the api
             logger.error(f"The api return a wrong mileage for {vin} : {mileage}")
         else:
-            try:
-                conn.execute("INSERT INTO position(Timestamp,VIN,longitude,latitude,mileage,level) VALUES(?,?,?,?,?,?)",
-                             (date, vin, longitude, latitude, mileage, level))
+            if conn.execute("SELECT Timestamp from position where Timestamp=?", (date,)).fetchone() is None:
+                temp = None
+                if self.weather_api is not None:
+                    try:
+                        weather_rep = requests.get("https://api.openweathermap.org/data/2.5/onecall",
+                                                   params={"lat": res["latitude"], "lon": res["longitude"],
+                                                           "exclude": "minutely,hourly,daily,alerts",
+                                                           "appid": "f8ee4124ea074950b696fd3e956a7069", "units": "metric"})
+                        temp = weather_rep.json()["current"]["temp"]
+                    except Exception as e:
+                        logger.error(f"Unable to get temperature from openweathermap :{e}")
+
+                conn.execute(
+                    "INSERT INTO position(Timestamp,VIN,longitude,latitude,mileage,level, moving) VALUES(?,?,?,?,?,?,?,?)",
+                    (date, vin, longitude, latitude, mileage, level, moving, temp))
+
                 conn.commit()
                 logger.info(f"new position recorded for {vin}")
-            except sqlite3.IntegrityError:
+                res = conn.execute(
+                    "SELECT Timestamp,mileage,level from position ORDER BY Timestamp DESC LIMIT 3;").fetchall()
+                # Clean DB
+                if len(res) == 3:
+                    if res[0]["mileage"] == res[1]["mileage"] == res[2]["mileage"]:
+                        if res[0]["level"] == res[1]["level"] == res[2]["level"]:
+                            logger.debug("Delete duplicate line")
+                            conn.execute("DELETE FROM position where Timestamp=?;", (res[1]["Timestamp"],))
+                            conn.commit()
+            else:
                 logger.debug("position already saved")
+
         # todo handle battery status
         charge_date = status.energy[0].updated_at
         if charging_status == "InProgress":
             try:
-                in_progress = conn.execute("SELECT stop_at FROM battery WHERE VIN=? ORDER BY start_at DESC limit 1", (vin,)).fetchone()[0] is None
+                in_progress = conn.execute("SELECT stop_at FROM battery WHERE VIN=? ORDER BY start_at DESC limit 1",
+                                           (vin,)).fetchone()[0] is None
             except TypeError:
                 in_progress = False
             if not in_progress:
                 res = conn.execute("INSERT INTO battery(start_at,start_level,VIN) VALUES(?,?,?)",
-                                      (charge_date, level, vin))
+                                   (charge_date, level, vin))
                 conn.commit()
         else:
             try:
-                start_at, stop_at, start_level = conn.execute("SELECT start_at, stop_at, start_level from battery WHERE VIN=? ORDER BY start_at "
-                                                 "DESC limit 1", (vin,)).fetchone()
+                start_at, stop_at, start_level = conn.execute(
+                    "SELECT start_at, stop_at, start_level from battery WHERE VIN=? ORDER BY start_at "
+                    "DESC limit 1", (vin,)).fetchone()
                 in_progress = stop_at is None
                 if in_progress:
                     co2_per_kw = Ecomix.get_co2_per_kw(start_at, charge_date, latitude, longitude)
-                    kw = (level-start_level)/100*BATTERY_POWER
-                    res = conn.execute("UPDATE battery set stop_at=?, end_level=?, co2=?, kw=? WHERE start_at=? and VIN=?",
-                                          (charge_date, level, co2_per_kw, kw, start_at, vin))
+                    kw = (level - start_level) / 100 * BATTERY_POWER
+                    res = conn.execute(
+                        "UPDATE battery set stop_at=?, end_level=?, co2=?, kw=? WHERE start_at=? and VIN=?",
+                        (charge_date, level, co2_per_kw, kw, start_at, vin))
                     conn.commit()
             except:
                 logger.debug("Error when saving status " + traceback.format_exc())
@@ -468,7 +497,7 @@ class MyPSACC:
         from geojson import Feature, Point, FeatureCollection
         from geojson import dumps as geo_dumps
         conn = get_db()
-        res = conn.execute('SELECT * FROM position ORDER BY Timestamp');
+        res = conn.execute('SELECT * FROM position ORDER BY Timestamp')
         features_list = []
         for row in res:
             feature = Feature(geometry=Point((row["longitude"], row["latitude"])),
@@ -487,6 +516,7 @@ class MyPSACC:
         end = res[1]
         trips = []
         tr = Trip()
+        #res = list(map(dict,res))
         for x in range(0, len(res) - 2):
             next_el = res[x + 2]
             if end["mileage"] - start["mileage"] == 0 or \
@@ -504,11 +534,14 @@ class MyPSACC:
                         tr.add_points(end["longitude"], end["latitude"])
                         tr.duration = (end["Timestamp"] - start["Timestamp"]).total_seconds() / 3600
                         tr.speed_average = tr.distance / tr.duration
-                        tr.consumption = (start["level"] - end["level"]) / 100 * BATTERY_POWER  # kw
+                        diff_level = start["level"] - end["level"]
+                        tr.consumption = diff_level / 100 * BATTERY_POWER  # kw
                         tr.consumption_km = 100 * tr.consumption / tr.distance  # kw/100 km
                         logger.debug(
                             f"Trip: {start['Timestamp']}  {tr.distance:.1f}km {tr.duration:.2f}h {tr.speed_average:.2f} km/h {tr.consumption:.2f} kw {tr.consumption_km:.2f}kw/100km")
-                        trips.append(tr)
+                        # filter bad value
+                        if tr.consumption_km < 70:
+                            trips.append(tr)
                     start = next_el
                     tr = Trip()
                 else:
@@ -521,14 +554,15 @@ class MyPSACC:
         conn = get_db()
         if min is not None:
             if max is not None:
-                res = conn.execute("select * from battery WHERE start_at>=? and start_at<=?",(min,max)).fetchall()
+                res = conn.execute("select * from battery WHERE start_at>=? and start_at<=?", (min, max)).fetchall()
             else:
-                res = conn.execute("select * from battery WHERE start_at>=?",(min,)).fetchall()
+                res = conn.execute("select * from battery WHERE start_at>=?", (min,)).fetchall()
         elif max is not None:
             res = conn.execute("select * from battery WHERE start_at<=?", (max,)).fetchall()
         else:
             res = conn.execute("select * from battery").fetchall()
-        return tuple(map(dict,res))
+        return tuple(map(dict, res))
+
 
 class MyPeugeotEncoder(JSONEncoder):
     def default(self, mp: MyPSACC):
@@ -537,6 +571,6 @@ class MyPeugeotEncoder(JSONEncoder):
         mpd["proxies"] = data["_proxies"]
         mpd["refresh_token"] = mp.manager.refresh_token
         mpd["client_secret"] = mp.service_information.client_secret
-        for el in ["client_id", "realm", "remote_refresh_token", "customer_id"]:
+        for el in ["client_id", "realm", "remote_refresh_token", "customer_id","weather_api"]:
             mpd[el] = data[el]
         return mpd

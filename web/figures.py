@@ -11,7 +11,7 @@ import plotly.express as px
 import plotly.graph_objects as go
 from Trip import Trip
 from pandas import options as pandas_options
-
+import dash_html_components as html
 
 def unix_time_millis(dt):
     return int(dt.timestamp())
@@ -108,9 +108,9 @@ def get_figures(trips: List[Trip], charging: List[dict]):
     co2_per_km = co2_per_kw * kw_per_km / 100
     try:
         charge_speed = 3600 * charging_data["kw"].mean() / \
-                   (charging_data["stop_at"] - charging_data["start_at"]).mean().total_seconds()
-    except TypeError: #when there is no data yet:
-        charge_speed=0
-    battery_info = "Average gC02/kW: {:.1f}\n" \
-                   "Average gC02/km: {:1f}\n" \
-                   "Average Charge SPEED {:1f} gC02/kW".format(co2_per_kw, co2_per_km, charge_speed)
+                       (charging_data["stop_at"] - charging_data["start_at"]).mean().total_seconds()
+    except TypeError:  # when there is no data yet:
+        charge_speed = 0
+    battery_info = html.Div(children=[html.P("Average gC02/kW: {:.1f}".format(co2_per_kw)),
+                   html.P("Average gC02/km: {:1f}".format(co2_per_km)),
+                    html.P("Average Charge SPEED {:1f} kW/h".format(charge_speed))])

@@ -3,7 +3,7 @@ from datetime import datetime
 import pytz
 
 callback_fct = None
-
+default_db_file = 'info.db'
 def convert_datetime(st):
     return datetime.strptime(st.decode("utf-8"), "%Y-%m-%d %H:%M:%S+00:00").replace(tzinfo=pytz.UTC)
 
@@ -13,12 +13,12 @@ def update_callback():
         callback_fct()
     return
 
-def get_db():
+def get_db(db_file=default_db_file):
     sqlite3.register_converter("DATETIME", convert_datetime)
-    conn = sqlite3.connect('info.db', detect_types=sqlite3.PARSE_DECLTYPES | sqlite3.PARSE_COLNAMES)
+    conn = sqlite3.connect(db_file, detect_types=sqlite3.PARSE_DECLTYPES | sqlite3.PARSE_COLNAMES)
     conn.row_factory = sqlite3.Row
     conn.execute("CREATE TABLE IF NOT EXISTS position (Timestamp DATETIME PRIMARY KEY, VIN TEXT, longitude REAL, "
-                 "latitude REAL, mileage REAL, level INTEGER);")
+                 "latitude REAL, mileage REAL, level INTEGER, moving BOOLEAN, temperature INTEGER);")
     conn.execute("CREATE TABLE IF NOT EXISTS battery (start_at DATETIME PRIMARY KEY,stop_at DATETIME,VIN TEXT, "
                  "start_level INTEGER, end_level INTEGER, co2 INTEGER, kw INTEGER);")
     conn.create_function("update_trips", 0, update_callback)

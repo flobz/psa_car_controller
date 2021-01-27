@@ -5,7 +5,8 @@ import dash_bootstrap_components as dbc
 from flask import Flask
 import locale
 
-from werkzeug import run_simple, DispatcherMiddleware
+from werkzeug import run_simple
+from werkzeug.middleware.dispatcher import DispatcherMiddleware
 
 from ChargeControl import ChargeControls
 from MyLogger import logger
@@ -34,6 +35,7 @@ def start_app(title, base_path, debug: bool, host, port):
         requests_pathname_prefix = base_path + "/"
     dash_app = dash.Dash(external_stylesheets=[dbc.themes.BOOTSTRAP], external_scripts=locale_url, title=title,
                          server=app, requests_pathname_prefix=requests_pathname_prefix)
+    # keep this line
     import web.callback
     return run_simple(host, port, application, use_reloader=False, use_debugger=debug)
 

@@ -1,5 +1,5 @@
 from datetime import datetime, timedelta
-from statistics import mean
+from statistics import mean, StatisticsError
 import xml.etree.ElementTree as ET
 import requests
 import reverse_geocode
@@ -31,8 +31,10 @@ class Ecomix:
         while int(valeur.attrib["periode"]) != period_end:
             co2_per_kw.append(int(valeur.text))
             valeur = next(valeurs)
-
-        return mean(co2_per_kw)
+        try:
+            return mean(co2_per_kw)
+        except StatisticsError:
+            return None
 
     @staticmethod
     def get_co2_per_kw(start: datetime, end: datetime, latitude, longitude):

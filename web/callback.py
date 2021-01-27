@@ -36,7 +36,7 @@ def display_value(value):
     filtered_chargings = MyPSACC.get_chargings(min,max)
     figures.get_figures(filtered_trips,filtered_chargings)
     consumption = "Average consumption: {:.1f} kW/100km".format(float(figures.consumption_df.mean(numeric_only=True)))
-    return figures.trips_map, figures.consumption_fig, figures.consumption_fig_by_speed, consumption, figures.table_fig
+    return figures.trips_map, figures.consumption_fig, figures.consumption_fig_by_speed, consumption, figures.table_fig, figures.battery_info
 
 
 @app.route('/getvehicles')

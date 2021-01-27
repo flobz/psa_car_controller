@@ -12,6 +12,7 @@ flask
 dash_bootstrap_components
 geojson
 reverse_geocode
+androguard
 
 #swagger req
 certifi >= 14.05.14

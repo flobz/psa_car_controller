@@ -19,6 +19,7 @@ from typing import List
 import psa_connectedcar as psac
 from Trip import Trip
 from ecomix import Ecomix
+from otp.Otp import load_otp, new_otp_session, save_otp
 from psa_connectedcar import ApiClient
 from psa_connectedcar.rest import ApiException
 from MyLogger import logger
@@ -167,6 +168,7 @@ class MyPSACC:
         }
         self.remote_token_last_update = None
         self._record_enabled = False
+        self.otp = None
         self.weather_api = weather_api
 
     def refresh_token(self):
@@ -218,6 +220,28 @@ class MyPSACC:
             self.get_vehicles()
         return list(self.vehicles_list.keys())
 
+    def load_otp(self):
+        otp_session = load_otp()
+        if otp_session is None:
+            self.get_sms_otp_code()
+            otp_session = new_otp_session()
+        return otp_session
+
+    def get_sms_otp_code(self):
+        res = self.manager.post(
+            "https://api.groupe-psa.com/applications/cvs/v4/mobile/smsCode?client_id=" + self.client_id,
+            headers={
+                "Connection": "Keep-Alive",
+                "User-Agent": "okhttp/4.8.0",
+                "x-introspect-realm": "clientsB2CPeugeot"
+            })
+        return res
+
+    def getOtpCode(self):
+        otp_code = self.otp.getOtpCode()
+        save_otp(self.otp)
+        return otp_code
+
     def get_remote_access_token(self, password):
         res = self.manager.post(remote_url + self.client_id,
                                 json={"grant_type": "password", "password": password},
@@ -242,9 +266,12 @@ class MyPSACC:
             self.remote_access_token = data["access_token"]
             self.remote_refresh_token = data["refresh_token"]
             self.remote_token_last_update = datetime.now()
-            return data["access_token"], data["refresh_token"]
+            return res
         else:
-            logger.error(f"can't refresh_remote_token: {data}")
+            logger.error(f"can't refresh_remote_token: {data}\n Create a new one")
+            self.remote_token_last_update = datetime.now()
+            otp_code = self.getOtpCode()
+            self.get_remote_access_token(otp_code)
 
     def on_mqtt_connect(self, client, userdata, rc, a):
         try:
@@ -293,6 +320,7 @@ class MyPSACC:
             logger.error(traceback.format_exc())
 
     def start_mqtt(self):
+        self.otp = self.load_otp()
         self.refresh_remote_token()
         self.mqtt_client = mqtt.Client(clean_session=True, protocol=mqtt.MQTTv311)
         self.mqtt_client.tls_set_context()

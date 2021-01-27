@@ -469,11 +469,12 @@ class MyPSACC:
                                                            "exclude": "minutely,hourly,daily,alerts",
                                                            "appid": "f8ee4124ea074950b696fd3e956a7069", "units": "metric"})
                         temp = weather_rep.json()["current"]["temp"]
+                        logger.debug(f"Temperature :{temp}c")
                     except Exception as e:
                         logger.error(f"Unable to get temperature from openweathermap :{e}")
 
                 conn.execute(
-                    "INSERT INTO position(Timestamp,VIN,longitude,latitude,mileage,level, moving) VALUES(?,?,?,?,?,?,?,?)",
+                    "INSERT INTO position(Timestamp,VIN,longitude,latitude,mileage,level, moving, temperature) VALUES(?,?,?,?,?,?,?,?)",
                     (date, vin, longitude, latitude, mileage, level, moving, temp))
 
                 conn.commit()

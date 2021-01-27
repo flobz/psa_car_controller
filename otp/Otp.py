@@ -3,13 +3,12 @@ import traceback
 from secrets import token_hex, token_bytes
 
 import requests
-from Crypto.Cipher import AES
-
+from Cryptodome.Cipher import AES
+from Cryptodome.PublicKey import RSA
+from Cryptodome import Hash
 from math import ceil
 
-import Crypto
 
-from Crypto.PublicKey import RSA
 
 from collections import defaultdict
 from xml.etree import cElementTree as ET
@@ -96,7 +95,7 @@ class Otp:
         self.pinmode = pinmode
         self.Kiw = self.decode_oeap(Kiw, self.Kfact)
         key = RSA.construct((int(self.Kiw, 16), Otp.exponent))
-        self.cipher = oaep.new(key, hashAlgo=Crypto.Hash.SHA256)
+        self.cipher = oaep.new(key, hashAlgo=Hash.SHA256)
 
     def getSerial(self):
         return self.device_id + "/_/" + self.iwalea
@@ -128,7 +127,7 @@ class Otp:
     def decode_oeap(self, enc, key):
         modulus = int(key, 16)
         key = RSA.construct((modulus, Otp.exponent))
-        cipher = oaep.new(key, hashAlgo=Crypto.Hash.SHA256)
+        cipher = oaep.new(key, hashAlgo=Hash.SHA256)
         block_size = 128
         dec_string = ""
         enc_b = bytes.fromhex(enc)
@@ -228,7 +227,7 @@ class Otp:
         self.action = "synchro"
         res = self.decode_oeap(xml["ms_key"], self.Kfact)
         temp_key = RSA.construct((int(res, 16), self.exponent))
-        temp_cipher = oaep.new(temp_key, hashAlgo=Crypto.Hash.SHA256)
+        temp_cipher = oaep.new(temp_key, hashAlgo=Hash.SHA256)
         if random_bytes is None:
             random_bytes = token_bytes(16)
         KpubEncode = temp_cipher.encrypt(random_bytes)
@@ -276,11 +275,11 @@ class Otp:
         self.__dict__.update(dict)
         if self.Kiw is not None:
              key = RSA.construct((int(self.Kiw, 16), Otp.exponent))
-             self.cipher = oaep.new(key, hashAlgo=Crypto.Hash.SHA256)
+             self.cipher = oaep.new(key, hashAlgo=Hash.SHA256)
 
 
 def encode_oeap(text, key):
-    cipher = oaep.new(bytes.fromhex(key), hashAlgo=Crypto.Hash.SHA256)
+    cipher = oaep.new(bytes.fromhex(key), hashAlgo=Hash.SHA256)
     return cipher.encrypt(text)
 
 def save_otp(obj):

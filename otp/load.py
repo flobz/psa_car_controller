@@ -2,7 +2,7 @@ import hashlib
 from locale import atoi
 from time import time
 
-from Crypto.Cipher import AES
+from Cryptodome.Cipher import AES
 
 from otp.Tokenizer import Tokenizer
 

@@ -1,6 +1,6 @@
 import hashlib
-import random
 import traceback
+from secrets import token_hex, token_bytes
 
 import requests
 from Crypto.Cipher import AES
@@ -75,8 +75,8 @@ class Otp:
         self.needsync = None
         self.serviceid = None
         self.alias = None
-        self.iwalea = random.randbytes(16).hex()
-        self.device_id = random.randbytes(8).hex()
+        self.iwalea = token_hex(16)
+        self.device_id = token_hex(8)
         self.codepin = None
         self.challenge = ""
         self.action = ""
@@ -230,7 +230,7 @@ class Otp:
         temp_key = RSA.construct((int(res, 16), self.exponent))
         temp_cipher = oaep.new(temp_key, hashAlgo=Crypto.Hash.SHA256)
         if random_bytes is None:
-            random_bytes = random.randbytes(16)
+            random_bytes = token_bytes(16)
         KpubEncode = temp_cipher.encrypt(random_bytes)
 
         aes_cipher = AES.new(bytes.fromhex(self.generateKMA(self.codepin)), AES.MODE_ECB)

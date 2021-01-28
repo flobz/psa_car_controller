@@ -17,16 +17,13 @@ The api is documented [here](https://developer.groupe-psa.io/webapi/b2c/quicksta
 
 ## I. Get credentials
 We need to get credentials from the android app.
- 
-1.1 Extract credentials from the apk
-
 We will retrieve these informations:
  - client-id and client-secret  for the api
  - some url to login
 
-1.2 Download the app on your computer, the original MyPeugeot app can be downloaded [here](https://apkpure.com/fr/mypeugeot-app/com.psa.mym.mypeugeot) for example.
+1.1 Download the app on your computer, the original MyPeugeot app can be downloaded [here](https://apkpure.com/fr/mypeugeot-app/com.psa.mym.mypeugeot) for example.
 
-1.3 Install requirements :
+1.2 Install requirements :
 
 - On debian based distribution you can install some requirement from repos: 
  
@@ -35,7 +32,7 @@ We will retrieve these informations:
 - For everyone :
       ```pip3 install -r requirements.txt```
 
-1.4  run the decoder script : ```python3 app_decoder.py <path to my apk file>```
+1.3  run the decoder script : ```python3 app_decoder.py <path to my apk file>```
   
     mypeugeot email: <write your mypeugeot email>
     mypeugeot password: <write your mypeugeot password>
@@ -47,7 +44,7 @@ We will retrieve these informations:
 
     Your vehicles: {'VINNUBMER': {'id': 'vehicule id'}}
 
-1.5 If it works you will have VIN of your vehicles and there ids in the last line. The script generate a test.json file with all credentials needed.
+1.4 If it works you will have VIN of your vehicles and there ids in the last line. The script generate a test.json file with all credentials needed.
 
  ## II. Use the app
   
@@ -73,10 +70,10 @@ We will retrieve these informations:
     2.2 Stop charge (only for solution 1)
     http://localhost:5000/charge_now/YOURVIN/0
     
-    2.3 Set hour to stop the charge to 6am (only for solution 1)
+    2.3 Set hour to stop the charge to 6am
     http://localhost:5000/charge_control?vin=yourvin&hour=6&minute=0 
     
-    2.4 Change car charge threshold to 80 percent (only for solution 1)
+    2.4 Change car charge threshold to 80 percent
     http://localhost:5000/charge_control?vin=YOURVIN&percentage=80 
 
     2.5 See the dashboard (only if record is enabled)
@@ -101,6 +98,13 @@ You can use all functions from the doc, for example :
 ```myp.api().get_car_last_position(myp.get_vehicle_id_with_vin("myvin"))```
 ## More information
 To analyse the traffics between the app and psa server, you can use mitmproxy.
-You will need the client certificate present in the apk at asssets/MWPMYMA1.pem
+You will need the client certificate present in the apk at asssets/MWPMYMA1.pfx
+```bash
+# decrypt the pfx file (there is no password)
+openssl pkcs12 -in MWPMYMA1.pfx -out MWPMYMA1.pem -nodes
+```
+Then you can use mitmproxy for example:
 
-```mitmproxy --set client_certs=MWPMYMA1.pem```
+```
+mitmproxy --set client_certs=MWPMYMA1.pem
+```

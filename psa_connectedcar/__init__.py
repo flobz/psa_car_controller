@@ -55,6 +55,9 @@ from psa_connectedcar.models.e_coaching import ECoaching
 from psa_connectedcar.models.e_coaching_links import ECoachingLinks
 from psa_connectedcar.models.e_coaching_scores import ECoachingScores
 from psa_connectedcar.models.energy import Energy
+from psa_connectedcar.models.energy_battery import EnergyBattery
+from psa_connectedcar.models.energy_battery_health import EnergyBatteryHealth
+from psa_connectedcar.models.energy_charging import EnergyCharging
 from psa_connectedcar.models.engine import Engine
 from psa_connectedcar.models.engine_oil import EngineOil
 from psa_connectedcar.models.environment import Environment

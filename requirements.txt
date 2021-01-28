@@ -1,9 +1,22 @@
+paho-mqtt>=1.5.0
+dash>=1.18.0
+plotly>=4
+pandas
 oauth2_client
-Flask
-certifi
-urllib3
-six
 requests
-paho_mqtt
-python_dateutil
+numpy
+pytz
+typing
+argparse
+flask
+dash_bootstrap_components
 geojson
+reverse_geocode
+androguard
+pycryptodomex
+
+#swagger req
+certifi >= 14.05.14
+six >= 1.10
+python_dateutil >= 2.5.3
+urllib3 >= 1.15.1

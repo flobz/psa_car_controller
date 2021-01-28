@@ -31,14 +31,242 @@ class Energy(object):
                             and the value is json key in definition.
     """
     swagger_types = {
+        'updated_at': 'datetime',
+        'autonomy': 'float',
+        'battery': 'EnergyBattery',
+        'charging': 'EnergyCharging',
+        'consumption': 'float',
+        'level': 'float',
+        'residual': 'float',
+        'type': 'str'
     }
 
     attribute_map = {
+        'updated_at': 'updatedAt',
+        'autonomy': 'autonomy',
+        'battery': 'battery',
+        'charging': 'charging',
+        'consumption': 'consumption',
+        'level': 'level',
+        'residual': 'residual',
+        'type': 'type'
     }
 
-    def __init__(self):  # noqa: E501
+    def __init__(self, updated_at=None, autonomy=None, battery=None, charging=None, consumption=None, level=None, residual=None, type=None):  # noqa: E501
         """Energy - a model defined in Swagger"""  # noqa: E501
+
+        self._updated_at = None
+        self._autonomy = None
+        self._battery = None
+        self._charging = None
+        self._consumption = None
+        self._level = None
+        self._residual = None
+        self._type = None
         self.discriminator = None
+
+        if updated_at is not None:
+            self.updated_at = updated_at
+        if autonomy is not None:
+            self.autonomy = autonomy
+        if battery is not None:
+            self.battery = battery
+        if charging is not None:
+            self.charging = charging
+        if consumption is not None:
+            self.consumption = consumption
+        if level is not None:
+            self.level = level
+        if residual is not None:
+            self.residual = residual
+        if type is not None:
+            self.type = type
+
+    @property
+    def updated_at(self):
+        """Gets the updated_at of this Energy.  # noqa: E501
+
+        Date when the resource has been updated.  # noqa: E501
+
+        :return: The updated_at of this Energy.  # noqa: E501
+        :rtype: datetime
+        """
+        return self._updated_at
+
+    @updated_at.setter
+    def updated_at(self, updated_at):
+        """Sets the updated_at of this Energy.
+
+        Date when the resource has been updated.  # noqa: E501
+
+        :param updated_at: The updated_at of this Energy.  # noqa: E501
+        :type: datetime
+        """
+
+        self._updated_at = updated_at
+
+    @property
+    def autonomy(self):
+        """Gets the autonomy of this Energy.  # noqa: E501
+
+        Vehicle autonomy for this energy class expressed in KM.  # noqa: E501
+
+        :return: The autonomy of this Energy.  # noqa: E501
+        :rtype: float
+        """
+        return self._autonomy
+
+    @autonomy.setter
+    def autonomy(self, autonomy):
+        """Sets the autonomy of this Energy.
+
+        Vehicle autonomy for this energy class expressed in KM.  # noqa: E501
+
+        :param autonomy: The autonomy of this Energy.  # noqa: E501
+        :type: float
+        """
+
+        self._autonomy = autonomy
+
+    @property
+    def battery(self):
+        """Gets the battery of this Energy.  # noqa: E501
+
+
+        :return: The battery of this Energy.  # noqa: E501
+        :rtype: EnergyBattery
+        """
+        return self._battery
+
+    @battery.setter
+    def battery(self, battery):
+        """Sets the battery of this Energy.
+
+
+        :param battery: The battery of this Energy.  # noqa: E501
+        :type: EnergyBattery
+        """
+
+        self._battery = battery
+
+    @property
+    def charging(self):
+        """Gets the charging of this Energy.  # noqa: E501
+
+
+        :return: The charging of this Energy.  # noqa: E501
+        :rtype: EnergyCharging
+        """
+        return self._charging
+
+    @charging.setter
+    def charging(self, charging):
+        """Sets the charging of this Energy.
+
+
+        :param charging: The charging of this Energy.  # noqa: E501
+        :type: EnergyCharging
+        """
+
+        self._charging = charging
+
+    @property
+    def consumption(self):
+        """Gets the consumption of this Energy.  # noqa: E501
+
+        Instant consumption for thermic vehicles.  # noqa: E501
+
+        :return: The consumption of this Energy.  # noqa: E501
+        :rtype: float
+        """
+        return self._consumption
+
+    @consumption.setter
+    def consumption(self, consumption):
+        """Sets the consumption of this Energy.
+
+        Instant consumption for thermic vehicles.  # noqa: E501
+
+        :param consumption: The consumption of this Energy.  # noqa: E501
+        :type: float
+        """
+
+        self._consumption = consumption
+
+    @property
+    def level(self):
+        """Gets the level of this Energy.  # noqa: E501
+
+
+        :return: The level of this Energy.  # noqa: E501
+        :rtype: float
+        """
+        return self._level
+
+    @level.setter
+    def level(self, level):
+        """Sets the level of this Energy.
+
+
+        :param level: The level of this Energy.  # noqa: E501
+        :type: float
+        """
+        if level is not None and level > 100:  # noqa: E501
+            raise ValueError("Invalid value for `level`, must be a value less than or equal to `100`")  # noqa: E501
+        if level is not None and level < 0:  # noqa: E501
+            raise ValueError("Invalid value for `level`, must be a value greater than or equal to `0`")  # noqa: E501
+
+        self._level = level
+
+    @property
+    def residual(self):
+        """Gets the residual of this Energy.  # noqa: E501
+
+        Residual electric energy avaialble only for electric energy class expressed in KWh.  # noqa: E501
+
+        :return: The residual of this Energy.  # noqa: E501
+        :rtype: float
+        """
+        return self._residual
+
+    @residual.setter
+    def residual(self, residual):
+        """Sets the residual of this Energy.
+
+        Residual electric energy avaialble only for electric energy class expressed in KWh.  # noqa: E501
+
+        :param residual: The residual of this Energy.  # noqa: E501
+        :type: float
+        """
+
+        self._residual = residual
+
+    @property
+    def type(self):
+        """Gets the type of this Energy.  # noqa: E501
+
+
+        :return: The type of this Energy.  # noqa: E501
+        :rtype: str
+        """
+        return self._type
+
+    @type.setter
+    def type(self, type):
+        """Sets the type of this Energy.
+
+
+        :param type: The type of this Energy.  # noqa: E501
+        :type: str
+        """
+        allowed_values = ["Fuel", "Electric"]  # noqa: E501
+        if type not in allowed_values:
+            raise ValueError(
+                "Invalid value for `type` ({0}), must be one of {1}"  # noqa: E501
+                .format(type, allowed_values)
+            )
+
+        self._type = type
 
     def to_dict(self):
         """Returns the model properties as a dict"""

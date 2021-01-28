@@ -1,103 +1,33 @@
 #!/usr/bin/env python3
+import atexit
 import sys
-import threading
 from threading import Thread
 
 from oauth2_client.credentials_manager import OAuthError
 
+import web.app
 from ChargeControl import ChargeControls
 from MyLogger import my_logger
-from MyPSACC import *
-from flask import Flask, request, jsonify
-from flask import Response as FlaskResponse
 import argparse
 from MyLogger import logger
+from MyPSACC import MyPSACC
+from web.app import start_app, save_config
 
 parser = argparse.ArgumentParser()
-app = Flask(__name__)
 
-
-@app.route('/getvehicles')
-def getvehicules():
-    return jsonify(myp.getVIN())
-
-
-@app.route('/get_vehicleinfo/<string:vin>')
-def get_vehicle_Info(vin):
-    response = app.response_class(
-        response=json.dumps(myp.get_vehicle_info(vin).to_dict(), default=str),
-        status=200,
-        mimetype='application/json'
-    )
-    return response
-
-
-@app.route('/charge_now/<string:vin>/<int:charge>')
-def charge_now(vin, charge):
-    return jsonify(myp.charge_now(vin, charge != 0))
-
-
-@app.route('/charge_hour')
-def change_charge_hour():
-    return jsonify(myp.change_charge_hour(request.form['vin'], request.form['hour'], request.form['minute']))
-
-
-@app.route('/wakeup/<string:vin>')
-def wakeup(vin):
-    return jsonify(myp.wakeup(vin))
-
-
-@app.route('/preconditioning/<string:vin>/<int:activate>')
-def preconditioning(vin, activate):
-    return jsonify(myp.preconditioning(vin, activate))
-
-@app.route('/position/<string:vin>')
-def get_position(vin):
-    res = myp.get_vehicle_info(vin)
-    longitude, latitude = res.last_position.geometry.coordinates
-    return jsonify({"longitude":longitude,"latitude":latitude,"url":f"http://maps.google.com/maps?q={latitude},{longitude}"})
-
-def save_config(mypeugeot: MyPSACC):
-    myp.save_config()
-    threading.Timer(30, save_config, args=[mypeugeot]).start()
-
-
-# Set a battery threshold and schedule an hour to stop the charge
-@app.route('/charge_control')
-def charge_control():
-    logger.info(request)
-    vin = request.args['vin']
-    charge_control = chc.get(vin)
-    if charge_control is None:
-        return jsonify("error: VIN not in list")
-    if 'hour' in request.args or 'minute' in request.args:
-        charge_control.set_stop_hour([int(request.args["hour"]), int(request.args["minute"])])
-    if 'percentage' in request.args:
-        charge_control.percentage_threshold = int(request.args['percentage'])
-    chc.save_config()
-    return jsonify(charge_control.get_dict())
-
-@app.route('/positions')
-def get_recorded_position():
-    return FlaskResponse(myp.get_recorded_position(), mimetype='application/json')
-
-@app.after_request
-def after_request(response):
-    header = response.headers
-    header['Access-Control-Allow-Origin'] = '*'
-    return response
 
 def parse_args():
     parser = argparse.ArgumentParser()
-    parser.add_argument("-f", "--config", help="config file", type=argparse.FileType('r'))
-    parser.add_argument("-c", "--charge-control", help="enable charge control", const="charge_config.json", nargs='?')
-    parser.add_argument("-d", "--debug", help="enable debug", const=10, default=20, nargs='?')
-    parser.add_argument("-l", "--listen", help="change server listen address", default="127.0.0.1")
-    parser.add_argument("-p", "--port", help="change server listen address", default="5000")
-    parser.add_argument("-r", "--record-position", help="save vehicle position to db", action='store_true')
-    parser.add_argument("-m", "--mail", help="change the email address")
-    parser.add_argument("-P", "--password", help="change the password")
-    parser.add_argument("--remote-disable",help="disable remote control")
+    parser.add_argument("-f", "--config", help="config file, default file: config.json", type=argparse.FileType('r'))
+    parser.add_argument("-c", "--charge-control", help="enable charge control, default charge_config.json", const="charge_config.json", nargs='?', metavar='charge config file')
+    parser.add_argument("-d", "--debug", help="enable debug", const=10, default=20, nargs='?', metavar='Debug level number')
+    parser.add_argument("-l", "--listen", help="change server listen address", default="127.0.0.1", metavar="IP")
+    parser.add_argument("-p", "--port", help="change server listen port", default="5000")
+    parser.add_argument("-r", "--record", help="save vehicle data to db", action='store_true')
+    parser.add_argument("-m", "--mail", help="set the email address")
+    parser.add_argument("-P", "--password", help="set the password")
+    parser.add_argument("--remote-disable", help="disable remote control")
+    parser.add_argument("-b", "--base-path", help="base path for web app",default="/")
     parser.parse_args()
     return parser
 
@@ -110,30 +40,30 @@ if __name__ == "__main__":
     my_logger(handler_level=args.debug)
     logger.info("server start")
     if args.config:
-        myp = MyPSACC.load_config(name=args.config.name)
+        web.app.myp = MyPSACC.load_config(name=args.config.name)
     else:
-        myp = MyPSACC.load_config()
+        web.app.myp = MyPSACC.load_config()
+    atexit.register(web.app.myp.save_config)
     if args.record_position:
-        myp.set_record(True)
+        web.app.myp.set_record(True)
     try:
-        myp.manager._refresh_token()
+        web.app.myp.manager._refresh_token()
     except OAuthError:
         if args.mail and args.password:
             client_email = args.mail
-            client_paswword = args.password
+            client_password = args.password
         else:
             client_email = input("mypeugeot email: ")
-            client_paswword = input("mypeugeot password: ")
-        myp.connect(client_email, client_paswword)
-    logger.info(myp.get_vehicles())
-    t1 = Thread(target=app.run,kwargs={"host":args.listen,"port":int(args.port)})
+            client_password = input("mypeugeot password: ")
+        web.app.myp.connect(client_email, client_password)
+    logger.info(web.app.myp.get_vehicles())
+    t1 = Thread(target=start_app, args=["My car info", args.base_path, args.debug < 20, args.listen, int(args.port)])
     t1.start()
     if args.remote_disable:
-       logger.info("mqtt disabled")
+        logger.info("mqtt disabled")
     else:
-        myp.start_mqtt()
+        web.app.myp.start_mqtt()
         if args.charge_control:
-            chc = ChargeControls.load_config(myp, name=args.charge_control)
-            chc.start()
-    save_config(myp)
-
+            web.app.chc = ChargeControls.load_config(web.app.myp, name=args.charge_control)
+            web.app.chc.start()
+    save_config(web.app.myp)

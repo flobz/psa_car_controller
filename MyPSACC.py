@@ -465,7 +465,7 @@ class MyPSACC:
                 if self.weather_api is not None:
                     try:
                         weather_rep = requests.get("https://api.openweathermap.org/data/2.5/onecall",
-                                                   params={"lat": res["latitude"], "lon": res["longitude"],
+                                                   params={"lat": latitude, "lon": longitude,
                                                            "exclude": "minutely,hourly,daily,alerts",
                                                            "appid": "f8ee4124ea074950b696fd3e956a7069", "units": "metric"})
                         temp = weather_rep.json()["current"]["temp"]

@@ -566,8 +566,8 @@ class MyPSACC:
                         diff_level = start["level"] - end["level"]
                         tr.consumption = diff_level / 100 * BATTERY_POWER  # kw
                         tr.consumption_km = 100 * tr.consumption / tr.distance  # kw/100 km
-                        logger.debug(
-                            f"Trip: {start['Timestamp']}  {tr.distance:.1f}km {tr.duration:.2f}h {tr.speed_average:.2f} km/h {tr.consumption:.2f} kw {tr.consumption_km:.2f}kw/100km")
+                      #  logger.debug(
+                       #     f"Trip: {start['Timestamp']}  {tr.distance:.1f}km {tr.duration:.2f}h {tr.speed_average:.2f} km/h {tr.consumption:.2f} kw {tr.consumption_km:.2f}kw/100km")
                         # filter bad value
                         if tr.consumption_km < 70:
                             trips.append(tr)

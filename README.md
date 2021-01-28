@@ -9,66 +9,31 @@ With this app  you will be able to :
  - set a stop hour to charge your vehicle only on off-peak hours
  - control air conditioning
  - control lights and horn if your vehicle is compatible (mine isn't) 
+ - get consumption statistic
+ - visualize your trips on a map
  
 The api is documented [here](https://developer.groupe-psa.io/webapi/b2c/quickstart/connect/#article) but it is not totally up to date, and contains some errors. 
 
 
 ## I. Get credentials
-We need to get credentials from the MyPeugeot app. You have two solutions :  
-- You can extract all credentials from the application data after backup the app
-- You can extract some credentials from the apk, it's faster, but you will not be able to remote control your vehicle
-
-1. Solution 1 : Backup MyPeugeot app
-   
+We need to get credentials from the android app.
+ 
+1. Extract credentials from the apk
+      
    We will retrieve these informations:
      - client-id and client-secret  for the api
-     - remote refresh token for the control of the vehicle
+     - some url to login
 
-    1.1 MyPeugeot app doesn't allow backup by default, so you need to modify it.
-    Basically you need to put to true two attributes in the AndroidManifest.xml :
-     - "android:allowBackup"
-     - "android:extractNativeLibs"
+    2.1 Download the app on your computer, the original MyPeugeot app can be downloaded [here](https://apkpure.com/fr/mypeugeot-app/com.psa.mym.mypeugeot) for example.
+    
+    2.2 Install requirements :
+   
+   - On debian based distribution you can install some requirement from repos: 
      
-        To do that you can follow this guide: https://forum.xda-developers.com/android/software-hacking/guide-how-to-enable-adb-backup-app-t3495117  
-        The original app can be downloaded [here](https://apkpure.com/fr/mypeugeot-app/com.psa.mym.mypeugeot) for example.
-        I tested Mypeugeot version 1.25.2, 1.26.2, and 1.27.0.
+     ```sudo apt-get install python3-typing-extensions python3-pandas python3-plotly python3-paho-mqtt  python3-six python3-dateutil python3-brotli  libblas-dev  liblapack-dev gfortran python3-pycryptodome```
         
-    1.2 Uninstall the original app
-    
-    1.3 Install the modified app
-    
-    1.4 Login on the app and start a remote request (start preconditioning for example) to generate remote refresh token   
-    
-    1.5 Enable developer mode on your android phone 
-    
-    1.6 enable password for backup in developer option of your android phone (for some smartphone it is mandatory to successfully backup app)
-    
-    1.7 backup MyPeugeot app : 
-    
-    ``` adb backup -f backup.ab -noapk com.psa.mym.mypeugeot ```
-
-    1.8. Retrieve credentials in the backup
-
-    ```
-   python3 app_decoder.py  backup.ab <backup_password>
-   Calculated MK checksum (use UTF-8: true): XXXXXXXXXXXXX
-    0% 1% 2% 3% 4% 5% 6% 7% 8% 9% 10% 11% 12% 13% 14% 15%  25% 26% 100% 
-    235687424 bytes written to backup.tar.
-    mypeugeot email: <write your mypeugeot email>
-    mypeugeot password: <write your mypeugeot password>
-    What is the car api realm : clientsB2CPeugeot, clientsB2CDS, clientsB2COpel, clientsB2CVauxhall
-    clientsB2CPeugeot
-    save config change
-
-    Your vehicles: {'VINNUBMER': {'id': 'vehicule id'}} 
-      ```
-    1.9 If it works you will have VIN of your vehicles and there ids in the last line. The script generate a test.json file with all credentials needed.
- 
-2. Solution 2 : Extract credentials from the apk
-
-    2.1 Download the app on your computer, the original app can be downloaded [here](https://apkpure.com/fr/mypeugeot-app/com.psa.mym.mypeugeot) for example.
-    
-    2.2 Install pythons dependency ```pip install androguard```
+   - For everyone :
+          ```pip3 install -r requirements.txt```
     
     2.3  run the decoder script : ```python3 app_decoder.py <path to my apk file>```
       
@@ -76,6 +41,8 @@ We need to get credentials from the MyPeugeot app. You have two solutions :
         mypeugeot password: <write your mypeugeot password>
         What is the car api realm : clientsB2CPeugeot, clientsB2CDS, clientsB2COpel, clientsB2CVauxhall
         clientsB2CPeugeot
+        What is your country code ? (ex: FR, GB, DE, ES...)
+        FR
         save config change
     
         Your vehicles: {'VINNUBMER': {'id': 'vehicule id'}}
@@ -83,24 +50,22 @@ We need to get credentials from the MyPeugeot app. You have two solutions :
    2.4 If it works you will have VIN of your vehicles and there ids in the last line. The script generate a test.json file with all credentials needed.
  
  ## II. Use the app
-  1. Install requirements
-        - On debian based distribution you can install some requirement from repos: 
-          
-           ```sudo apt-get install python3-typing-extensions python3-pandas python3-plotly python3-paho-mqtt  python3-six python3-dateutil python3-brotli  libblas-dev  liblapack-dev gfortran```
-        
-        - For everyone :
-          ```pip3 install -r requirements.txt```
+  
             
-  2. start the app:
+  1. start the app:
         
-       - if you choose solution 1 :
-    ``python3 server.py -f test.json -c charge_config1.json`` 
-     You can add the -r argument to record the position of the vehicle and retrieve this information in a dashboard.
+     Start the app with charge control enabled :
+
+     ``python3 server.py -f test.json -c charge_config1.json``
      
-       - if you choose solution 2 :
-            ``python3 server.py -f test.json --remote-disable``
-     
-  3. Test it 
+     At the first launch you will receive a SMS and you will be asked to give it and also give your pin code (the four-digit code that your use on the android app).
+     If it failed you can remove the file otp.bin and retry.
+   
+     You can see all options available with :
+    ``python3 server.py -h``
+
+
+  2. Test it 
   
     2.1 Get the car state :
     http://localhost:5000/get_vehicleinfo/YOURVIN
@@ -117,6 +82,19 @@ We need to get credentials from the MyPeugeot app. You have two solutions :
     2.5 See the dashboard (only if record is enabled)
     http://localhost:5000
 
+  3. Dashboard and stats (Beta)
+     
+     You can add the -r argument to record the position of the vehicle and retrieve this information in a dashboard.
+
+     ``python3 server.py -f test.json -c charge_config1.json -r``
+    
+     You will be able to visualize your trips, your consumption and some statistics:
+    
+     
+![Screenshot_20210128_104519](https://user-images.githubusercontent.com/48728684/106119895-01c98d80-6156-11eb-8969-9e8bc24f3677.png)
+    You can add an api key for  https://home.openweathermap.org/ in your config file.
+    In the future version of the dashboard you will be able to see your consumption vs exterior temperature.  
+    
 ## API documentation
 The api documentation is described here : [api_spec.md](api_spec.md).
 You can use all functions from the doc, for example :

@@ -12,7 +12,7 @@ With this app  you will be able to :
  - get consumption statistic
  - visualize your trips on a map
  
-The api is documented [here](https://developer.groupe-psa.io/webapi/b2c/quickstart/connect/#article) but it is not totally up to date, and contains some errors. 
+The official api is documented [here](https://developer.groupe-psa.io/webapi/b2c/quickstart/connect/#article) but it is not totally up to date, and contains some errors. 
 
 
 ## I. Get credentials

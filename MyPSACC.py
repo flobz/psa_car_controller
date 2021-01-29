@@ -506,8 +506,8 @@ class MyPSACC:
         else:
             try:
                 start_at, stop_at, start_level = conn.execute(
-                    "SELECT start_at, stop_at, start_level from battery WHERE VIN=? ORDER BY start_at "
-                    "DESC limit 1", (vin,)).fetchone()
+                        "SELECT start_at, stop_at, start_level from battery WHERE VIN=? ORDER BY start_at "
+                        "DESC limit 1", (vin,)).fetchone()
                 in_progress = stop_at is None
                 if in_progress:
                     co2_per_kw = Ecomix.get_co2_per_kw(start_at, charge_date, latitude, longitude)
@@ -516,9 +516,10 @@ class MyPSACC:
                         "UPDATE battery set stop_at=?, end_level=?, co2=?, kw=? WHERE start_at=? and VIN=?",
                         (charge_date, level, co2_per_kw, kw, start_at, vin))
                     conn.commit()
+            except TypeError:
+                logger.debug("battery table is empty")
             except:
                 logger.debug("Error when saving status " + traceback.format_exc())
-                pass
         conn.close()
 
     @staticmethod
@@ -541,41 +542,42 @@ class MyPSACC:
     def get_trips() -> List[Trip]:
         conn = get_db()
         res = conn.execute('SELECT * FROM position ORDER BY Timestamp').fetchall()
-        start = res[0]
-        end = res[1]
         trips = []
-        tr = Trip()
-        #res = list(map(dict,res))
-        for x in range(0, len(res) - 2):
-            next_el = res[x + 2]
-            if end["mileage"] - start["mileage"] == 0 or \
-                    (end["Timestamp"] - start["Timestamp"]).total_seconds() / 3600 > 3:
-                start = end
-                tr = Trip()
-            else:
-                distance = next_el["mileage"] - end["mileage"]  # km
-                duration = (next_el["Timestamp"] - end["Timestamp"]).total_seconds() / 3600
-                if (distance == 0 and duration > 0.08) or duration > 2:  # check the speed to handle missing point
-                    tr.distance = end["mileage"] - start["mileage"]  # km
-                    if tr.distance > 0:
-                        tr.start_at = start["Timestamp"]
-                        tr.end_at = end["Timestamp"]
-                        tr.add_points(end["longitude"], end["latitude"])
-                        tr.duration = (end["Timestamp"] - start["Timestamp"]).total_seconds() / 3600
-                        tr.speed_average = tr.distance / tr.duration
-                        diff_level = start["level"] - end["level"]
-                        tr.consumption = diff_level / 100 * BATTERY_POWER  # kw
-                        tr.consumption_km = 100 * tr.consumption / tr.distance  # kw/100 km
-                      #  logger.debug(
-                       #     f"Trip: {start['Timestamp']}  {tr.distance:.1f}km {tr.duration:.2f}h {tr.speed_average:.2f} km/h {tr.consumption:.2f} kw {tr.consumption_km:.2f}kw/100km")
-                        # filter bad value
-                        if tr.consumption_km < 70:
-                            trips.append(tr)
-                    start = next_el
+        if len(res) > 1:
+            start = res[0]
+            end = res[1]
+            tr = Trip()
+            #res = list(map(dict,res))
+            for x in range(0, len(res) - 2):
+                next_el = res[x + 2]
+                if end["mileage"] - start["mileage"] == 0 or \
+                        (end["Timestamp"] - start["Timestamp"]).total_seconds() / 3600 > 3:
+                    start = end
                     tr = Trip()
                 else:
-                    tr.add_points(end["longitude"], end["latitude"])
-            end = next_el
+                    distance = next_el["mileage"] - end["mileage"]  # km
+                    duration = (next_el["Timestamp"] - end["Timestamp"]).total_seconds() / 3600
+                    if (distance == 0 and duration > 0.08) or duration > 2:  # check the speed to handle missing point
+                        tr.distance = end["mileage"] - start["mileage"]  # km
+                        if tr.distance > 0:
+                            tr.start_at = start["Timestamp"]
+                            tr.end_at = end["Timestamp"]
+                            tr.add_points(end["longitude"], end["latitude"])
+                            tr.duration = (end["Timestamp"] - start["Timestamp"]).total_seconds() / 3600
+                            tr.speed_average = tr.distance / tr.duration
+                            diff_level = start["level"] - end["level"]
+                            tr.consumption = diff_level / 100 * BATTERY_POWER  # kw
+                            tr.consumption_km = 100 * tr.consumption / tr.distance  # kw/100 km
+                          #  logger.debug(
+                           #     f"Trip: {start['Timestamp']}  {tr.distance:.1f}km {tr.duration:.2f}h {tr.speed_average:.2f} km/h {tr.consumption:.2f} kw {tr.consumption_km:.2f}kw/100km")
+                            # filter bad value
+                            if tr.consumption_km < 70:
+                                trips.append(tr)
+                        start = next_el
+                        tr = Trip()
+                    else:
+                        tr.add_points(end["longitude"], end["latitude"])
+                end = next_el
         return trips
 
     @staticmethod

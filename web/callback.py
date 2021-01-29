@@ -123,7 +123,6 @@ def update_trips():
 try:
     web.db.callback_fct = update_trips
     update_trips()
-
     min_date = trips[0].start_at
     max_date = trips[-1].start_at
     min_millis = figures.unix_time_millis(min_date)
@@ -157,6 +156,10 @@ try:
             ),
             html.Div(id="tab-content", className="p-4"),
         ])])
+except (IndexError, TypeError) as e:
+    logger.debug("Failed to generate figure, there is probably not enough data yet")
+    data_div = dbc.Alert("No data to show", color="danger")
+
 except:
     logger.error("Failed to generate figure, there is probably not enough data yet")
     logger.error(traceback.format_exc())

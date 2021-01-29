@@ -43,7 +43,7 @@ def find_preferences_xml():
 
 
 def save_key_to_pem(pfx_data, pfx_password):
-        private_key, certificate, additional_certificates = pkcs12.load_key_and_certificates(pfx_data, bytes.fromhex(pfx_password))
+        private_key, certificate, additional_certificates = pkcs12.load_key_and_certificates(pfx_data, bytes.fromhex(pfx_password),None)
         with open("public.pem", "wb") as f:
             f.write(certificate.public_bytes(encoding=serialization.Encoding.PEM))
 

@@ -6,6 +6,7 @@ from androguard.core.bytecodes.apk import APK
 import requests
 from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.serialization import pkcs12
+from cryptography.hazmat.backends import default_backend
 
 from ChargeControl import ChargeControl, ChargeControls
 from MyPSACC import MyPSACC
@@ -43,7 +44,7 @@ def find_preferences_xml():
 
 
 def save_key_to_pem(pfx_data, pfx_password):
-        private_key, certificate, additional_certificates = pkcs12.load_key_and_certificates(pfx_data, bytes.fromhex(pfx_password),None)
+        private_key, certificate, additional_certificates = pkcs12.load_key_and_certificates(pfx_data, bytes.fromhex(pfx_password),default_backend())
         with open("public.pem", "wb") as f:
             f.write(certificate.public_bytes(encoding=serialization.Encoding.PEM))
 

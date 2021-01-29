@@ -237,6 +237,8 @@ class MyPSACC:
             })
         return res
 
+    # 6 otp by day
+    @rate_limit(6, 3600 * 24)
     def getOtpCode(self):
         otp_code = self.otp.getOtpCode()
         save_otp(self.otp)

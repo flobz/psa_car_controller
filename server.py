@@ -44,7 +44,7 @@ if __name__ == "__main__":
     else:
         web.app.myp = MyPSACC.load_config()
     atexit.register(web.app.myp.save_config)
-    if args.record_position:
+    if args.record:
         web.app.myp.set_record(True)
     try:
         web.app.myp.manager._refresh_token()

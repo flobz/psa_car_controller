@@ -85,7 +85,7 @@ client_realm = input(f"What is the car api realm : {' '.join(BRAND.keys())}\n")
 country_code = input("What is your country code ? (ex: FR, GB, DE, ES...)\n")
 
 ## Customer id
-site_code = "AP_" + country_code + "_ESP"
+site_code = BRAND[client_realm] + "_" + country_code + "_ESP"
 try:
     res = requests.post(HOST_BRANDID_PROD + "/GetAccessToken",
                         headers={

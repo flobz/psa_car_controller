@@ -16,6 +16,8 @@ from sys import argv
 import sys
 import re
 
+BRAND = {"clientsB2CPeugeot": "AP", "clientsB2CCitroen": "AC", "clientsB2CDS": "AC", "clientsB2COpel": "0V",
+         "clientsB2CVauxhall": "0V"}
 
 def getxmlvalue(root, name):
     for child in root.findall("*[@name='" + name + "']"):
@@ -44,16 +46,17 @@ def find_preferences_xml():
     return None
 
 
-
 def save_key_to_pem(pfx_data, pfx_password):
-        private_key, certificate, additional_certificates = pkcs12.load_key_and_certificates(pfx_data, bytes.fromhex(pfx_password),default_backend())
-        with open("public.pem", "wb") as f:
-            f.write(certificate.public_bytes(encoding=serialization.Encoding.PEM))
+    private_key, certificate, additional_certificates = pkcs12.load_key_and_certificates(pfx_data,
+                                                                                         bytes.fromhex(pfx_password),
+                                                                                         default_backend())
+    with open("public.pem", "wb") as f:
+        f.write(certificate.public_bytes(encoding=serialization.Encoding.PEM))
 
-        with open("private.pem", "wb") as f:
-            f.write(private_key.private_bytes(encoding=serialization.Encoding.PEM,
-                                              format=serialization.PrivateFormat.TraditionalOpenSSL,
-                                              encryption_algorithm=serialization.NoEncryption()))
+    with open("private.pem", "wb") as f:
+        f.write(private_key.private_bytes(encoding=serialization.Encoding.PEM,
+                                          format=serialization.PrivateFormat.TraditionalOpenSSL,
+                                          encryption_algorithm=serialization.NoEncryption()))
 
 
 current_dir = os.getcwd()
@@ -75,28 +78,28 @@ pfx_cert = a.get_file("assets/MWPMYMA1.pfx")
 remote_refresh_token = None
 print("APK loaded !")
 
-
 client_email = input("mypeugeot email: ")
 client_password = input("mypeugeot password: ")
-client_realm = input("What is the car api realm : clientsB2CPeugeot, clientsB2CCitroen, clientsB2CDS, clientsB2COpel, "
-                     "clientsB2CVauxhall\n")
+
+client_realm = input(f"What is the car api realm : {' '.join(BRAND.keys())}\n")
 country_code = input("What is your country code ? (ex: FR, GB, DE, ES...)\n")
 
 ## Customer id
-site_code="AP_"+country_code+"_ESP"
+site_code = "AP_" + country_code + "_ESP"
 try:
-    res = requests.post(HOST_BRANDID_PROD+"/GetAccessToken",
-                  headers={
-                      "Connection": "Keep-Alive",
-                      "Content-Type": "application/json",
-                      "Host": "id-dcr.peugeot.com",
-                      "User-Agent": "okhttp/2.3.0"
-                  },
-                  params={"jsonRequest": json.dumps({"siteCode": site_code, "culture": "fr-FR", "action": "authenticate",
-                                                     "fields": {"USR_EMAIL": {"value": client_email},
-                                                                "USR_PASSWORD": {"value": client_password}}})
-                          }
-                  )
+    res = requests.post(HOST_BRANDID_PROD + "/GetAccessToken",
+                        headers={
+                            "Connection": "Keep-Alive",
+                            "Content-Type": "application/json",
+                            "Host": "id-dcr.peugeot.com",
+                            "User-Agent": "okhttp/2.3.0"
+                        },
+                        params={"jsonRequest": json.dumps(
+                            {"siteCode": site_code, "culture": "fr-FR", "action": "authenticate",
+                             "fields": {"USR_EMAIL": {"value": client_email},
+                                        "USR_PASSWORD": {"value": client_password}}})
+                                }
+                        )
 
     token = res.json()["accessToken"]
 except:
@@ -105,23 +108,22 @@ except:
     print(res.text)
     exit(1)
 
-save_key_to_pem(pfx_cert,"")
+save_key_to_pem(pfx_cert, "")
 
 res2 = requests.post("https://mw-ap-m2c.mym.awsmpsa.com/api/v1/user?culture=fr_FR&width=1080&cgu=1611656517&v=1.27.0",
-    data=json.dumps({"site_code":site_code, "ticket":token}),
-    headers={
-        "Connection": "Keep-Alive",
-        "Content-Type": "application/json;charset=UTF-8",
-        "Source-Agent": "App-Android",
-        "Token": token,
-        "User-Agent": "okhttp/4.8.0",
-        "Version": "1.27.0"
-    },
-    cert=("public.pem","private.pem"),
-)
+                     data=json.dumps({"site_code": site_code, "ticket": token}),
+                     headers={
+                         "Connection": "Keep-Alive",
+                         "Content-Type": "application/json;charset=UTF-8",
+                         "Source-Agent": "App-Android",
+                         "Token": token,
+                         "User-Agent": "okhttp/4.8.0",
+                         "Version": "1.27.0"
+                     },
+                     cert=("public.pem", "private.pem"),
+                     )
 res_dict = res2.json()["success"]
-customer_id = res_dict["dealers"]["apv"]["data"]["Brand"] + "-" + res_dict["id"]
-
+customer_id = BRAND[client_realm] + "-" + res_dict["id"]
 
 # Psacc
 

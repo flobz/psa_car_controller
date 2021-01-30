@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 import json
 import os
+import traceback
+
 from androguard.core.bytecodes.apk import APK
 
 import requests
@@ -82,20 +84,27 @@ country_code = input("What is your country code ? (ex: FR, GB, DE, ES...)\n")
 
 ## Customer id
 site_code="AP_"+country_code+"_ESP"
-res=requests.post(HOST_BRANDID_PROD+"/GetAccessToken",
-              headers={
-                  "Connection": "Keep-Alive",
-                  "Content-Type": "application/json",
-                  "Host": "id-dcr.peugeot.com",
-                  "User-Agent": "okhttp/2.3.0"
-              },
-              params={"jsonRequest": json.dumps({"siteCode": site_code, "culture": "fr-FR", "action": "authenticate",
-                                                 "fields": {"USR_EMAIL": {"value": client_email},
-                                                            "USR_PASSWORD": {"value": client_password}}})
-                      }
-              )
+try:
+    res = requests.post(HOST_BRANDID_PROD+"/GetAccessToken",
+                  headers={
+                      "Connection": "Keep-Alive",
+                      "Content-Type": "application/json",
+                      "Host": "id-dcr.peugeot.com",
+                      "User-Agent": "okhttp/2.3.0"
+                  },
+                  params={"jsonRequest": json.dumps({"siteCode": site_code, "culture": "fr-FR", "action": "authenticate",
+                                                     "fields": {"USR_EMAIL": {"value": client_email},
+                                                                "USR_PASSWORD": {"value": client_password}}})
+                          }
+                  )
 
-token = res.json()["accessToken"]
+    token = res.json()["accessToken"]
+except:
+    traceback.print_exc()
+    print(f"HOST_BRANDID : {HOST_BRANDID_PROD} sitecode: {site_code}")
+    print(res.text)
+    exit(1)
+
 save_key_to_pem(pfx_cert,"")
 
 res2 = requests.post("https://mw-ap-m2c.mym.awsmpsa.com/api/v1/user?culture=fr_FR&width=1080&cgu=1611656517&v=1.27.0",

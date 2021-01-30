@@ -91,7 +91,6 @@ try:
                         headers={
                             "Connection": "Keep-Alive",
                             "Content-Type": "application/json",
-                            "Host": "id-dcr.peugeot.com",
                             "User-Agent": "okhttp/2.3.0"
                         },
                         params={"jsonRequest": json.dumps(

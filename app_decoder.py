@@ -98,7 +98,7 @@ try:
                              "fields": {"USR_EMAIL": {"value": client_email},
                                         "USR_PASSWORD": {"value": client_password}}})
                                 }
-                        )
+                            )
 
     token = res.json()["accessToken"]
 except:
@@ -109,20 +109,28 @@ except:
 
 save_key_to_pem(pfx_cert, "")
 
-res2 = requests.post("https://mw-ap-m2c.mym.awsmpsa.com/api/v1/user?culture=fr_FR&width=1080&cgu=1611656517&v=1.27.0",
-                     data=json.dumps({"site_code": site_code, "ticket": token}),
-                     headers={
-                         "Connection": "Keep-Alive",
-                         "Content-Type": "application/json;charset=UTF-8",
-                         "Source-Agent": "App-Android",
-                         "Token": token,
-                         "User-Agent": "okhttp/4.8.0",
-                         "Version": "1.27.0"
-                     },
-                     cert=("public.pem", "private.pem"),
-                     )
-res_dict = res2.json()["success"]
-customer_id = BRAND[client_realm] + "-" + res_dict["id"]
+if client_realm == "clientsB2COpel":
+    site_code = "OV_" + country_code + "_ESP"
+try:
+    res2 = requests.post("https://mw-ap-m2c.mym.awsmpsa.com/api/v1/user?culture=fr_FR&width=1080&cgu=1611656517&v=1.27.0",
+                         data=json.dumps({"site_code": site_code, "ticket": token}),
+                         headers={
+                             "Connection": "Keep-Alive",
+                             "Content-Type": "application/json;charset=UTF-8",
+                             "Source-Agent": "App-Android",
+                             "Token": token,
+                             "User-Agent": "okhttp/4.8.0",
+                             "Version": "1.27.0"
+                         },
+                         cert=("public.pem", "private.pem"),
+                         )
+    res_dict = res2.json()["success"]
+    customer_id = BRAND[client_realm] + "-" + res_dict["id"]
+
+except:
+    traceback.print_exc()
+    print(res2.text)
+    exit(1)
 
 # Psacc
 

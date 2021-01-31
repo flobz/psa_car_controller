@@ -16,7 +16,7 @@ from sys import argv
 import sys
 import re
 
-BRAND = {"clientsB2CPeugeot": "AP", "clientsB2CCitroen": "AC", "clientsB2CDS": "AC", "clientsB2COpel": "0V",
+BRAND = {"clientsB2CPeugeot": "AP", "clientsB2CCitroen": "AC", "clientsB2CDS": "AC", "clientsB2COpel": "0P",
          "clientsB2CVauxhall": "0V"}
 
 def getxmlvalue(root, name):

@@ -16,8 +16,13 @@ from sys import argv
 import sys
 import re
 
-BRAND = {"clientsB2CPeugeot": "AP", "clientsB2CCitroen": "AC", "clientsB2CDS": "AC", "clientsB2COpel": "OP",
-         "clientsB2CVauxhall": "0V"}
+BRAND = {"com.psa.mym.myopel":     {"realm": "clientsB2COpel",     "brand_code": "OP", "app_name": "MyOpel"},
+         "com.psa.mym.mypeugeot":  {"realm": "clientsB2CPeugeot",  "brand_code": "AP", "app_name": "MyPeugeot"},
+         "com.psa.mym.mycitroen":  {"realm": "clientsB2CCitroen",  "brand_code": "AC", "app_name": "MyCitroen"},
+         "com.psa.mym.myds":       {"realm": "clientsB2CDS",       "brand_code": "AC", "app_name": "MyDS"},
+         "com.psa.mym.myvauxhall": {"realm": "clientsB2CVauxhall", "brand_code": "0V", "app_name": "MyVauxall"}
+         }
+
 
 def getxmlvalue(root, name):
     for child in root.findall("*[@name='" + name + "']"):
@@ -78,14 +83,13 @@ pfx_cert = a.get_file("assets/MWPMYMA1.pfx")
 remote_refresh_token = None
 print("APK loaded !")
 
-client_email = input("mypeugeot email: ")
-client_password = input("mypeugeot password: ")
+client_email = input(f"{BRAND[package_name]['app_name']} email: ")
+client_password = input(f"{BRAND[package_name]['app_name']} password: ")
 
-client_realm = input(f"What is the car api realm : {' '.join(BRAND.keys())}\n")
 country_code = input("What is your country code ? (ex: FR, GB, DE, ES...)\n")
 
 ## Get Customer id
-site_code = BRAND[client_realm] + "_" + country_code + "_ESP"
+site_code = BRAND[package_name]["brand_code"] + "_" + country_code + "_ESP"
 try:
     res = requests.post(HOST_BRANDID_PROD + "/GetAccessToken",
                         headers={
@@ -97,8 +101,8 @@ try:
                             {"siteCode": site_code, "culture": "fr-FR", "action": "authenticate",
                              "fields": {"USR_EMAIL": {"value": client_email},
                                         "USR_PASSWORD": {"value": client_password}}})
-                                }
-                            )
+                        }
+                        )
 
     token = res.json()["accessToken"]
 except:
@@ -109,23 +113,23 @@ except:
 
 save_key_to_pem(pfx_cert, "")
 
-#if client_realm == "clientsB2COpel":
- #   site_code = "OV_" + country_code + "_ESP"
 try:
-    res2 = requests.post("https://mw-ap-m2c.mym.awsmpsa.com/api/v1/user?culture=fr_FR&width=1080&v=1.27.0",
-                         data=json.dumps({"site_code": site_code, "ticket": token}),
-                         headers={
-                             "Connection": "Keep-Alive",
-                             "Content-Type": "application/json;charset=UTF-8",
-                             "Source-Agent": "App-Android",
-                             "Token": token,
-                             "User-Agent": "okhttp/4.8.0",
-                             "Version": "1.27.0"
-                         },
-                         cert=("public.pem", "private.pem"),
-                         )
+    res2 = requests.post(
+        f"https://mw-{BRAND[package_name]['brand_code'].lower()}-m2c.mym.awsmpsa.com/api/v1/user?culture=fr_FR&width=1080&v=1.27.0",
+        data=json.dumps({"site_code": site_code, "ticket": token}),
+        headers={
+            "Connection": "Keep-Alive",
+            "Content-Type": "application/json;charset=UTF-8",
+            "Source-Agent": "App-Android",
+            "Token": token,
+            "User-Agent": "okhttp/4.8.0",
+            "Version": "1.27.0"
+        },
+        cert=("public.pem", "private.pem"),
+    )
+
     res_dict = res2.json()["success"]
-    customer_id = BRAND[client_realm] + "-" + res_dict["id"]
+    customer_id = BRAND[package_name]["brand_code"] + "-" + res_dict["id"]
 
 except:
     traceback.print_exc()
@@ -134,7 +138,7 @@ except:
 
 # Psacc
 
-psacc = MyPSACC(None, client_id, client_secret, remote_refresh_token, customer_id, client_realm)
+psacc = MyPSACC(None, client_id, client_secret, remote_refresh_token, customer_id, BRAND[package_name]["realm"])
 psacc.connect(client_email, client_password)
 
 os.chdir(current_dir)

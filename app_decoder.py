@@ -84,7 +84,7 @@ client_password = input("mypeugeot password: ")
 client_realm = input(f"What is the car api realm : {' '.join(BRAND.keys())}\n")
 country_code = input("What is your country code ? (ex: FR, GB, DE, ES...)\n")
 
-## Customer id
+## Get Customer id
 site_code = BRAND[client_realm] + "_" + country_code + "_ESP"
 try:
     res = requests.post(HOST_BRANDID_PROD + "/GetAccessToken",
@@ -109,10 +109,10 @@ except:
 
 save_key_to_pem(pfx_cert, "")
 
-if client_realm == "clientsB2COpel":
-    site_code = "OV_" + country_code + "_ESP"
+#if client_realm == "clientsB2COpel":
+ #   site_code = "OV_" + country_code + "_ESP"
 try:
-    res2 = requests.post("https://mw-ap-m2c.mym.awsmpsa.com/api/v1/user?culture=fr_FR&width=1080&cgu=1611656517&v=1.27.0",
+    res2 = requests.post("https://mw-ap-m2c.mym.awsmpsa.com/api/v1/user?culture=fr_FR&width=1080&v=1.27.0",
                          data=json.dumps({"site_code": site_code, "ticket": token}),
                          headers={
                              "Connection": "Keep-Alive",

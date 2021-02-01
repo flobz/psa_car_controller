@@ -280,7 +280,7 @@ class MyPSACC:
             logger.info("Connected with result code " + str(rc))
             topics = [MQTT_RESP_TOPIC + self.customer_id + "/#"]
             for vin in self.getVIN():
-                topics.append(MQTT_EVENT_TOPIC + vin + "/#")
+                topics.append(MQTT_EVENT_TOPIC + vin)
             for topic in topics:
                 client.subscribe(topic)
                 logger.info("subscribe to " + topic)

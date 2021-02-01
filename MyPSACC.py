@@ -407,6 +407,14 @@ class MyPSACC:
         self.mqtt_client.publish(MQTT_REQ_TOPIC + self.customer_id + "/VehCharge/state", msg)
         return True
 
+    #get state from server by mqtt
+    def get_state(self, vin):
+        logger.info("ask state to " + vin)
+        msg = self.mqtt_request(vin, {"action": "state"})
+        logger.info(msg)
+        self.mqtt_client.publish(MQTT_REQ_TOPIC + self.customer_id + "/VehicleState", msg)
+        return True
+
     def lock_door(self, vin, lock: bool):
         if lock:
             value = "lock"

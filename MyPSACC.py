@@ -268,12 +268,14 @@ class MyPSACC:
             self.remote_access_token = data["access_token"]
             self.remote_refresh_token = data["refresh_token"]
             self.remote_token_last_update = datetime.now()
-            return res
         else:
             logger.error(f"can't refresh_remote_token: {data}\n Create a new one")
             self.remote_token_last_update = datetime.now()
             otp_code = self.getOtpCode()
-            self.get_remote_access_token(otp_code)
+            res = self.get_remote_access_token(otp_code)
+        self.mqtt_client.username_pw_set("IMA_OAUTH_ACCESS_TOKEN", self.remote_access_token)
+        return res
+
 
     def on_mqtt_connect(self, client, userdata, rc, a):
         try:
@@ -290,12 +292,12 @@ class MyPSACC:
     def on_mqtt_disconnect(self, client, userdata, rc):
         try:
             logger.warn("Disconnected with result code " + str(rc))
-            # Subscribing in on_connect() means that if we lose the connection and
-            # reconnect then subscriptions will be renewed.
-            logger.warn(mqtt.error_string(rc))
+            if rc == 1:
+                self.refresh_remote_token(force=True)
+            else:
+                logger.warn(mqtt.error_string(rc))
         except:
             logger.error(traceback.format_exc())
-        self.mqtt_client.username_pw_set("IMA_OAUTH_ACCESS_TOKEN", self.remote_access_token)
 
     def on_mqtt_message(self, client, userdata, msg):
         try:
@@ -337,8 +339,10 @@ class MyPSACC:
 
     def __keep_mqtt(self):  # avoid token expiration
         timeout = 3600 * 24  # 1 day
-        if (datetime.now() - self.remote_token_last_update).total_seconds() > timeout:
-            self.refresh_remote_token()
+        try:
+            self.get_state(list(self.vehicles_list.keys())[0])
+        except:
+            logger.warn("keep_mqtt error")
         threading.Timer(timeout, self.__keep_mqtt).start()
 
     def mqtt_request(self, vin, req_parameters):

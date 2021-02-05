@@ -325,13 +325,12 @@ class MyPSACC:
 
     def start_mqtt(self):
         self.otp = self.load_otp()
-        self.refresh_remote_token()
         self.mqtt_client = mqtt.Client(clean_session=True, protocol=mqtt.MQTTv311)
+        self.refresh_remote_token()
         self.mqtt_client.tls_set_context()
         self.mqtt_client.on_connect = self.on_mqtt_connect
         self.mqtt_client.on_message = self.on_mqtt_message
         self.mqtt_client.on_disconnect = self.on_mqtt_disconnect
-        self.mqtt_client.username_pw_set("IMA_OAUTH_ACCESS_TOKEN", self.remote_access_token)
         self.mqtt_client.connect(MQTT_SERVER, 8885, 60)
         self.mqtt_client.loop_start()
         self.__keep_mqtt()

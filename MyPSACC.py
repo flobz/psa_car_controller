@@ -314,8 +314,8 @@ class MyPSACC:
                         logger.error(f'{data["return_code"]} : {data["reason"]}')
                 else:
                     logger.debug("mqtt msg hasn't return code")
-            elif msg.topic.startswith(MQTT_EVENT_TOPIC):
-                # fix charge beginning without status api being updated
+            elif msg.topic.startswith(MQTT_EVENT_TOPIC) or msg.topic.endswith("/VehicleState"):
+                # fix a psa server bug where charge beginning without status api being updated
                 if data["charging_state"]['remaining_time'] != 0 and data["charging_state"]['rate'] == 0:
                     logger.info("charge begin")
                     sleep(60)

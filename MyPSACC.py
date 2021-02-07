@@ -306,7 +306,7 @@ class MyPSACC:
             if msg.topic.startswith(MQTT_RESP_TOPIC):
                 if "return_code" in data:
                     if data["return_code"] == "0":
-                        return
+                        pass
                     elif data["return_code"] == "400":
                         self.refresh_remote_token(force=True)
                         logger.error("retry last request, token was expired")
@@ -314,7 +314,7 @@ class MyPSACC:
                         logger.error(f'{data["return_code"]} : {data["reason"]}')
                 else:
                     logger.debug("mqtt msg hasn't return code")
-            elif msg.topic.startswith(MQTT_EVENT_TOPIC) or msg.topic.endswith("/VehicleState"):
+            if msg.topic.startswith(MQTT_EVENT_TOPIC) or msg.topic.endswith("/VehicleState"):
                 # fix a psa server bug where charge beginning without status api being updated
                 if data["charging_state"]['remaining_time'] != 0 and data["charging_state"]['rate'] == 0:
                     logger.info("charge begin")

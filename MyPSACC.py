@@ -300,6 +300,7 @@ class MyPSACC:
             logger.error(traceback.format_exc())
 
     def on_mqtt_message(self, client, userdata, msg):
+        charge_not_detected = False
         try:
             logger.info(f"mqtt msg {msg.topic} {str(msg.payload)}")
             data = json.loads(msg.payload)
@@ -314,12 +315,18 @@ class MyPSACC:
                         logger.error(f'{data["return_code"]} : {data["reason"]}')
                 else:
                     logger.debug("mqtt msg hasn't return code")
-            if msg.topic.startswith(MQTT_EVENT_TOPIC) or msg.topic.endswith("/VehicleState"):
-                # fix a psa server bug where charge beginning without status api being updated
+            if msg.topic.startswith(MQTT_EVENT_TOPIC):
                 if data["charging_state"]['remaining_time'] != 0 and data["charging_state"]['rate'] == 0:
-                    logger.info("charge begin")
-                    sleep(60)
-                    self.wakeup(data["vin"])
+                    charge_not_detected = True
+            elif msg.topic.endswith("/VehicleState"):
+                if data["resp_data"]["charging_state"]['remaining_time'] != 0 \
+                        and data["resp_data"]["charging_state"]['rate'] == 0:
+                    charge_not_detected = True
+            if charge_not_detected:
+                # fix a psa server bug where charge beginning without status api being properly updated
+                logger.info("charge begin")
+                sleep(60)
+                self.wakeup(data["vin"])
         except:
             logger.error(traceback.format_exc())
 

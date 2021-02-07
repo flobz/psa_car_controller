@@ -360,7 +360,7 @@ class MyPSACC:
         data = self.get_vehicle_info(vin)
         if data.energy[0].type == 'Electric':
             hour_str = data.energy[0].charging.next_delayed_time
-        elif data.energy[1].type == 'Electric':
+        elif len(data.energy) >= 2 and data.energy[1].type == 'Electric':
             hour_str = data.energy[1].charging.next_delayed_time
         else:
             hour_str = ''
@@ -376,7 +376,7 @@ class MyPSACC:
         data = self.get_vehicle_info(vin)
         if data.energy[0].type == 'Electric':
             status = data.energy[0].charging.status
-        elif data.energy[1].type == 'Electric':
+        elif len(data.energy) >= 2 and data.energy[1].type == 'Electric':
             status = data.energy[1].charging.status
         else:
             status = ''
@@ -480,7 +480,7 @@ class MyPSACC:
             level = status.energy[0].level
             charging_status = status.energy[0].charging.status
             charge_date = status.energy[0].updated_at
-        elif status.energy[1].type == 'Electric':
+        elif len(status.energy) >=2 and status.energy[1].type == 'Electric':
             level = status.energy[1].level
             charging_status = status.energy[1].charging.status
             charge_date = status.energy[1].updated_at
@@ -490,7 +490,7 @@ class MyPSACC:
             charge_date = ''
         if status.energy[0].type == 'Fuel':
             level_fuel = status.energy[0].level
-        elif status.energy[1].type == 'Fuel':
+        elif len(status.energy) >= 2 and status.energy[1].type == 'Fuel':
             level_fuel = status.energy[1].level
         else:
             level_fuel = ''

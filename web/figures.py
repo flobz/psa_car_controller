@@ -113,4 +113,4 @@ def get_figures(trips: List[Trip], charging: List[dict]):
         charge_speed = 0
     battery_info = html.Div(children=[html.P("Average gC02/kW: {:.1f}".format(co2_per_kw)),
                    html.P("Average gC02/km: {:1f}".format(co2_per_km)),
-                    html.P("Average Charge SPEED {:1f} kW/h".format(charge_speed))])
+                   html.P("Average Charge SPEED {:1f} kW/h".format(charge_speed))])

@@ -358,7 +358,12 @@ class MyPSACC:
     def get_charge_hour(self, vin):
         reg = r"PT([0-9]{1,2})H([0-9]{1,2})?"
         data = self.get_vehicle_info(vin)
-        hour_str = data.energy[0].charging.next_delayed_time
+        if data.energy[0].type == 'Electric':
+            hour_str = data.energy[0].charging.next_delayed_time
+        elif data.energy[1].type == 'Electric':
+            hour_str = data.energy[1].charging.next_delayed_time
+        else:
+            hour_str = ''
         hour = re.findall(reg, hour_str)[0]
         h = int(hour[0])
         if hour[1] == '':
@@ -369,7 +374,12 @@ class MyPSACC:
 
     def get_charge_status(self, vin):
         data = self.get_vehicle_info(vin)
-        status = data.energy[0].charging.status
+        if data.energy[0].type == 'Electric':
+            status = data.energy[0].charging.status
+        elif data.energy[1].type == 'Electric':
+            status = data.energy[1].charging.status
+        else:
+            status = ''
         return status
 
     def veh_charge_request(self, vin, hour, miinute, charge_type):
@@ -466,8 +476,24 @@ class MyPSACC:
         latitude = status.last_position.geometry.coordinates[1]
         date = status.last_position.properties.updated_at
         mileage = status.timed_odometer.mileage
-        level = status.energy[0].level
-        charging_status = status.energy[0].charging.status
+        if status.energy[0].type == 'Electric':
+            level = status.energy[0].level
+            charging_status = status.energy[0].charging.status
+            charge_date = status.energy[0].updated_at
+        elif status.energy[1].type == 'Electric':
+            level = status.energy[1].level
+            charging_status = status.energy[1].charging.status
+            charge_date = status.energy[1].updated_at
+        else:
+            level = ''
+            charging_status = ''
+            charge_date = ''
+        if status.energy[0].type == 'Fuel':
+            level_fuel = status.energy[0].level
+        elif status.energy[1].type == 'Fuel':
+            level_fuel = status.energy[1].level
+        else:
+            level_fuel = ''
         moving = status.kinetic.moving
         conn = get_db()
         if mileage == 0:  # fix a bug of the api
@@ -487,8 +513,8 @@ class MyPSACC:
                         logger.error(f"Unable to get temperature from openweathermap :{e}")
 
                 conn.execute(
-                    "INSERT INTO position(Timestamp,VIN,longitude,latitude,mileage,level, moving, temperature) VALUES(?,?,?,?,?,?,?,?)",
-                    (date, vin, longitude, latitude, mileage, level, moving, temp))
+                    "INSERT INTO position(Timestamp,VIN,longitude,latitude,mileage,level,level_fuel,moving,temperature) VALUES(?,?,?,?,?,?,?,?,?)",
+                    (date, vin, longitude, latitude, mileage, level, level_fuel, moving, temp))
 
                 conn.commit()
                 logger.info(f"new position recorded for {vin}")
@@ -505,7 +531,6 @@ class MyPSACC:
                 logger.debug("position already saved")
 
         # todo handle battery status
-        charge_date = status.energy[0].updated_at
         if charging_status == "InProgress":
             try:
                 in_progress = conn.execute("SELECT stop_at FROM battery WHERE VIN=? ORDER BY start_at DESC limit 1",

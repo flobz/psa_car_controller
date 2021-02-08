@@ -139,6 +139,8 @@ cython_debug/
 
 .idea/
 backup.ab
+info.db
+otp.bin
 charge_config1.json
 config.json
 test.json

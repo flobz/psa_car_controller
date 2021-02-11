@@ -310,6 +310,8 @@ class MyPSACC:
                     elif data["return_code"] == "400":
                         self.refresh_remote_token(force=True)
                         logger.error("retry last request, token was expired")
+                    elif data["return_code"] == "300":
+                        logger.error(f'{data["return_code"]}')
                     else:
                         logger.error(f'{data["return_code"]} : {data["reason"]}')
                 else:

@@ -358,12 +358,7 @@ class MyPSACC:
     def get_charge_hour(self, vin):
         reg = r"PT([0-9]{1,2})H([0-9]{1,2})?"
         data = self.get_vehicle_info(vin)
-        if data.energy[0].type == 'Electric':
-            hour_str = data.energy[0].charging.next_delayed_time
-        elif len(data.energy) >= 2 and data.energy[1].type == 'Electric':
-            hour_str = data.energy[1].charging.next_delayed_time
-        else:
-            hour_str = ''
+        hour_str = data.get_energy('Electric').charging.next_delayed_time
         hour = re.findall(reg, hour_str)[0]
         h = int(hour[0])
         if hour[1] == '':
@@ -374,12 +369,7 @@ class MyPSACC:
 
     def get_charge_status(self, vin):
         data = self.get_vehicle_info(vin)
-        if data.energy[0].type == 'Electric':
-            status = data.energy[0].charging.status
-        elif len(data.energy) >= 2 and data.energy[1].type == 'Electric':
-            status = data.energy[1].charging.status
-        else:
-            status = ''
+        status = data.get_energy('Electric').charging.status
         return status
 
     def veh_charge_request(self, vin, hour, miinute, charge_type):
@@ -476,25 +466,12 @@ class MyPSACC:
         latitude = status.last_position.geometry.coordinates[1]
         date = status.last_position.properties.updated_at
         mileage = status.timed_odometer.mileage
-        if status.energy[0].type == 'Electric':
-            level = status.energy[0].level
-            charging_status = status.energy[0].charging.status
-            charge_date = status.energy[0].updated_at
-        elif len(status.energy) >=2 and status.energy[1].type == 'Electric':
-            level = status.energy[1].level
-            charging_status = status.energy[1].charging.status
-            charge_date = status.energy[1].updated_at
-        else:
-            level = ''
-            charging_status = ''
-            charge_date = ''
-        if status.energy[0].type == 'Fuel':
-            level_fuel = status.energy[0].level
-        elif len(status.energy) >= 2 and status.energy[1].type == 'Fuel':
-            level_fuel = status.energy[1].level
-        else:
-            level_fuel = ''
+        level = status.get_energy('Electric').level
+        charging_status = status.get_energy('Electric').charging.status
+        charge_date = status.get_energy('Electric').updated_at
+        level_fuel = status.get_energy('Fuel').level
         moving = status.kinetic.moving
+        logger.info(f"vin:{vin} longitude:{longitude} latitude:{latitude} date:{date} mileage:{mileage} level:{level} charging_status:{charging_status} charge_date:{charge_date} level_fuel:{level_fuel} moving:{moving}")
         conn = get_db()
         if mileage == 0:  # fix a bug of the api
             logger.error(f"The api return a wrong mileage for {vin} : {mileage}")
@@ -651,3 +628,13 @@ class MyPeugeotEncoder(JSONEncoder):
         for el in ["client_id", "realm", "remote_refresh_token", "customer_id","weather_api"]:
             mpd[el] = data[el]
         return mpd
+
+
+#add method to class Energy
+def get_energy(self,energy_type):
+    for energy in self._energy:
+        if energy.type == energy_type:
+            return energy
+    return psac.models.energy.Energy(charging=psac.models.energy_charging.EnergyCharging())
+
+psac.models.status.Status.get_energy = get_energy

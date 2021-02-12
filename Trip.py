@@ -31,8 +31,11 @@ class Trip:
         self.speed_average = None
         self.consumption = None
         self.consumption_km = None
+        self.consumption_fuel = None
+        self.consumption_fuel_km = None
         self.distance = None
         self.duration = None
+        self.mileage = None
 
     def add_points(self, longitude, latitude):
         self.positions.append(Points(longitude, latitude))
@@ -43,13 +46,20 @@ class Trip:
             'consumption': self.consumption_km,
         }
 
+    def get_consumption_fuel(self):
+        return {
+            'date': self.start_at,
+            'consumption': self.consumption_fuel_km,
+        }
+
     def to_geojson(self):
         multi_line_string = MultiLineString(tuple(map(list, self.positions)))
         return Feature(geometry=multi_line_string, properties={"start_at": self.start_at, "end_at": self.end_at,
                                                                "average speed": self.speed_average,
-                                                               "average consumption": self.consumption_km})
+                                                               "average consumption": self.consumption_km,
+                                                               "average consumption fuel": self.consumption_fuel_km})
 
     def get_info(self):
         res = {"start_at": self.start_at.astimezone(None).strftime("%x %X"), "end_at": self.end_at.astimezone(None).strftime("%x %X"), "duration": self.duration*60,
-               "speed_average": self.speed_average, "consumption_km": self.consumption_km, "distance": self.distance}
+               "speed_average": self.speed_average, "consumption_km": self.consumption_km, "consumption_fuel_km": self.consumption_fuel_km, "distance": self.distance, "mileage": self.mileage}
         return res

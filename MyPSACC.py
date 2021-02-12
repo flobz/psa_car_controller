@@ -29,7 +29,10 @@ import sqlite3
 
 from web.db import get_db
 
-BATTERY_POWER = 46
+BATTERY_POWER = 46   #e208
+FUEL_CAPACITY = 0    #e208
+#BATTERY_POWER = 10.8 #3008
+#FUEL_CAPACITY = 43   #3008
 
 oauhth_url = {"clientsB2CPeugeot": "https://idpcvs.peugeot.com/am/oauth2/access_token",
               "clientsB2CCitroen": "https://idpcvs.citroen.com/am/oauth2/access_token",
@@ -473,7 +476,7 @@ class MyPSACC:
         charge_date = status.get_energy('Electric').updated_at
         level_fuel = status.get_energy('Fuel').level
         moving = status.kinetic.moving
-        logger.info(f"vin:{vin} longitude:{longitude} latitude:{latitude} date:{date} mileage:{mileage} level:{level} charging_status:{charging_status} charge_date:{charge_date} level_fuel:{level_fuel} moving:{moving}")
+        logger.debug(f"vin:{vin} longitude:{longitude} latitude:{latitude} date:{date} mileage:{mileage} level:{level} charging_status:{charging_status} charge_date:{charge_date} level_fuel:{level_fuel} moving:{moving}")
         conn = get_db()
         if mileage == 0:  # fix a bug of the api
             logger.error(f"The api return a wrong mileage for {vin} : {mileage}")
@@ -574,15 +577,20 @@ class MyPSACC:
             tr = Trip()
             #res = list(map(dict,res))
             for x in range(0, len(res) - 2):
+                logger.debug(f"{res[x]['Timestamp']} mileage : {res[x]['mileage']}")
                 next_el = res[x + 2]
                 if end["mileage"] - start["mileage"] == 0 or \
-                        (end["Timestamp"] - start["Timestamp"]).total_seconds() / 3600 > 3:
+                        (end["Timestamp"] - start["Timestamp"]).total_seconds() / 3600 > 10:  # condition useless ???
+                    logger.debug(f"restart trip")
                     start = end
                     tr = Trip()
                 else:
                     distance = next_el["mileage"] - end["mileage"]  # km
                     duration = (next_el["Timestamp"] - end["Timestamp"]).total_seconds() / 3600
-                    if (distance == 0 and duration > 0.08) or duration > 2:  # check the speed to handle missing point
+                    charge = next_el["level"] - end["level"]
+                    refuel = next_el["level_fuel"] - end["level_fuel"]
+                    if ((distance == 0 and duration > 0.08) or duration > 2 or  # check the speed to handle missing point
+                            refuel > 0 or (distance == 0 and charge > 0)):
                         tr.distance = end["mileage"] - start["mileage"]  # km
                         if tr.distance > 0:
                             tr.start_at = start["Timestamp"]
@@ -593,11 +601,18 @@ class MyPSACC:
                             diff_level = start["level"] - end["level"]
                             tr.consumption = diff_level / 100 * BATTERY_POWER  # kw
                             tr.consumption_km = 100 * tr.consumption / tr.distance  # kw/100 km
-                          #  logger.debug(
-                           #     f"Trip: {start['Timestamp']}  {tr.distance:.1f}km {tr.duration:.2f}h {tr.speed_average:.2f} km/h {tr.consumption:.2f} kw {tr.consumption_km:.2f}kw/100km")
+                            diff_level_fuel = start["level_fuel"] - end["level_fuel"]
+                            tr.consumption_fuel = diff_level_fuel / 100 * FUEL_CAPACITY # L
+                            tr.consumption_fuel_km = 100 * tr.consumption_fuel / tr.distance  # L/100 km
+                            tr.mileage = end["mileage"]
+                            logger.debug(
+                                    f"Trip: {start['Timestamp']} {tr.distance:.1f}km {tr.duration:.2f}h {tr.speed_average:.0f}km/h "
+                                    f"{tr.consumption:.2f}kw {tr.consumption_km:.2f}kw/100km {tr.consumption_fuel:.2f}L {tr.consumption_fuel_km:.2f}L/100km {tr.mileage:.1f}km")
                             # filter bad value
-                            if tr.consumption_km < 70:
+                            if tr.consumption_km < 70 and tr.consumption_fuel_km < 30:
                                 trips.append(tr)
+                            else:
+                                logger.debug(f"trip discarded")
                         start = next_el
                         tr = Trip()
                     else:

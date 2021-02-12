@@ -75,10 +75,13 @@ def get_figures(trips: List[Trip], charging: List[dict]):
                  {'id': 'duration', 'name': 'duration', 'type': 'numeric',
                   'format': deepcopy(nb_format).symbol_suffix(" min").precision(0)},
                  {'id': 'speed_average', 'name': 'average speed', 'type': 'numeric',
-                  'format': deepcopy(nb_format).symbol_suffix(" km/h")},
+                  'format': deepcopy(nb_format).symbol_suffix(" km/h").precision(0)},
                  {'id': 'consumption_km', 'name': 'average consumption', 'type': 'numeric',
                   'format': deepcopy(nb_format).symbol_suffix(" kw/100km")},
-                 {'id': 'distance', 'name': 'distance', 'type': 'numeric', 'format': nb_format.symbol_suffix(" km")}],
+                 {'id': 'consumption_fuel_km', 'name': 'average consumption fuel', 'type': 'numeric',
+                  'format': deepcopy(nb_format).symbol_suffix(" L/100km")},
+                 {'id': 'distance', 'name': 'distance', 'type': 'numeric', 'format': nb_format.symbol_suffix(" km")},
+                 {'id': 'mileage', 'name': 'mileage', 'type': 'numeric', 'format': nb_format.symbol_suffix(" km")}],
         data=[tr.get_info() for tr in trips],
     )
     # consumption_fig

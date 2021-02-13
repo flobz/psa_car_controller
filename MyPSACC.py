@@ -499,7 +499,7 @@ class MyPSACC:
                         level_fuel = conn.execute("SELECT level_fuel FROM position WHERE level_fuel>0 AND VIN=? ORDER BY Timestamp DESC LIMIT 1",(vin,)).fetchone()[0]
                         logger.info(f"level_fuel fixed with last real value {level_fuel} for {vin}")
                     except TypeError:
-                        level_fuel = ''
+                        level_fuel = None
                         logger.info(f"level_fuel unfixed for {vin}")
 
                 conn.execute(

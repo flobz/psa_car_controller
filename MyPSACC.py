@@ -559,8 +559,8 @@ class MyPSACC:
         features_list = []
         for row in res:
             feature = Feature(geometry=Point((row["longitude"], row["latitude"])),
-                              properties={"vin": row["vin"], "date": row["Timestamp"], "mileage": row["mileage"],
-                                          "level": row["level"]})
+                              properties={"vin": row["vin"], "date": row["Timestamp"].strftime("%x %X"), "mileage": row["mileage"],
+                                          "level": row["level"],"level_fuel": row["level_fuel"]})
             features_list.append(feature)
         feature_collection = FeatureCollection(features_list)
         conn.close()

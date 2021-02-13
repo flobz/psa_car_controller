@@ -588,9 +588,12 @@ class MyPSACC:
                     distance = next_el["mileage"] - end["mileage"]  # km
                     duration = (next_el["Timestamp"] - end["Timestamp"]).total_seconds() / 3600
                     charge = next_el["level"] - end["level"]
-                    refuel = next_el["level_fuel"] - end["level_fuel"]
+                    if next_el["level_fuel"] != None and end["level_fuel"] != None:
+                        refuel = next_el["level_fuel"] - end["level_fuel"]
+                    else:
+                        refuel = None
                     if ((distance == 0 and duration > 0.08) or duration > 2 or  # check the speed to handle missing point
-                            refuel > 0 or (distance == 0 and charge > 0)):
+                            (refuel != None and refuel > 0) or (distance == 0 and charge > 0)):
                         tr.distance = end["mileage"] - start["mileage"]  # km
                         if tr.distance > 0:
                             tr.start_at = start["Timestamp"]
@@ -601,15 +604,16 @@ class MyPSACC:
                             diff_level = start["level"] - end["level"]
                             tr.consumption = diff_level / 100 * BATTERY_POWER  # kw
                             tr.consumption_km = 100 * tr.consumption / tr.distance  # kw/100 km
-                            diff_level_fuel = start["level_fuel"] - end["level_fuel"]
-                            tr.consumption_fuel = diff_level_fuel / 100 * FUEL_CAPACITY # L
-                            tr.consumption_fuel_km = 100 * tr.consumption_fuel / tr.distance  # L/100 km
+                            if start["level_fuel"] != None and end["level_fuel"] != None:
+                                diff_level_fuel = start["level_fuel"] - end["level_fuel"]
+                                tr.consumption_fuel = round(diff_level_fuel / 100 * FUEL_CAPACITY,2) # L
+                                tr.consumption_fuel_km = round(100 * tr.consumption_fuel / tr.distance,2)  # L/100 km
                             tr.mileage = end["mileage"]
                             logger.debug(
                                     f"Trip: {start['Timestamp']} {tr.distance:.1f}km {tr.duration:.2f}h {tr.speed_average:.0f}km/h "
-                                    f"{tr.consumption:.2f}kw {tr.consumption_km:.2f}kw/100km {tr.consumption_fuel:.2f}L {tr.consumption_fuel_km:.2f}L/100km {tr.mileage:.1f}km")
+                                    f"{tr.consumption:.2f}kw {tr.consumption_km:.2f}kw/100km {tr.consumption_fuel}L {tr.consumption_fuel_km}L/100km {tr.mileage:.1f}km")
                             # filter bad value
-                            if tr.consumption_km < 70 and tr.consumption_fuel_km < 30:
+                            if tr.consumption_km < 70 and (tr.consumption_fuel_km == None or tr.consumption_fuel_km < 30):
                                 trips.append(tr)
                             else:
                                 logger.debug(f"trip discarded")

@@ -75,10 +75,13 @@ def get_figures(trips: List[Trip], charging: List[dict]):
                  {'id': 'duration', 'name': 'duration', 'type': 'numeric',
                   'format': deepcopy(nb_format).symbol_suffix(" min").precision(0)},
                  {'id': 'speed_average', 'name': 'average speed', 'type': 'numeric',
-                  'format': deepcopy(nb_format).symbol_suffix(" km/h")},
+                  'format': deepcopy(nb_format).symbol_suffix(" km/h").precision(0)},
                  {'id': 'consumption_km', 'name': 'average consumption', 'type': 'numeric',
                   'format': deepcopy(nb_format).symbol_suffix(" kw/100km")},
-                 {'id': 'distance', 'name': 'distance', 'type': 'numeric', 'format': nb_format.symbol_suffix(" km")}],
+                 {'id': 'consumption_fuel_km', 'name': 'average consumption fuel', 'type': 'numeric',
+                  'format': deepcopy(nb_format).symbol_suffix(" L/100km")},
+                 {'id': 'distance', 'name': 'distance', 'type': 'numeric', 'format': nb_format.symbol_suffix(" km")},
+                 {'id': 'mileage', 'name': 'mileage', 'type': 'numeric', 'format': nb_format.symbol_suffix(" km")}],
         data=[tr.get_info() for tr in trips],
     )
     # consumption_fig
@@ -105,12 +108,16 @@ def get_figures(trips: List[Trip], charging: List[dict]):
         co2_per_kw = charging_data["co2"].sum() / charging_data["kw"].sum()
     except ZeroDivisionError:
         co2_per_kw = 0
+    except KeyError:  # when there is no data yet:
+        co2_per_kw = 0
     co2_per_km = co2_per_kw * kw_per_km / 100
     try:
         charge_speed = 3600 * charging_data["kw"].mean() / \
                        (charging_data["stop_at"] - charging_data["start_at"]).mean().total_seconds()
     except TypeError:  # when there is no data yet:
         charge_speed = 0
+    except KeyError:  # when there is no data yet:
+        charge_speed = 0
     battery_info = html.Div(children=[html.P("Average gC02/kW: {:.1f}".format(co2_per_kw)),
                    html.P("Average gC02/km: {:1f}".format(co2_per_km)),
-                    html.P("Average Charge SPEED {:1f} kW/h".format(charge_speed))])
+                   html.P("Average Charge SPEED {:1f} kW/h".format(charge_speed))])

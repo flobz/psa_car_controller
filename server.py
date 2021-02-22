@@ -26,7 +26,8 @@ def parse_args():
     parser.add_argument("-r", "--record", help="save vehicle data to db", action='store_true')
     parser.add_argument("-m", "--mail", help="set the email address")
     parser.add_argument("-P", "--password", help="set the password")
-    parser.add_argument("--remote-disable", help="disable remote control")
+    parser.add_argument("--remote-disable", help="disable remote control", action='store_true')
+    parser.add_argument("--offline", help="offline limited mode", action='store_true')
     parser.add_argument("-b", "--base-path", help="base path for web app",default="/")
     parser.parse_args()
     return parser
@@ -46,20 +47,21 @@ if __name__ == "__main__":
     atexit.register(web.app.myp.save_config)
     if args.record:
         web.app.myp.set_record(True)
-    try:
-        web.app.myp.manager._refresh_token()
-    except OAuthError:
-        if args.mail and args.password:
-            client_email = args.mail
-            client_password = args.password
-        else:
-            client_email = input("mypeugeot email: ")
-            client_password = input("mypeugeot password: ")
-        web.app.myp.connect(client_email, client_password)
-    logger.info(web.app.myp.get_vehicles())
-    t1 = Thread(target=start_app, args=["My car info", args.base_path, args.debug < 20, args.listen, int(args.port)])
-    t1.start()
-    if args.remote_disable:
+    if args.offline:
+        logger.info("offline mode")
+    else:
+        try:
+            web.app.myp.manager._refresh_token()
+        except OAuthError:
+            if args.mail and args.password:
+                client_email = args.mail
+                client_password = args.password
+            else:
+                client_email = input("mypeugeot email: ")
+                client_password = input("mypeugeot password: ")
+            web.app.myp.connect(client_email, client_password)
+        logger.info(web.app.myp.get_vehicles())
+    if args.offline or args.remote_disable:
         logger.info("mqtt disabled")
     else:
         web.app.myp.start_mqtt()
@@ -67,3 +69,5 @@ if __name__ == "__main__":
             web.app.chc = ChargeControls.load_config(web.app.myp, name=args.charge_control)
             web.app.chc.start()
     save_config(web.app.myp)
+    t1 = Thread(target=start_app, args=["My car info", args.base_path, args.debug < 20, args.listen, int(args.port)])
+    t1.start()

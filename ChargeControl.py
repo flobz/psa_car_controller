@@ -54,12 +54,12 @@ class ChargeControl:
                 except ApiException:
                     logger.error(traceback.format_exc())
                 if res is not None:
-                    status = res.energy[0].charging.status
-                    level = res.energy[0].level
+                    status = res.get_energy('Electric').charging.status
+                    level = res.get_energy('Electric').level
                     logger.info(f"charging status of {self.vin} is {status}, battery level: {level}")
                     if status == "InProgress":
                         # force update if the car doesn't send info during 10 minutes
-                        last_update = res.energy[0].updated_at
+                        last_update = res.get_energy('Electric').updated_at
                         if (datetime.utcnow().replace(tzinfo=pytz.UTC) - last_update).total_seconds() > 60 * 10:
                             self.psacc.wakeup(self.vin)
                         if (level >= self.percentage_threshold and self.retry_count < 2) or stop_charge:
@@ -67,7 +67,7 @@ class ChargeControl:
                             self.retry_count += 1
                             sleep(ChargeControl.MQTT_TIMEOUT)
                             res = self.psacc.get_vehicle_info(self.vin)
-                            status = res.energy[0].charging.status
+                            status = res.get_energy('Electric').charging.status
                             if status == "InProgress":
                                 logger.warn(f"retry to stop the charge of {self.vin}")
                                 self.psacc.charge_now(self.vin, False)

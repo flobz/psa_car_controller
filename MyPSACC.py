@@ -29,7 +29,10 @@ import sqlite3
 
 from web.db import get_db
 
-BATTERY_POWER = 46
+BATTERY_POWER = 46   #e208
+FUEL_CAPACITY = 0    #e208
+#BATTERY_POWER = 10.8 #3008
+#FUEL_CAPACITY = 43   #3008
 
 oauhth_url = {"clientsB2CPeugeot": "https://idpcvs.peugeot.com/am/oauth2/access_token",
               "clientsB2CCitroen": "https://idpcvs.citroen.com/am/oauth2/access_token",
@@ -311,6 +314,8 @@ class MyPSACC:
                     elif data["return_code"] == "400":
                         self.refresh_remote_token(force=True)
                         logger.error("retry last request, token was expired")
+                    elif data["return_code"] == "300":
+                        logger.error(f'{data["return_code"]}')
                     else:
                         logger.error(f'{data["return_code"]} : {data["reason"]}')
                 else:
@@ -365,7 +370,7 @@ class MyPSACC:
     def get_charge_hour(self, vin):
         reg = r"PT([0-9]{1,2})H([0-9]{1,2})?"
         data = self.get_vehicle_info(vin)
-        hour_str = data.energy[0].charging.next_delayed_time
+        hour_str = data.get_energy('Electric').charging.next_delayed_time
         hour = re.findall(reg, hour_str)[0]
         h = int(hour[0])
         if hour[1] == '':
@@ -376,7 +381,7 @@ class MyPSACC:
 
     def get_charge_status(self, vin):
         data = self.get_vehicle_info(vin)
-        status = data.energy[0].charging.status
+        status = data.get_energy('Electric').charging.status
         return status
 
     def veh_charge_request(self, vin, hour, miinute, charge_type):
@@ -473,9 +478,12 @@ class MyPSACC:
         latitude = status.last_position.geometry.coordinates[1]
         date = status.last_position.properties.updated_at
         mileage = status.timed_odometer.mileage
-        level = status.energy[0].level
-        charging_status = status.energy[0].charging.status
+        level = status.get_energy('Electric').level
+        charging_status = status.get_energy('Electric').charging.status
+        charge_date = status.get_energy('Electric').updated_at
+        level_fuel = status.get_energy('Fuel').level
         moving = status.kinetic.moving
+        logger.debug(f"vin:{vin} longitude:{longitude} latitude:{latitude} date:{date} mileage:{mileage} level:{level} charging_status:{charging_status} charge_date:{charge_date} level_fuel:{level_fuel} moving:{moving}")
         conn = get_db()
         if mileage == 0:  # fix a bug of the api
             logger.error(f"The api return a wrong mileage for {vin} : {mileage}")
@@ -493,9 +501,17 @@ class MyPSACC:
                     except Exception as e:
                         logger.error(f"Unable to get temperature from openweathermap :{e}")
 
+                if level_fuel == 0: # fix fuel level not provided when car is off
+                    try:
+                        level_fuel = conn.execute("SELECT level_fuel FROM position WHERE level_fuel>0 AND VIN=? ORDER BY Timestamp DESC LIMIT 1",(vin,)).fetchone()[0]
+                        logger.info(f"level_fuel fixed with last real value {level_fuel} for {vin}")
+                    except TypeError:
+                        level_fuel = None
+                        logger.info(f"level_fuel unfixed for {vin}")
+
                 conn.execute(
-                    "INSERT INTO position(Timestamp,VIN,longitude,latitude,mileage,level, moving, temperature) VALUES(?,?,?,?,?,?,?,?)",
-                    (date, vin, longitude, latitude, mileage, level, moving, temp))
+                    "INSERT INTO position(Timestamp,VIN,longitude,latitude,mileage,level,level_fuel,moving,temperature) VALUES(?,?,?,?,?,?,?,?,?)",
+                    (date, vin, longitude, latitude, mileage, level, level_fuel, moving, temp))
 
                 conn.commit()
                 logger.info(f"new position recorded for {vin}")
@@ -512,7 +528,6 @@ class MyPSACC:
                 logger.debug("position already saved")
 
         # todo handle battery status
-        charge_date = status.energy[0].updated_at
         if charging_status == "InProgress":
             try:
                 in_progress = conn.execute("SELECT stop_at FROM battery WHERE VIN=? ORDER BY start_at DESC limit 1",
@@ -551,8 +566,8 @@ class MyPSACC:
         features_list = []
         for row in res:
             feature = Feature(geometry=Point((row["longitude"], row["latitude"])),
-                              properties={"vin": row["vin"], "date": row["Timestamp"], "mileage": row["mileage"],
-                                          "level": row["level"]})
+                              properties={"vin": row["vin"], "date": row["Timestamp"].strftime("%x %X"), "mileage": row["mileage"],
+                                          "level": row["level"],"level_fuel": row["level_fuel"]})
             features_list.append(feature)
         feature_collection = FeatureCollection(features_list)
         conn.close()
@@ -569,15 +584,23 @@ class MyPSACC:
             tr = Trip()
             #res = list(map(dict,res))
             for x in range(0, len(res) - 2):
+                logger.debug(f"{res[x]['Timestamp']} mileage : {res[x]['mileage']}")
                 next_el = res[x + 2]
                 if end["mileage"] - start["mileage"] == 0 or \
-                        (end["Timestamp"] - start["Timestamp"]).total_seconds() / 3600 > 3:
+                        (end["Timestamp"] - start["Timestamp"]).total_seconds() / 3600 > 10:  # condition useless ???
+                    logger.debug(f"restart trip")
                     start = end
                     tr = Trip()
                 else:
                     distance = next_el["mileage"] - end["mileage"]  # km
                     duration = (next_el["Timestamp"] - end["Timestamp"]).total_seconds() / 3600
-                    if (distance == 0 and duration > 0.08) or duration > 2:  # check the speed to handle missing point
+                    charge = next_el["level"] - end["level"]
+                    if next_el["level_fuel"] != None and end["level_fuel"] != None:
+                        refuel = next_el["level_fuel"] - end["level_fuel"]
+                    else:
+                        refuel = None
+                    if ((distance == 0 and duration > 0.08) or duration > 2 or  # check the speed to handle missing point
+                            (refuel != None and refuel > 0) or (distance == 0 and charge > 0)):
                         tr.distance = end["mileage"] - start["mileage"]  # km
                         if tr.distance > 0:
                             tr.start_at = start["Timestamp"]
@@ -588,11 +611,19 @@ class MyPSACC:
                             diff_level = start["level"] - end["level"]
                             tr.consumption = diff_level / 100 * BATTERY_POWER  # kw
                             tr.consumption_km = 100 * tr.consumption / tr.distance  # kw/100 km
-                          #  logger.debug(
-                           #     f"Trip: {start['Timestamp']}  {tr.distance:.1f}km {tr.duration:.2f}h {tr.speed_average:.2f} km/h {tr.consumption:.2f} kw {tr.consumption_km:.2f}kw/100km")
+                            if start["level_fuel"] != None and end["level_fuel"] != None:
+                                diff_level_fuel = start["level_fuel"] - end["level_fuel"]
+                                tr.consumption_fuel = round(diff_level_fuel / 100 * FUEL_CAPACITY,2) # L
+                                tr.consumption_fuel_km = round(100 * tr.consumption_fuel / tr.distance,2)  # L/100 km
+                            tr.mileage = end["mileage"]
+                            logger.debug(
+                                    f"Trip: {start['Timestamp']} {tr.distance:.1f}km {tr.duration:.2f}h {tr.speed_average:.0f}km/h "
+                                    f"{tr.consumption:.2f}kw {tr.consumption_km:.2f}kw/100km {tr.consumption_fuel}L {tr.consumption_fuel_km}L/100km {tr.mileage:.1f}km")
                             # filter bad value
-                            if tr.consumption_km < 70:
+                            if tr.consumption_km < 70 and (tr.consumption_fuel_km == None or tr.consumption_fuel_km < 30):
                                 trips.append(tr)
+                            else:
+                                logger.debug(f"trip discarded")
                         start = next_el
                         tr = Trip()
                     else:
@@ -625,3 +656,13 @@ class MyPeugeotEncoder(JSONEncoder):
         for el in ["client_id", "realm", "remote_refresh_token", "customer_id","weather_api"]:
             mpd[el] = data[el]
         return mpd
+
+
+#add method to class Energy
+def get_energy(self,energy_type):
+    for energy in self._energy:
+        if energy.type == energy_type:
+            return energy
+    return psac.models.energy.Energy(charging=psac.models.energy_charging.EnergyCharging())
+
+psac.models.status.Status.get_energy = get_energy

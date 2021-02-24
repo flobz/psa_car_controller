@@ -57,8 +57,6 @@ if __name__ == "__main__":
             client_password = input("mypeugeot password: ")
         web.app.myp.connect(client_email, client_password)
     logger.info(web.app.myp.get_vehicles())
-    t1 = Thread(target=start_app, args=["My car info", args.base_path, args.debug < 20, args.listen, int(args.port)])
-    t1.start()
     if args.remote_disable:
         logger.info("mqtt disabled")
     else:

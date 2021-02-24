@@ -114,7 +114,11 @@ def update_trips():
     global trips, chargings
     logger.info("update_data")
     try:
-        trips = MyPSACC.get_trips()
+        if myp.vehicles_list == None:   # mandatory for offline mode right now
+            trips = MyPSACC.get_trips()
+        else:
+            vehicle_model = list(myp.vehicles_list.values())[0]['label']    # workaround here as vin is not managed yet in the dashboard
+            trips = MyPSACC.get_trips(vehicle_model)
         chargings = MyPSACC.get_chargings()
     except:
         logger.error("update_trips: " + traceback.format_exc())

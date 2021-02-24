@@ -29,10 +29,9 @@ import sqlite3
 
 from web.db import get_db
 
-BATTERY_POWER = 46   #e208
-FUEL_CAPACITY = 0    #e208
-#BATTERY_POWER = 10.8 #3008
-#FUEL_CAPACITY = 43   #3008
+ENERGY_CAPACITY = {'SUV 3008': {'BATTERY_POWER': 10.8, 'FUEL_CAPACITY': 43},
+                   '208':      {'BATTERY_POWER': 46,   'FUEL_CAPACITY': 0},     # to be verified by an e208 owner - to be changed in ENERGY_CAPACITY and in get_trip function vehicle_model default value
+                  }
 
 oauhth_url = {"clientsB2CPeugeot": "https://idpcvs.peugeot.com/am/oauth2/access_token",
               "clientsB2CCitroen": "https://idpcvs.citroen.com/am/oauth2/access_token",
@@ -212,7 +211,7 @@ class MyPSACC:
         self.vehicles_list = {}
         for vehicle in res.embedded.vehicles:
             vin = vehicle.vin
-            self.vehicles_list[vin] = {"id": vehicle.id}
+            self.vehicles_list[vin] = {"id": vehicle.id,"brand": vehicle.brand, "label": vehicle.label}
         return self.vehicles_list
 
     def get_vehicle_id_with_vin(self, vin):
@@ -574,7 +573,9 @@ class MyPSACC:
         return geo_dumps(feature_collection, sort_keys=True)
 
     @staticmethod
-    def get_trips() -> List[Trip]:
+    def get_trips(vehicle_model='208') -> List[Trip]:   # to be verified by an e208 owner - to be changed in ENERGY_CAPACITY and in get_trip function vehicle_model default value
+                                                        # we should add vin parameter
+                                                        # we should think moving this method in Trip.py
         conn = get_db()
         res = conn.execute('SELECT * FROM position ORDER BY Timestamp').fetchall()
         trips = []
@@ -584,23 +585,68 @@ class MyPSACC:
             tr = Trip()
             #res = list(map(dict,res))
             for x in range(0, len(res) - 2):
-                logger.debug(f"{res[x]['Timestamp']} mileage : {res[x]['mileage']}")
+                logger.debug(f"{res[x]['Timestamp']} mileage:{res[x]['mileage']} level:{res[x]['level']} level_fuel:{res[x]['level_fuel']}")
                 next_el = res[x + 2]
-                if end["mileage"] - start["mileage"] == 0 or \
-                        (end["Timestamp"] - start["Timestamp"]).total_seconds() / 3600 > 10:  # condition useless ???
-                    logger.debug(f"restart trip")
+                distance = end["mileage"] - start["mileage"]
+                duration = (end["Timestamp"] - start["Timestamp"]).total_seconds() / 3600
+                try:
+                    speed_average = distance / duration
+                except ZeroDivisionError:
+                    speed_average = 0
+                charge = end["level"] - start["level"]
+                if end["level_fuel"] != None and start["level_fuel"] != None:
+                    refuel = end["level_fuel"] - start["level_fuel"]
+                else:
+                    refuel = 0
+                restart_trip = False
+                if refuel > 0:
+                    restart_trip = True
+                    logger.debug(f"refuel detected")
+                elif distance == 0 and charge > 2:
+                    restart_trip = True
+                    logger.debug(f"charge detected")
+                elif speed_average < 0.2 and duration > 0.05:   # think again if duration is really needed
+                     #end["mileage"] - start["mileage"] == 0 #or \
+                     #(end["Timestamp"] - start["Timestamp"]).total_seconds() / 3600 > 10:  # condition useless ???
+                    restart_trip = True
+                    logger.debug(f"low speed detected")
+                if restart_trip:
                     start = end
                     tr = Trip()
+                    logger.debug(f"restart trip at {start['Timestamp']} {start['mileage']}km level:{start['level']} level_fuel:{start['level_fuel']}")
                 else:
                     distance = next_el["mileage"] - end["mileage"]  # km
                     duration = (next_el["Timestamp"] - end["Timestamp"]).total_seconds() / 3600
+                    try:
+                        speed_average = distance / duration
+                    except ZeroDivisionError:
+                        speed_average = 0
                     charge = next_el["level"] - end["level"]
                     if next_el["level_fuel"] != None and end["level_fuel"] != None:
                         refuel = next_el["level_fuel"] - end["level_fuel"]
                     else:
-                        refuel = None
-                    if ((distance == 0 and duration > 0.08) or duration > 2 or  # check the speed to handle missing point
-                            (refuel != None and refuel > 0) or (distance == 0 and charge > 0)):
+                        refuel = 0
+                    end_trip = False
+                    if refuel > 0:
+                        end_trip = True
+                        logger.debug(f"refuel detected")
+                    elif distance == 0 and charge > 2:
+                        end_trip = True
+                        logger.debug(f"charge detected {charge}")
+                    elif speed_average < 0.2 and duration > 0.05:
+                         #(distance == 0 and duration > 0.08) or duration > 2 or  # check the speed to handle missing point
+                        end_trip = True
+                        logger.debug(f"low speed detected")
+                    elif duration > 2:
+                        end_trip = True
+                        logger.debug(f"too much time detected")
+                    elif x == len(res)-3:  # last record detected
+                        # think if add point is needed
+                        end = next_el
+                        end_trip = True
+                        logger.debug(f"last position found")
+                    if end_trip:
+                        logger.debug(f"stop trip at {end['Timestamp']} {end['mileage']}km level:{end['level']} level_fuel:{end['level_fuel']}")
                         tr.distance = end["mileage"] - start["mileage"]  # km
                         if tr.distance > 0:
                             tr.start_at = start["Timestamp"]
@@ -609,16 +655,17 @@ class MyPSACC:
                             tr.duration = (end["Timestamp"] - start["Timestamp"]).total_seconds() / 3600
                             tr.speed_average = tr.distance / tr.duration
                             diff_level = start["level"] - end["level"]
-                            tr.consumption = diff_level / 100 * BATTERY_POWER  # kw
+                            tr.consumption = diff_level / 100 * ENERGY_CAPACITY[vehicle_model]['BATTERY_POWER']  # kw
                             tr.consumption_km = 100 * tr.consumption / tr.distance  # kw/100 km
                             if start["level_fuel"] != None and end["level_fuel"] != None:
                                 diff_level_fuel = start["level_fuel"] - end["level_fuel"]
-                                tr.consumption_fuel = round(diff_level_fuel / 100 * FUEL_CAPACITY,2) # L
+                                tr.consumption_fuel = round(diff_level_fuel / 100 * ENERGY_CAPACITY[vehicle_model]['FUEL_CAPACITY'],2) # L
                                 tr.consumption_fuel_km = round(100 * tr.consumption_fuel / tr.distance,2)  # L/100 km
                             tr.mileage = end["mileage"]
                             logger.debug(
-                                    f"Trip: {start['Timestamp']} {tr.distance:.1f}km {tr.duration:.2f}h {tr.speed_average:.0f}km/h "
-                                    f"{tr.consumption:.2f}kw {tr.consumption_km:.2f}kw/100km {tr.consumption_fuel}L {tr.consumption_fuel_km}L/100km {tr.mileage:.1f}km")
+                                    f"Trip: {tr.start_at} -> {tr.end_at} {tr.distance:.1f}km {tr.duration:.2f}h {tr.speed_average:.0f}km/h "
+                                    f"{tr.consumption:.2f}kw {tr.consumption_km:.2f}kw/100km {tr.consumption_fuel}L {tr.consumption_fuel_km}L/100km "
+                                    f"{tr.mileage:.1f}km")
                             # filter bad value
                             if tr.consumption_km < 70 and (tr.consumption_fuel_km == None or tr.consumption_fuel_km < 30):
                                 trips.append(tr)

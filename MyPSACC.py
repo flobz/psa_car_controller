@@ -29,10 +29,9 @@ import sqlite3
 
 from web.db import get_db
 
-BATTERY_POWER = 46   #e208
-FUEL_CAPACITY = 0    #e208
-#BATTERY_POWER = 10.8 #3008
-#FUEL_CAPACITY = 43   #3008
+ENERGY_CAPACITY = {'SUV 3008': {'BATTERY_POWER': 10.8, 'FUEL_CAPACITY': 43},
+                   '208':      {'BATTERY_POWER': 46,   'FUEL_CAPACITY': 0},     # to be verified by an e208 owner - to be changed in ENERGY_CAPACITY and in get_trip function vehicle_model default value
+                  }
 
 oauhth_url = {"clientsB2CPeugeot": "https://idpcvs.peugeot.com/am/oauth2/access_token",
               "clientsB2CCitroen": "https://idpcvs.citroen.com/am/oauth2/access_token",
@@ -212,7 +211,7 @@ class MyPSACC:
         self.vehicles_list = {}
         for vehicle in res.embedded.vehicles:
             vin = vehicle.vin
-            self.vehicles_list[vin] = {"id": vehicle.id}
+            self.vehicles_list[vin] = {"id": vehicle.id,"brand": vehicle.brand, "label": vehicle.label}
         return self.vehicles_list
 
     def get_vehicle_id_with_vin(self, vin):
@@ -574,7 +573,9 @@ class MyPSACC:
         return geo_dumps(feature_collection, sort_keys=True)
 
     @staticmethod
-    def get_trips() -> List[Trip]:
+    def get_trips(vehicle_model='208') -> List[Trip]:   # to be verified by an e208 owner - to be changed in ENERGY_CAPACITY and in get_trip function vehicle_model default value
+                                                        # we should add vin parameter
+                                                        # we should think moving this method in Trip.py
         conn = get_db()
         res = conn.execute('SELECT * FROM position ORDER BY Timestamp').fetchall()
         trips = []
@@ -654,11 +655,11 @@ class MyPSACC:
                             tr.duration = (end["Timestamp"] - start["Timestamp"]).total_seconds() / 3600
                             tr.speed_average = tr.distance / tr.duration
                             diff_level = start["level"] - end["level"]
-                            tr.consumption = diff_level / 100 * BATTERY_POWER  # kw
+                            tr.consumption = diff_level / 100 * ENERGY_CAPACITY[vehicle_model]['BATTERY_POWER']  # kw
                             tr.consumption_km = 100 * tr.consumption / tr.distance  # kw/100 km
                             if start["level_fuel"] != None and end["level_fuel"] != None:
                                 diff_level_fuel = start["level_fuel"] - end["level_fuel"]
-                                tr.consumption_fuel = round(diff_level_fuel / 100 * FUEL_CAPACITY,2) # L
+                                tr.consumption_fuel = round(diff_level_fuel / 100 * ENERGY_CAPACITY[vehicle_model]['FUEL_CAPACITY'],2) # L
                                 tr.consumption_fuel_km = round(100 * tr.consumption_fuel / tr.distance,2)  # L/100 km
                             tr.mileage = end["mileage"]
                             logger.debug(

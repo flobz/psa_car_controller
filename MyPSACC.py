@@ -545,7 +545,7 @@ class MyPSACC:
                 in_progress = stop_at is None
                 if in_progress:
                     co2_per_kw = Ecomix.get_co2_per_kw(start_at, charge_date, latitude, longitude)
-                    kw = (level - start_level) / 100 * BATTERY_POWER
+                    kw = (level - start_level) / 100 * ENERGY_CAPACITY[self.vehicles_list[vin]['label']]['BATTERY_POWER']
                     res = conn.execute(
                         "UPDATE battery set stop_at=?, end_level=?, co2=?, kw=? WHERE start_at=? and VIN=?",
                         (charge_date, level, co2_per_kw, kw, start_at, vin))

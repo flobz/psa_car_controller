@@ -665,7 +665,7 @@ class MyPSACC:
                             tr.mileage = end["mileage"]
                             logger.debug(
                                     f"Trip: {tr.start_at} -> {tr.end_at} {tr.distance:.1f}km {tr.duration:.2f}h {tr.speed_average:.0f}km/h "
-                                    f"{tr.consumption:.2f}kw {tr.consumption_km:.2f}kw/100km {tr.consumption_fuel}L {tr.consumption_fuel_km}L/100km "
+                                    f"{tr.consumption:.2f}kWh {tr.consumption_km:.2f}kWh/100km {tr.consumption_fuel}L {tr.consumption_fuel_km}L/100km "
                                     f"{tr.mileage:.1f}km")
                             # filter bad value
                             if tr.consumption_km < 70 and (tr.consumption_fuel_km == None or tr.consumption_fuel_km < 30):

@@ -29,8 +29,9 @@ import sqlite3
 
 from web.db import get_db
 
-ENERGY_CAPACITY = {'SUV 3008': {'BATTERY_POWER': 10.8, 'FUEL_CAPACITY': 43},
-                   '208':      {'BATTERY_POWER': 46,   'FUEL_CAPACITY': 0},     # to be verified by an e208 owner - to be changed in ENERGY_CAPACITY and in get_trip function vehicle_model default value
+ENERGY_CAPACITY = {'SUV 3008':    {'BATTERY_POWER': 10.8, 'FUEL_CAPACITY': 43},
+                   'C5 Aircross': {'BATTERY_POWER': 10.8, 'FUEL_CAPACITY': 43},
+                   '208':         {'BATTERY_POWER': 46,   'FUEL_CAPACITY': 0},     # to be verified by an e208 owner - to be changed in ENERGY_CAPACITY and in get_trip function vehicle_model default value
                   }
 
 oauhth_url = {"clientsB2CPeugeot": "https://idpcvs.peugeot.com/am/oauth2/access_token",

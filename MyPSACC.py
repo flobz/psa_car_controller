@@ -233,7 +233,7 @@ class MyPSACC:
             headers={
                 "Connection": "Keep-Alive",
                 "User-Agent": "okhttp/4.8.0",
-                "x-introspect-realm": "clientsB2CPeugeot"
+                "x-introspect-realm": self.realm
             })
         return res
 

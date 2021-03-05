@@ -60,7 +60,7 @@ if __name__ == "__main__":
                 client_email = input("mypeugeot email: ")
                 client_password = input("mypeugeot password: ")
             web.app.myp.connect(client_email, client_password)
-        logger.info(web.app.myp.get_vehicles())
+        logger.info(str(web.app.myp.get_vehicles()))
     if args.offline or args.remote_disable:
         logger.info("mqtt disabled")
     else:

@@ -17,7 +17,7 @@ from requests import Response
 from typing import List
 
 import psa_connectedcar as psac
-from Trip import Trip
+from Car import Cars, Car
 from ecomix import Ecomix
 from otp.Otp import load_otp, new_otp_session, save_otp
 from psa_connectedcar import ApiClient
@@ -25,13 +25,8 @@ from psa_connectedcar.rest import ApiException
 from MyLogger import logger
 from threading import Semaphore, Timer
 from functools import wraps
-import sqlite3
 
 from web.db import get_db
-
-ENERGY_CAPACITY = {'SUV 3008': {'BATTERY_POWER': 10.8, 'FUEL_CAPACITY': 43},
-                   '208':      {'BATTERY_POWER': 46,   'FUEL_CAPACITY': 0},     # to be verified by an e208 owner - to be changed in ENERGY_CAPACITY and in get_trip function vehicle_model default value
-                  }
 
 oauhth_url = {"clientsB2CPeugeot": "https://idpcvs.peugeot.com/am/oauth2/access_token",
               "clientsB2CCitroen": "https://idpcvs.citroen.com/am/oauth2/access_token",
@@ -132,8 +127,8 @@ class OauthAPIClient(ApiClient):
 def correlation_id(date):
     date_str = date.strftime("%Y%m%d%H%M%S%f")[:-3]
     uuid_str = str(uuid.uuid4()).replace("-", "")
-    correlation_id = uuid_str + date_str
-    return correlation_id
+    correlationId = uuid_str + date_str
+    return correlationId
 
 
 class MyPSACC:
@@ -142,7 +137,8 @@ class MyPSACC:
     def connect(self, user, password):
         self.manager.init_with_user_credentials(user, password, self.realm)
 
-    def __init__(self, refresh_token, client_id, client_secret, remote_refresh_token, customer_id, realm, proxies=None, weather_api = None):
+    def __init__(self, refresh_token, client_id, client_secret, remote_refresh_token, customer_id, realm, country_code,
+                 proxies=None, weather_api=None):
         self.realm = realm
         self.service_information = ServiceInformation(authorize_service,
                                                       oauhth_url[self.realm],
@@ -156,7 +152,7 @@ class MyPSACC:
         self.manager.refresh_token = refresh_token
         self.remote_refresh_token = remote_refresh_token
         self.remote_access_token = None
-        self.vehicles_list = None
+        self.vehicles_list = Cars.load_cars()
         self.setProxies(proxies)
         self.customer_id = customer_id
         self._confighash = None
@@ -172,6 +168,8 @@ class MyPSACC:
         self._record_enabled = False
         self.otp = None
         self.weather_api = weather_api
+        self.country_code = country_code
+        self.mqtt_client = None
 
     def refresh_token(self):
         self.manager._refresh_token()
@@ -191,36 +189,29 @@ class MyPSACC:
         self.manager.proxies = self._proxies
 
     def get_vehicle_info(self, vin):
-        res = self.api().get_vehicle_status(self.get_vehicle_id_with_vin(vin), extension=["odometer"])
+        res = self.api().get_vehicle_status(self.vehicles_list.get_car_by_vin(vin).vehicle_id, extension=["odometer"])
         # retry
         if res is None:
-            res = self.api().get_vehicle_status(self.get_vehicle_id_with_vin(vin), extension=["odometer"])
+            res = self.api().get_vehicle_status(self.vehicles_list.get_car_by_vin(vin).vehicle_id, extension=["odometer"])
         if self._record_enabled:
             self.record_info(vin, res)
         return res
 
     # monitor doesn't seem to work
     def newMonitor(self, vin, body):
-        res = self.manager.post("https://api.groupe-psa.com/connectedcar/v4/user/vehicles/" + self.vehicles_list[vin][
-            "id"] + "/status?client_id=" + self.client_id, headers=self.headers, data=body)
+        res = self.manager.post("https://api.groupe-psa.com/connectedcar/v4/user/vehicles/" +
+                                self.vehicles_list.get_car_by_vin(vin).id + "/status?client_id=" + self.client_id,
+                                headers=self.headers, data=body)
         data = res.json()
         return data
 
     def get_vehicles(self):
         res = self.api().get_vehicles_by_device()
-        self.vehicles_list = {}
         for vehicle in res.embedded.vehicles:
             vin = vehicle.vin
-            self.vehicles_list[vin] = {"id": vehicle.id,"brand": vehicle.brand, "label": vehicle.label}
+            self.vehicles_list.add(Car(vin, vehicle.id, vehicle.brand, vehicle.label))
+        self.vehicles_list.save_cars()
         return self.vehicles_list
-
-    def get_vehicle_id_with_vin(self, vin):
-        return self.vehicles_list[vin]["id"]
-
-    def getVIN(self):
-        if self.vehicles_list is None:
-            self.get_vehicles()
-        return list(self.vehicles_list.keys())
 
     def load_otp(self):
         otp_session = load_otp()
@@ -278,13 +269,12 @@ class MyPSACC:
         self.mqtt_client.username_pw_set("IMA_OAUTH_ACCESS_TOKEN", self.remote_access_token)
         return res
 
-
     def on_mqtt_connect(self, client, userdata, rc, a):
         try:
             logger.info("Connected with result code " + str(rc))
             topics = [MQTT_RESP_TOPIC + self.customer_id + "/#"]
-            for vin in self.getVIN():
-                topics.append(MQTT_EVENT_TOPIC + vin)
+            for car in self.vehicles_list:
+                topics.append(MQTT_EVENT_TOPIC + car.vin)
             for topic in topics:
                 client.subscribe(topic)
                 logger.info("subscribe to " + topic)
@@ -350,7 +340,7 @@ class MyPSACC:
     def __keep_mqtt(self):  # avoid token expiration
         timeout = 3600 * 24  # 1 day
         try:
-            self.get_state(list(self.vehicles_list.keys())[0])
+            self.get_state(self.vehicles_list[0].vin)
         except:
             logger.warn("keep_mqtt error")
         threading.Timer(timeout, self.__keep_mqtt).start()
@@ -421,7 +411,7 @@ class MyPSACC:
         self.mqtt_client.publish(MQTT_REQ_TOPIC + self.customer_id + "/VehCharge/state", msg)
         return True
 
-    #get state from server by mqtt
+    # get state from server by mqtt
     def get_state(self, vin):
         logger.info("ask state to " + vin)
         msg = self.mqtt_request(vin, {"action": "state"})
@@ -467,7 +457,10 @@ class MyPSACC:
     def load_config(name="config.json"):
         with open(name, "r") as f:
             str = f.read()
-            return MyPSACC(**json.loads(str))
+            config = dict(**json.loads(str))
+            if "country_code" not in config:
+                config["country_code"] = input("What is your country code ? (ex: FR, GB, DE, ES...)\n")
+            return MyPSACC(**config)
 
     def set_record(self, value: bool):
         self._record_enabled = value
@@ -482,7 +475,9 @@ class MyPSACC:
         charge_date = status.get_energy('Electric').updated_at
         level_fuel = status.get_energy('Fuel').level
         moving = status.kinetic.moving
-        logger.debug(f"vin:{vin} longitude:{longitude} latitude:{latitude} date:{date} mileage:{mileage} level:{level} charging_status:{charging_status} charge_date:{charge_date} level_fuel:{level_fuel} moving:{moving}")
+        logger.debug(
+            f"vin:{vin} longitude:{longitude} latitude:{latitude} date:{date} mileage:{mileage} level:{level} "
+            f"charging_status:{charging_status} charge_date:{charge_date} level_fuel:{level_fuel} moving:{moving}")
         conn = get_db()
         if mileage == 0:  # fix a bug of the api
             logger.error(f"The api return a wrong mileage for {vin} : {mileage}")
@@ -494,15 +489,18 @@ class MyPSACC:
                         weather_rep = requests.get("https://api.openweathermap.org/data/2.5/onecall",
                                                    params={"lat": latitude, "lon": longitude,
                                                            "exclude": "minutely,hourly,daily,alerts",
-                                                           "appid": "f8ee4124ea074950b696fd3e956a7069", "units": "metric"})
+                                                           "appid": self.weather_api,
+                                                           "units": "metric"})
                         temp = weather_rep.json()["current"]["temp"]
                         logger.debug(f"Temperature :{temp}c")
                     except Exception as e:
                         logger.error(f"Unable to get temperature from openweathermap :{e}")
 
-                if level_fuel == 0: # fix fuel level not provided when car is off
+                if level_fuel == 0:  # fix fuel level not provided when car is off
                     try:
-                        level_fuel = conn.execute("SELECT level_fuel FROM position WHERE level_fuel>0 AND VIN=? ORDER BY Timestamp DESC LIMIT 1",(vin,)).fetchone()[0]
+                        level_fuel = conn.execute(
+                            "SELECT level_fuel FROM position WHERE level_fuel>0 AND VIN=? ORDER BY Timestamp DESC LIMIT 1",
+                            (vin,)).fetchone()[0]
                         logger.info(f"level_fuel fixed with last real value {level_fuel} for {vin}")
                     except TypeError:
                         level_fuel = None
@@ -540,12 +538,12 @@ class MyPSACC:
         else:
             try:
                 start_at, stop_at, start_level = conn.execute(
-                        "SELECT start_at, stop_at, start_level from battery WHERE VIN=? ORDER BY start_at "
-                        "DESC limit 1", (vin,)).fetchone()
+                    "SELECT start_at, stop_at, start_level from battery WHERE VIN=? ORDER BY start_at "
+                    "DESC limit 1", (vin,)).fetchone()
                 in_progress = stop_at is None
                 if in_progress:
                     co2_per_kw = Ecomix.get_co2_per_kw(start_at, charge_date, latitude, longitude)
-                    kw = (level - start_level) / 100 * BATTERY_POWER
+                    kw = (level - start_level) / 100 * self.vehicles_list.get_car_by_vin(vin).battery_power
                     res = conn.execute(
                         "UPDATE battery set stop_at=?, end_level=?, co2=?, kw=? WHERE start_at=? and VIN=?",
                         (charge_date, level, co2_per_kw, kw, start_at, vin))
@@ -565,118 +563,13 @@ class MyPSACC:
         features_list = []
         for row in res:
             feature = Feature(geometry=Point((row["longitude"], row["latitude"])),
-                              properties={"vin": row["vin"], "date": row["Timestamp"].strftime("%x %X"), "mileage": row["mileage"],
-                                          "level": row["level"],"level_fuel": row["level_fuel"]})
+                              properties={"vin": row["vin"], "date": row["Timestamp"].strftime("%x %X"),
+                                          "mileage": row["mileage"],
+                                          "level": row["level"], "level_fuel": row["level_fuel"]})
             features_list.append(feature)
         feature_collection = FeatureCollection(features_list)
         conn.close()
         return geo_dumps(feature_collection, sort_keys=True)
-
-    @staticmethod
-    def get_trips(vehicle_model='208') -> List[Trip]:   # to be verified by an e208 owner - to be changed in ENERGY_CAPACITY and in get_trip function vehicle_model default value
-                                                        # we should add vin parameter
-                                                        # we should think moving this method in Trip.py
-        conn = get_db()
-        res = conn.execute('SELECT * FROM position ORDER BY Timestamp').fetchall()
-        trips = []
-        if len(res) > 1:
-            start = res[0]
-            end = res[1]
-            tr = Trip()
-            #res = list(map(dict,res))
-            for x in range(0, len(res) - 2):
-                logger.debug(f"{res[x]['Timestamp']} mileage:{res[x]['mileage']} level:{res[x]['level']} level_fuel:{res[x]['level_fuel']}")
-                next_el = res[x + 2]
-                distance = end["mileage"] - start["mileage"]
-                duration = (end["Timestamp"] - start["Timestamp"]).total_seconds() / 3600
-                try:
-                    speed_average = distance / duration
-                except ZeroDivisionError:
-                    speed_average = 0
-                charge = end["level"] - start["level"]
-                if end["level_fuel"] != None and start["level_fuel"] != None:
-                    refuel = end["level_fuel"] - start["level_fuel"]
-                else:
-                    refuel = 0
-                restart_trip = False
-                if refuel > 0:
-                    restart_trip = True
-                    logger.debug(f"refuel detected")
-                elif distance == 0 and charge > 2:
-                    restart_trip = True
-                    logger.debug(f"charge detected")
-                elif speed_average < 0.2 and duration > 0.05:   # think again if duration is really needed
-                     #end["mileage"] - start["mileage"] == 0 #or \
-                     #(end["Timestamp"] - start["Timestamp"]).total_seconds() / 3600 > 10:  # condition useless ???
-                    restart_trip = True
-                    logger.debug(f"low speed detected")
-                if restart_trip:
-                    start = end
-                    tr = Trip()
-                    logger.debug(f"restart trip at {start['Timestamp']} {start['mileage']}km level:{start['level']} level_fuel:{start['level_fuel']}")
-                else:
-                    distance = next_el["mileage"] - end["mileage"]  # km
-                    duration = (next_el["Timestamp"] - end["Timestamp"]).total_seconds() / 3600
-                    try:
-                        speed_average = distance / duration
-                    except ZeroDivisionError:
-                        speed_average = 0
-                    charge = next_el["level"] - end["level"]
-                    if next_el["level_fuel"] != None and end["level_fuel"] != None:
-                        refuel = next_el["level_fuel"] - end["level_fuel"]
-                    else:
-                        refuel = 0
-                    end_trip = False
-                    if refuel > 0:
-                        end_trip = True
-                        logger.debug(f"refuel detected")
-                    elif distance == 0 and charge > 2:
-                        end_trip = True
-                        logger.debug(f"charge detected {charge}")
-                    elif speed_average < 0.2 and duration > 0.05:
-                         #(distance == 0 and duration > 0.08) or duration > 2 or  # check the speed to handle missing point
-                        end_trip = True
-                        logger.debug(f"low speed detected")
-                    elif duration > 2:
-                        end_trip = True
-                        logger.debug(f"too much time detected")
-                    elif x == len(res)-3:  # last record detected
-                        # think if add point is needed
-                        end = next_el
-                        end_trip = True
-                        logger.debug(f"last position found")
-                    if end_trip:
-                        logger.debug(f"stop trip at {end['Timestamp']} {end['mileage']}km level:{end['level']} level_fuel:{end['level_fuel']}")
-                        tr.distance = end["mileage"] - start["mileage"]  # km
-                        if tr.distance > 0:
-                            tr.start_at = start["Timestamp"]
-                            tr.end_at = end["Timestamp"]
-                            tr.add_points(end["longitude"], end["latitude"])
-                            tr.duration = (end["Timestamp"] - start["Timestamp"]).total_seconds() / 3600
-                            tr.speed_average = tr.distance / tr.duration
-                            diff_level = start["level"] - end["level"]
-                            tr.consumption = diff_level / 100 * ENERGY_CAPACITY[vehicle_model]['BATTERY_POWER']  # kw
-                            tr.consumption_km = 100 * tr.consumption / tr.distance  # kw/100 km
-                            if start["level_fuel"] != None and end["level_fuel"] != None:
-                                diff_level_fuel = start["level_fuel"] - end["level_fuel"]
-                                tr.consumption_fuel = round(diff_level_fuel / 100 * ENERGY_CAPACITY[vehicle_model]['FUEL_CAPACITY'],2) # L
-                                tr.consumption_fuel_km = round(100 * tr.consumption_fuel / tr.distance,2)  # L/100 km
-                            tr.mileage = end["mileage"]
-                            logger.debug(
-                                    f"Trip: {tr.start_at} -> {tr.end_at} {tr.distance:.1f}km {tr.duration:.2f}h {tr.speed_average:.0f}km/h "
-                                    f"{tr.consumption:.2f}kw {tr.consumption_km:.2f}kw/100km {tr.consumption_fuel}L {tr.consumption_fuel_km}L/100km "
-                                    f"{tr.mileage:.1f}km")
-                            # filter bad value
-                            if tr.consumption_km < 70 and (tr.consumption_fuel_km == None or tr.consumption_fuel_km < 30):
-                                trips.append(tr)
-                            else:
-                                logger.debug(f"trip discarded")
-                        start = next_el
-                        tr = Trip()
-                    else:
-                        tr.add_points(end["longitude"], end["latitude"])
-                end = next_el
-        return trips
 
     @staticmethod
     def get_chargings(min=None, max=None):
@@ -696,20 +589,19 @@ class MyPSACC:
 class MyPeugeotEncoder(JSONEncoder):
     def default(self, mp: MyPSACC):
         data = copy(mp.__dict__)
-        mpd = {}
-        mpd["proxies"] = data["_proxies"]
-        mpd["refresh_token"] = mp.manager.refresh_token
-        mpd["client_secret"] = mp.service_information.client_secret
-        for el in ["client_id", "realm", "remote_refresh_token", "customer_id","weather_api"]:
+        mpd = {"proxies": data["_proxies"], "refresh_token": mp.manager.refresh_token,
+               "client_secret": mp.service_information.client_secret}
+        for el in ["client_id", "realm", "remote_refresh_token", "customer_id", "weather_api", "country_code"]:
             mpd[el] = data[el]
         return mpd
 
 
-#add method to class Energy
-def get_energy(self,energy_type):
+# add method to class Energy
+def get_energy(self, energy_type):
     for energy in self._energy:
         if energy.type == energy_type:
             return energy
     return psac.models.energy.Energy(charging=psac.models.energy_charging.EnergyCharging())
+
 
 psac.models.status.Status.get_energy = get_energy

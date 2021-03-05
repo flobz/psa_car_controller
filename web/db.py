@@ -23,14 +23,6 @@ def get_db(db_file=default_db_file):
         conn.execute("ALTER TABLE position ADD level_fuel INTEGER;")
     except:
         pass
-    try:
-        conn.execute("ALTER TABLE position ADD moving BOOLEAN;")
-    except:
-        pass
-    try:
-        conn.execute("ALTER TABLE position ADD temperature INTEGER;")
-    except:
-        pass
     conn.execute("CREATE TABLE IF NOT EXISTS battery (start_at DATETIME PRIMARY KEY,stop_at DATETIME,VIN TEXT, "
                  "start_level INTEGER, end_level INTEGER, co2 INTEGER, kw INTEGER);")
     conn.create_function("update_trips", 0, update_callback)

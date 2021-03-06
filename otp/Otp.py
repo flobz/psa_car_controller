@@ -154,7 +154,7 @@ class Otp:
             },
             params=param,
             proxies=proxies,
-            verify=False
+            verify=proxies is None
         ).text
         try:
             raw_xml = raw_xml[raw_xml.index("?>") + 2:]

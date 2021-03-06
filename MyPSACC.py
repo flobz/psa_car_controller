@@ -227,7 +227,7 @@ class MyPSACC:
             headers={
                 "Connection": "Keep-Alive",
                 "User-Agent": "okhttp/4.8.0",
-                "x-introspect-realm": "clientsB2CPeugeot"
+                "x-introspect-realm": self.realm
             })
         return res
 
@@ -362,13 +362,17 @@ class MyPSACC:
         reg = r"PT([0-9]{1,2})H([0-9]{1,2})?"
         data = self.get_vehicle_info(vin)
         hour_str = data.get_energy('Electric').charging.next_delayed_time
-        hour = re.findall(reg, hour_str)[0]
-        h = int(hour[0])
-        if hour[1] == '':
-            m = 0
-        else:
-            m = hour[1]
-        return h, m
+        try:
+            hour = re.findall(reg, hour_str)[0]
+            h = int(hour[0])
+            if hour[1] == '':
+                m = 0
+            else:
+                m = hour[1]
+            return h, m
+        except IndexError:
+            logger.error(traceback.format_exc())
+            logger.error(f"Can't get charge hour: {hour_str}")
 
     def get_charge_status(self, vin):
         data = self.get_vehicle_info(vin)

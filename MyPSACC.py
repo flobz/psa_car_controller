@@ -14,7 +14,6 @@ import requests
 from oauth2_client.credentials_manager import CredentialManager, ServiceInformation
 import paho.mqtt.client as mqtt
 from requests import Response
-from typing import List
 
 import psa_connectedcar as psac
 from Car import Cars, Car
@@ -170,6 +169,7 @@ class MyPSACC:
         self.weather_api = weather_api
         self.country_code = country_code
         self.mqtt_client = None
+        self.precond_programs = {}
 
     def refresh_token(self):
         self.manager._refresh_token()
@@ -192,7 +192,8 @@ class MyPSACC:
         res = self.api().get_vehicle_status(self.vehicles_list.get_car_by_vin(vin).vehicle_id, extension=["odometer"])
         # retry
         if res is None:
-            res = self.api().get_vehicle_status(self.vehicles_list.get_car_by_vin(vin).vehicle_id, extension=["odometer"])
+            res = self.api().get_vehicle_status(self.vehicles_list.get_car_by_vin(vin).vehicle_id,
+                                                extension=["odometer"])
         if self._record_enabled:
             self.record_info(vin, res)
         return res
@@ -316,6 +317,7 @@ class MyPSACC:
                 if data["resp_data"]["charging_state"]['remaining_time'] != 0 \
                         and data["resp_data"]["charging_state"]['rate'] == 0:
                     charge_not_detected = True
+                self.precond_programs[data["vin"]] = data["resp_data"]["precond_state"]["programs"]
             if charge_not_detected:
                 # fix a psa server bug where charge beginning without status api being properly updated
                 logger.info("charge begin")
@@ -435,11 +437,18 @@ class MyPSACC:
             value = "activate"
         else:
             value = "deactivate"
-        msg = self.mqtt_request(vin, {"asap": value, "programs": {
-            "program1": {"day": [0, 0, 0, 0, 0, 0, 0], "hour": 34, "minute": 7, "on": 0},
-            "program2": {"day": [0, 0, 0, 0, 0, 0, 0], "hour": 34, "minute": 7, "on": 0},
-            "program3": {"day": [0, 0, 0, 0, 0, 0, 0], "hour": 34, "minute": 7, "on": 0},
-            "program4": {"day": [0, 0, 0, 0, 0, 0, 0], "hour": 34, "minute": 7, "on": 0}}})
+        self.get_state(vin)
+        sleep(2)  # wait for rep
+        if vin in self.precond_programs:
+            programs = self.precond_programs[vin]
+        else:
+            programs = {
+                "program1": {"day": [0, 0, 0, 0, 0, 0, 0], "hour": 34, "minute": 7, "on": 0},
+                "program2": {"day": [0, 0, 0, 0, 0, 0, 0], "hour": 34, "minute": 7, "on": 0},
+                "program3": {"day": [0, 0, 0, 0, 0, 0, 0], "hour": 34, "minute": 7, "on": 0},
+                "program4": {"day": [0, 0, 0, 0, 0, 0, 0], "hour": 34, "minute": 7, "on": 0}
+            }
+        msg = self.mqtt_request(vin, {"asap": value, "programs": programs})
         logger.info(msg)
         self.mqtt_client.publish(MQTT_REQ_TOPIC + self.customer_id + "/ThermalPrecond", msg)
         return True

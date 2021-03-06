@@ -21,6 +21,7 @@ Give the anonymize content of the config file
 **Environment (please complete the following information):**
  - OS: [e.g. Windows]
  - Android app Version [e.g. 26.0]
+ - Brand and model of car
 
 **Additional context**
 Add any other context about the problem here.

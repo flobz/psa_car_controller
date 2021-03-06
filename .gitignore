@@ -139,9 +139,11 @@ cython_debug/
 
 .idea/
 backup.ab
+*.apk
 info.db
 otp.bin
 charge_config1.json
 config.json
 test.json
 charge_config.json
+cars.json

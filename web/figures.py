@@ -77,7 +77,7 @@ def get_figures(trips: List[Trip], charging: List[dict]):
                  {'id': 'speed_average', 'name': 'average speed', 'type': 'numeric',
                   'format': deepcopy(nb_format).symbol_suffix(" km/h").precision(0)},
                  {'id': 'consumption_km', 'name': 'average consumption', 'type': 'numeric',
-                  'format': deepcopy(nb_format).symbol_suffix(" kw/100km")},
+                  'format': deepcopy(nb_format).symbol_suffix(" kWh/100km")},
                  {'id': 'consumption_fuel_km', 'name': 'average consumption fuel', 'type': 'numeric',
                   'format': deepcopy(nb_format).symbol_suffix(" L/100km")},
                  {'id': 'distance', 'name': 'distance', 'type': 'numeric', 'format': nb_format.symbol_suffix(" km").precision(1)},
@@ -100,7 +100,7 @@ def get_figures(trips: List[Trip], charging: List[dict]):
                    name="Trips"))
     consumption_fig_by_speed.update_layout(xaxis_title="average Speed km/h", yaxis_title="Consumption kWh/100Km")
     kw_per_km = float(consumption_df.mean(numeric_only=True))
-    info = "Average consumption: {:.1f} kW/100km".format(kw_per_km)
+    info = "Average consumption: {:.1f} kWh/100km".format(kw_per_km)
 
     # charging
     charging_data = DataFrame.from_records(charging)
@@ -118,6 +118,7 @@ def get_figures(trips: List[Trip], charging: List[dict]):
         charge_speed = 0
     except KeyError:  # when there is no data yet:
         charge_speed = 0
-    battery_info = html.Div(children=[html.P("Average gC02/kW: {:.1f}".format(co2_per_kw)),
-                   html.P("Average gC02/km: {:1f}".format(co2_per_km)),
-                   html.P("Average Charge SPEED {:1f} kW/h".format(charge_speed))])
+    battery_info = html.Div(children=[
+                   html.P("Average C02 emission: {:.1f} g/kWh".format(co2_per_kw)),
+                   html.P("Average CO2 emission: {:.1f} g/km".format(co2_per_km)),
+                   html.P("Average charge speed: {:.3f} kW".format(charge_speed))])

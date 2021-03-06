@@ -3,6 +3,7 @@ import json
 from MyLogger import logger
 
 ENERGY_CAPACITY = {'SUV 3008': {'BATTERY_POWER': 10.8, 'FUEL_CAPACITY': 43},
+                   'C5 Aircross': {'BATTERY_POWER': 10.8, 'FUEL_CAPACITY': 43},
                    'e-208': {'BATTERY_POWER': 46, 'FUEL_CAPACITY': 0},
                    'e-2008': {'BATTERY_POWER': 46, 'FUEL_CAPACITY': 0}
                    }

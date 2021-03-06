@@ -12,9 +12,8 @@ A clear and concise description of what the bug is.
 
 **To Reproduce**
 Steps to reproduce the behavior:
-1. what solution did you use (solution 1 or 2)
-2. what command did you use
-3. when the bug append ?
+1. what command did you use
+2. when the bug append ?
 
 **Config file**
 Give the anonymize content of the config file

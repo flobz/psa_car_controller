@@ -38,6 +38,10 @@ if __name__ == "__main__":
         raise RuntimeError("This application requires Python 3.6+")
     parser = parse_args()
     args = parser.parse_args()
+    try:
+        args.debug=int(args.debug)
+    except ValueError:
+        pass
     my_logger(handler_level=args.debug)
     logger.info("server start")
     if args.config:
@@ -69,5 +73,5 @@ if __name__ == "__main__":
             web.app.chc = ChargeControls.load_config(web.app.myp, name=args.charge_control)
             web.app.chc.start()
     save_config(web.app.myp)
-    t1 = Thread(target=start_app, args=["My car info", args.base_path, args.debug < 20, args.listen, int(args.port)])
+    t1 = Thread(target=start_app, args=["My car info", args.base_path, logger.level < 20, args.listen, int(args.port)])
     t1.start()

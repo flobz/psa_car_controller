@@ -198,6 +198,13 @@ class MyPSACC:
             self.record_info(vin, res)
         return res
 
+    def refresh_vehicle_info(self, refresh=5):
+        while True:
+            sleep(refresh * 60)
+            logger.info("refresh_vehicle_info")
+            for car in self.vehicles_list:
+                self.get_vehicle_info(car.vin)
+
     # monitor doesn't seem to work
     def newMonitor(self, vin, body):
         res = self.manager.post("https://api.groupe-psa.com/connectedcar/v4/user/vehicles/" +

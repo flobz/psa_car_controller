@@ -10,7 +10,6 @@ import pytz
 
 from MyPSACC import MyPSACC
 from MyLogger import logger
-from psa_connectedcar.rest import ApiException
 
 
 class ChargeControl:
@@ -23,7 +22,6 @@ class ChargeControl:
         self.set_stop_hour(stop_hour)
         self.psacc = psacc
         self.retry_count = 0
-        self.thread: threading.Timer = None
         self.always_check = True
 
     def set_stop_hour(self, stop_hour):
@@ -36,9 +34,9 @@ class ChargeControl:
             if self._next_stop_hour < datetime.now():
                 self._next_stop_hour += timedelta(days=1)
 
-    def start(self):
-        periodicity = ChargeControl.periodicity
+    def process(self):
         now = datetime.now()
+        vehicle_status = self.psacc.vehicles_list.get_car_by_vin(self.vin).status
         try:
             if self._next_stop_hour is not None and self._next_stop_hour < now:
                 stop_charge = True
@@ -48,47 +46,41 @@ class ChargeControl:
                 stop_charge = False
 
             if self.percentage_threshold != 100 or stop_charge or self.always_check:
-                res = None
-                try:
-                    res = self.psacc.get_vehicle_info(self.vin)
-                except ApiException:
-                    logger.error(traceback.format_exc())
-                if res is not None:
-                    status = res.get_energy('Electric').charging.status
-                    level = res.get_energy('Electric').level
+                if vehicle_status is not None:
+                    status = vehicle_status.get_energy('Electric').charging.status
+                    level = vehicle_status.get_energy('Electric').level
                     logger.info("charging status of %s is %s, battery level: %d", self.vin, status, level)
                     if status == "InProgress":
                         # force update if the car doesn't send info during 10 minutes
-                        last_update = res.get_energy('Electric').updated_at
+                        last_update = vehicle_status.get_energy('Electric').updated_at
                         if (datetime.utcnow().replace(tzinfo=pytz.UTC) - last_update).total_seconds() > 60 * 10:
                             self.psacc.wakeup(self.vin)
                         if (level >= self.percentage_threshold and self.retry_count < 2) or stop_charge:
                             self.psacc.charge_now(self.vin, False)
                             self.retry_count += 1
                             sleep(ChargeControl.MQTT_TIMEOUT)
-                            res = self.psacc.get_vehicle_info(self.vin)
-                            status = res.get_energy('Electric').charging.status
+                            vehicle_status = self.psacc.get_vehicle_info(self.vin)
+                            status = vehicle_status.get_energy('Electric').charging.status
                             if status == "InProgress":
                                 logger.warning("retry to stop the charge of %s", self.vin)
                                 self.psacc.charge_now(self.vin, False)
                                 self.retry_count += 1
                         if self._next_stop_hour is not None:
                             next_in_second = (self._next_stop_hour - now).total_seconds()
-                            if next_in_second < periodicity:
+                            if next_in_second < self.psacc.info_refresh_rate:
                                 periodicity = next_in_second
+                                self.thread = threading.Timer(periodicity, self.process, args=[vehicle_status])
+                                self.thread.start()
                     else:
                         self.retry_count = 0
                 else:
-                    logger.error("error when get vehicle info of %s", self.vin)
+                    logger.error("error can't retrieve vehicle info of %s", self.vin)
         except:
             logger.error(traceback.format_exc())
-        self.thread = threading.Timer(periodicity, self.start)
-        self.thread.start()
 
     def get_dict(self):
         chd = copy(self.__dict__)
         chd.pop("psacc")
-        chd.pop("thread")
         return chd
 
 
@@ -110,6 +102,7 @@ class ChargeControls:
             self._confighash = new_hash
             logger.info("save config change")
 
+    @staticmethod
     def load_config(psacc: MyPSACC, name="charge_config.json"):
         with open(name, "r") as f:
             config_str = f.read()
@@ -127,4 +120,4 @@ class ChargeControls:
 
     def start(self):
         for charge_control in self.list.values():
-            charge_control.start()
+            charge_control.psacc.info_callback.append(charge_control.process)

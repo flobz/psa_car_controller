@@ -181,6 +181,8 @@ class MyPSACC:
         self.country_code = country_code
         self.mqtt_client = None
         self.precond_programs = {}
+        self.info_callback = []
+        self.info_refresh_rate = 120
 
     def refresh_token(self):
         self.manager._refresh_token()
@@ -200,21 +202,25 @@ class MyPSACC:
         self.manager.proxies = self._proxies
 
     def get_vehicle_info(self, vin):
-        res = self.api().get_vehicle_status(self.vehicles_list.get_car_by_vin(vin).vehicle_id, extension=["odometer"])
-        # retry
-        if res is None:
-            res = self.api().get_vehicle_status(self.vehicles_list.get_car_by_vin(vin).vehicle_id,
-                                                extension=["odometer"])
-        if self._record_enabled:
-            self.record_info(vin, res)
+        car = self.vehicles_list.get_car_by_vin(vin)
+        for attempt in range(0, 2):
+            res = self.api().get_vehicle_status(car.vehicle_id, extension=["odometer"])
+            if res is not None:
+                car.status = res
+                if self._record_enabled:
+                    self.record_info(vin, res)
+                break
         return res
 
-    def refresh_vehicle_info(self, refresh=5):
-        while True:
-            sleep(refresh * 60)
-            logger.info("refresh_vehicle_info")
-            for car in self.vehicles_list:
-                self.get_vehicle_info(car.vin)
+    def refresh_vehicle_info(self):
+        if self.info_refresh_rate is not None:
+            while True:
+                sleep(self.info_refresh_rate)
+                logger.info("refresh_vehicle_info")
+                for car in self.vehicles_list:
+                    self.get_vehicle_info(car.vin)
+                for callback in self.info_callback:
+                    callback()
 
     # monitor doesn't seem to work
     def newMonitor(self, vin, body):

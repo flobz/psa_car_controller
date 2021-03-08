@@ -1,4 +1,5 @@
 import json
+from copy import copy
 
 from MyLogger import logger
 
@@ -20,6 +21,7 @@ class Car:
         self.battery_power = None
         self.fuel_capacity = None
         self.set_energy_capacity(battery_power, fuel_capacity)
+        self.status = None
 
     def set_energy_capacity(self, battery_power = None, fuel_capacity = None):
         if battery_power is not None and fuel_capacity is not None:
@@ -37,8 +39,13 @@ class Car:
     def from_json(cls, data: dict):
         return cls(**data)
 
+    def to_dict(self):
+        car_dict = copy(self.__dict__)
+        car_dict.pop("status")
+        return car_dict
+
     def __str__(self):
-        return str(self.__dict__)
+        return str(self.to_dict())
 
 class Cars(list):
     def __init__(self, *args):
@@ -69,7 +76,7 @@ class Cars(list):
         return str(list(map(str, self)))
 
     def save_cars(self, name="cars.json"):
-        config_str = json.dumps(self, default=lambda o: o.__dict__, sort_keys=True, indent=4)
+        config_str = json.dumps(self, default=lambda car: car.to_dict(), sort_keys=True, indent=4)
         with open(name, "w") as f:
             f.write(config_str)
 
@@ -79,5 +86,5 @@ class Cars(list):
             with open(name, "r") as f:
                 json_str = f.read()
                 return Cars.from_json(json.loads(json_str))
-        except FileNotFoundError:
+        except (FileNotFoundError, TypeError):
             return Cars()

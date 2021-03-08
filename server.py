@@ -63,16 +63,21 @@ if __name__ == "__main__":
                 client_password = input("mypeugeot password: ")
             web.app.myp.connect(client_email, client_password)
         logger.info(str(web.app.myp.get_vehicles()))
-    if args.offline or args.remote_disable:
-        logger.info("mqtt disabled")
+    if args.offline:
+        logger.info("offline mode")
     else:
-        web.app.myp.start_mqtt()
-        if args.charge_control:
-            web.app.chc = ChargeControls.load_config(web.app.myp, name=args.charge_control)
-            web.app.chc.start()
+        if args.remote_disable:
+            logger.info("mqtt disabled")
+        else:
+            web.app.myp.start_mqtt()
+        if args.refresh or args.charge_control:
+            if args.refresh:
+                web.app.myp.info_refresh_rate = args.refresh * 60
+            if args.charge_control:
+                web.app.chc = ChargeControls.load_config(web.app.myp, name=args.charge_control)
+                web.app.chc.start()
+            Thread(target=web.app.myp.refresh_vehicle_info).start()
+
     save_config(web.app.myp)
     t1 = Thread(target=start_app, args=["My car info", args.base_path, args.debug < 20, args.listen, int(args.port)])
     t1.start()
-
-    if args.refresh:
-        Thread(target=web.app.myp.refresh_vehicle_info, args=[args.refresh]).start()

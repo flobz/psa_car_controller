@@ -29,7 +29,7 @@ class Car:
             self.battery_power = ENERGY_CAPACITY[self.label]["BATTERY_POWER"]
             self.fuel_capacity = ENERGY_CAPACITY[self.label]["FUEL_CAPACITY"]
         else:
-            logger.warn("Can't get car model please check cars.json")
+            logger.warning("Can't get car model please check cars.json")
             self.battery_power = DEFAULT_BATTERY_POWER
             self.fuel_capacity = DEFAULT_FUEL_CAPACITY
 
@@ -48,11 +48,13 @@ class Cars(list):
         for car in self:
             if car.vin == vin:
                 return car
+        return None
 
     def get_car_by_id(self, vehicle_id) -> Car:
         for car in self:
             if car.vehicle_id == vehicle_id:
                 return car
+        return None
 
     def add(self, car: Car):
         if self.get_car_by_id(car.vehicle_id) is None:
@@ -77,5 +79,5 @@ class Cars(list):
             with open(name, "r") as f:
                 json_str = f.read()
                 return Cars.from_json(json.loads(json_str))
-        except:
+        except FileNotFoundError:
             return Cars()

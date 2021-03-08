@@ -19,7 +19,8 @@ parser = argparse.ArgumentParser()
 def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument("-f", "--config", help="config file, default file: config.json", type=argparse.FileType('r'))
-    parser.add_argument("-c", "--charge-control", help="enable charge control, default charge_config.json", const="charge_config.json", nargs='?', metavar='charge config file')
+    parser.add_argument("-c", "--charge-control", help="enable charge control, default charge_config.json",
+                        const="charge_config.json", nargs='?', metavar='charge config file')
     parser.add_argument("-d", "--debug", help="enable debug", const=10, default=20, nargs='?', metavar='Debug level number')
     parser.add_argument("-l", "--listen", help="change server listen address", default="127.0.0.1", metavar="IP")
     parser.add_argument("-p", "--port", help="change server listen port", default="5000")

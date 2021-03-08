@@ -16,8 +16,8 @@ from web import figures
 from web.app import app, dash_app, myp, chc
 import web.db
 
-trips = None
-chargings = None
+trips: Trips
+chargings: dict
 
 
 @dash_app.callback(Output('trips_map', 'figure'),
@@ -28,14 +28,14 @@ chargings = None
                    Output('tab_battery', 'children'),
                    Input('date-slider', 'value'))
 def display_value(value):
-    min = datetime.fromtimestamp(value[0], tz=timezone.utc)
-    max = datetime.fromtimestamp(value[1], tz=timezone.utc)
+    mini = datetime.fromtimestamp(value[0], tz=timezone.utc)
+    maxi = datetime.fromtimestamp(value[1], tz=timezone.utc)
     filtered_trips = []
     for trip in trips:
-        if min <= trip.start_at <= max:
+        if mini <= trip.start_at <= maxi:
             filtered_trips.append(trip)
-    filtered_chargings = MyPSACC.get_chargings(min,max)
-    figures.get_figures(filtered_trips,filtered_chargings)
+    filtered_chargings = MyPSACC.get_chargings(mini, maxi)
+    figures.get_figures(filtered_trips, filtered_chargings)
     consumption = "Average consumption: {:.1f} kWh/100km".format(float(figures.consumption_df.mean(numeric_only=True)))
     return figures.trips_map, figures.consumption_fig, figures.consumption_fig_by_speed, consumption, figures.table_fig, figures.battery_info
 
@@ -78,16 +78,16 @@ def preconditioning(vin, activate):
 @app.route('/position/<string:vin>')
 def get_position(vin):
     res = myp.get_vehicle_info(vin)
-    coordinates=res.last_position.geometry.coordinates
-    if len(coordinates)==3: # altitude is not always availlable
+    coordinates = res.last_position.geometry.coordinates
+    if len(coordinates) == 3:  # altitude is not always availlable
         longitude, latitude, altitude = coordinates
         return jsonify(
-            {"longitude": longitude, "latitude": latitude, "altitude": altitude, "url": f"http://maps.google.com/maps?q={latitude},{longitude}"})
-    else:
-        longitude, latitude = coordinates
-        return jsonify(
-            {"longitude": longitude, "latitude": latitude, "url": f"http://maps.google.com/maps?q={latitude},{longitude}"})
-
+            {"longitude": longitude, "latitude": latitude, "altitude": altitude,
+             "url": f"http://maps.google.com/maps?q={latitude},{longitude}"})
+    longitude, latitude = coordinates
+    return jsonify(
+            {"longitude": longitude, "latitude": latitude,
+             "url": f"http://maps.google.com/maps?q={latitude},{longitude}"})
 
 
 # Set a battery threshold and schedule an hour to stop the charge
@@ -125,7 +125,8 @@ def update_trips():
         trips = Trips.get_trips(myp.vehicles_list)
         chargings = MyPSACC.get_chargings()
     except:
-        logger.error("update_trips: " + traceback.format_exc())
+        logger.error("update_trips: %s", traceback.format_exc())
+
 
 try:
     web.db.callback_fct = update_trips
@@ -163,9 +164,9 @@ try:
             ),
             html.Div(id="tab-content", className="p-4"),
         ])])
-except (IndexError, TypeError) as e:
+except (IndexError, TypeError):
     logger.debug("Failed to generate figure, there is probably not enough data yet")
-    data_div = dbc.Alert("No data to show", color="danger")
+    data_div = dbc.Alert("No data to show, there is probably no trips recorded yet", color="danger")
 
 except:
     logger.error("Failed to generate figure, there is probably not enough data yet")

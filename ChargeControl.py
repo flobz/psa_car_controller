@@ -56,7 +56,7 @@ class ChargeControl:
                 if res is not None:
                     status = res.get_energy('Electric').charging.status
                     level = res.get_energy('Electric').level
-                    logger.info(f"charging status of {self.vin} is {status}, battery level: {level}")
+                    logger.info("charging status of %s is %s, battery level: %d", self.vin, status, level)
                     if status == "InProgress":
                         # force update if the car doesn't send info during 10 minutes
                         last_update = res.get_energy('Electric').updated_at
@@ -69,7 +69,7 @@ class ChargeControl:
                             res = self.psacc.get_vehicle_info(self.vin)
                             status = res.get_energy('Electric').charging.status
                             if status == "InProgress":
-                                logger.warn(f"retry to stop the charge of {self.vin}")
+                                logger.warning("retry to stop the charge of %s", self.vin)
                                 self.psacc.charge_now(self.vin, False)
                                 self.retry_count += 1
                         if self._next_stop_hour is not None:
@@ -79,7 +79,7 @@ class ChargeControl:
                     else:
                         self.retry_count = 0
                 else:
-                    logger.error(f"error when get vehicle info of {self.vin}")
+                    logger.error("error when get vehicle info of %s", self.vin)
         except:
             logger.error(traceback.format_exc())
         self.thread = threading.Timer(periodicity, self.start)
@@ -100,7 +100,7 @@ class ChargeControls:
 
     def save_config(self, name="charge_config.json", force=False):
         chd = {}
-        for key, el in self.list.items():
+        for el in self.list.values():
             chd[el.vin] = {"percentage_threshold": el.percentage_threshold, "stop_hour": el._stop_hour}
         config_str = json.dumps(chd, sort_keys=True, indent=4).encode('utf-8')
         new_hash = md5(config_str).hexdigest()
@@ -112,8 +112,8 @@ class ChargeControls:
 
     def load_config(psacc: MyPSACC, name="charge_config.json"):
         with open(name, "r") as f:
-            str = f.read()
-            chd = json.loads(str)
+            config_str = f.read()
+            chd = json.loads(config_str)
             charge_control_list = ChargeControls()
             for vin, el in chd.items():
                 charge_control_list.list[vin] = ChargeControl(psacc, vin, **el)
@@ -126,5 +126,5 @@ class ChargeControls:
             return None
 
     def start(self):
-        for vin, charge_control in self.list.items():
+        for charge_control in self.list.values():
             charge_control.start()

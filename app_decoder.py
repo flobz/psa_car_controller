@@ -72,7 +72,7 @@ if sys.version_info < (3, 6):
 
 if not argv[1].endswith(".apk"):
     print("No apk given")
-    exit(1)
+    sys.exit(1)
 print("APK loading...")
 a = APK(argv[1])
 package_name = a.get_package()
@@ -110,7 +110,7 @@ except:
     traceback.print_exc()
     print(f"HOST_BRANDID : {HOST_BRANDID_PROD} sitecode: {site_code}")
     print(res.text)
-    exit(1)
+    sys.exit(1)
 
 save_key_to_pem(pfx_cert, "")
 
@@ -135,7 +135,7 @@ try:
 except:
     traceback.print_exc()
     print(res2.text)
-    exit(1)
+    sys.exit(1)
 
 # Psacc
 
@@ -150,7 +150,7 @@ res = psacc.get_vehicles()
 for vehicle in res_dict["vehicles"]:
     label = vehicle["short_label"].split(" ")[-1]
     car = psacc.vehicles_list.get_car_by_vin(vehicle["vin"])
-    if car.label is "unknown":
+    if car.label == "unknown":
         car.label = label
         car.set_energy_capacity()
 psacc.vehicles_list.save_cars()

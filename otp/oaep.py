@@ -80,5 +80,4 @@ def new(key, hashAlgo=None, mgfunc=None, label=b'', randfunc=None):
 def notrandom(x):
     if x == 32:
         return b'\xf56\xccL`\x8a\x97l\nX0\xf4\x11\x9a\x0e\xce\x99K^\xe6\xcbU\xf3W+It"\xf5\x84\x1d\xe6'
-    else:
-        return None
+    return None

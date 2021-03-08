@@ -38,6 +38,7 @@ def get_marks_from_start_end(start, end):
         for date in result:
             marks[unix_time_millis(date)] = str(date.strftime(date_f))
         return marks
+    return None
 
 
 consumption_fig = None

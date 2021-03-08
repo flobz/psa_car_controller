@@ -27,7 +27,7 @@ def start_app(title, base_path, debug: bool, host, port):
         locale_url = [f"https://cdn.plot.ly/plotly-locale-{lang}-latest.js"]
     except:
         locale_url = None
-        logger.warn("Can't get language")
+        logger.warning("Can't get language")
     app = Flask(__name__)
     app.config["DEBUG"] = debug
     if base_path == "/":
@@ -44,7 +44,7 @@ def start_app(title, base_path, debug: bool, host, port):
 
 
 myp = None
-chc: ChargeControls = None
+chc: ChargeControls
 
 
 def save_config(my_peugeot: MyPSACC):

@@ -1,6 +1,6 @@
-from datetime import datetime, timedelta
+from datetime import datetime
 from statistics import mean, StatisticsError
-import xml.etree.ElementTree as ET
+import xml.etree.ElementTree as ElT
 import requests
 import reverse_geocode
 
@@ -18,7 +18,7 @@ class Ecomix:
             }
         )
 
-        etree = ET.fromstring(res.text)
+        etree = ElT.fromstring(res.text)
         period_start = (start.hour + int(start.minute / 30)) * 4
         period_end = (end.hour + int(end.minute / 30)) * 4
 
@@ -46,4 +46,3 @@ class Ecomix:
         else:
             co2_per_kw = None
         return co2_per_kw
-

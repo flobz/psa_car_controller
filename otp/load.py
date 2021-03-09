@@ -6,15 +6,20 @@ from Cryptodome.Cipher import AES
 
 from otp.Tokenizer import Tokenizer
 
-default_token="0.2.11&&&&&&0&&0&&0&&9f13ba238fbabba08e85d93638e98ef5e48682a9d3e5bc325c3dd6fac8199a6ce09e9b4f373aa6a75a905c3d690f6e3335d1e8e5b748ecec3020a794149033f6ada6896db6d73b8d43b8365bbe15b9ac66f49d4e684a3628f1e9f3deda0c4e24aba771946e6085b92c5ad312477152acf8db01e6aea4b409d5ac1a05c2fd4e95&&0&&&&&&&&&&&&0&&0&&0&&0&&0&&0&&0&&&&&&&&0&&0&&0&&0&&0&&2.0.0&&http://m.inwebo.com/&&"
-default_version="529"
+default_token = "0.2.11&&&&&&0&&0&&0&&9f13ba238fbabba08e85d93638e98ef5e48682a9d3e5bc325c3dd6fac8199a6ce09e9b4f373aa6a" \
+                "75a905c3d690f6e3335d1e8e5b748ecec3020a794149033f6ada6896db6d73b8d43b8365bbe15b9ac66f49d4e684a3628f1e" \
+                "9f3deda0c4e24aba771946e6085b92c5ad312477152acf8db01e6aea4b409d5ac1a05c2fd4e95&&0&&&&&&&&&&&&0&&0&&0&" \
+                "&0&&0&&0&&0&&&&&&&&0&&0&&0&&0&&0&&2.0.0&&http://m.inwebo.com/&&"
+default_version = "529"
 
-def filterLoad(string:str):
+
+def filterLoad(string: str):
     return string.replace("&amp;", "&")
 
-class IWData(object):
-    def __init__(self,IW):
-        self.IW=IW
+
+class IWData:
+    def __init__(self, IW):
+        self.IW = IW
         self.tokenizer = Tokenizer(default_token)
         self.tokenizer.nextToken()
         self.load1xx(int(default_version), self.tokenizer)
@@ -46,16 +51,16 @@ class IWData(object):
         self.iwH = tokenizer.nextToken()
         nextTokenI = tokenizer.nextTokenI()
         self.iwsrvn = nextTokenI
-        self.iwsrvid = [None]*(nextTokenI)
-        self.iwsrvname = [None]*(nextTokenI)
-        self.iwsrvlogo = [None]*(nextTokenI)
-        self.iwsrvurl = [None]*(nextTokenI)
-        self.iwsrvonlineotp = [None]*(nextTokenI)
+        self.iwsrvid = [None] * (nextTokenI)
+        self.iwsrvname = [None] * (nextTokenI)
+        self.iwsrvlogo = [None] * (nextTokenI)
+        self.iwsrvurl = [None] * (nextTokenI)
+        self.iwsrvonlineotp = [None] * (nextTokenI)
         if self.IW.isMac:
-            self.iwsrvconnected = [None]*(self.iwsrvn)
+            self.iwsrvconnected = [None] * (self.iwsrvn)
         j2 = self.iwsrvn
-        self.iwsrvsecure = [None]*(j2)
-        self.iwsrvksc = [None]*(j2)
+        self.iwsrvsecure = [None] * (j2)
+        self.iwsrvksc = [None] * (j2)
         i = 0
         while i < self.iwsrvn:
             self.iwsrvid[i] = tokenizer.nextToken()
@@ -63,12 +68,12 @@ class IWData(object):
             self.iwsrvlogo[i] = filterLoad(tokenizer.nextToken())
             if self.IW.isMac:
                 self.iwsrvconnected[i] = tokenizer.nextTokenI()
-            if j>515:
+            if j > 515:
                 i2 = 1
-            elif j ==515:
-                i2=0
+            elif j == 515:
+                i2 = 0
             else:
-                i2=-1
+                i2 = -1
             if i2 < 0 or self.IW.isMac:
                 self.iwsrvurl[i] = ""
             else:
@@ -85,8 +90,8 @@ class IWData(object):
             i += 1
         nextTokenI2 = tokenizer.nextTokenI()
         self.iwsecn = nextTokenI2
-        self.iwsecid = [None]*(nextTokenI2)
-        self.iwsecval = [None]*(nextTokenI2)
+        self.iwsecid = [None] * (nextTokenI2)
+        self.iwsecval = [None] * (nextTokenI2)
         i3 = 0
         while ((i3)) < self.iwsecn:
             self.iwsecid[i3] = tokenizer.nextToken()
@@ -94,15 +99,15 @@ class IWData(object):
             i3 += 1
         self.iwmsgn = tokenizer.nextTokenI()
         self.iwmsgtime = tokenizer.nextTokenI()
-        self.iwmsgid =""
-        self.iwmsgtitle =""
+        self.iwmsgid = ""
+        self.iwmsgtitle = ""
         self.iwmsgcontent = ""
         self.iwmsgack = ""
         i4 = 0
         while i4 < self.iwmsgn:
-            self.iwmsgid+= tokenizer.nextToken()
-            self.iwmsgtitle+= filterLoad(tokenizer.nextToken())
-            self.iwmsgcontent+=filterLoad(tokenizer.nextToken())
+            self.iwmsgid += tokenizer.nextToken()
+            self.iwmsgtitle += filterLoad(tokenizer.nextToken())
+            self.iwmsgcontent += filterLoad(tokenizer.nextToken())
             self.iwmsgack += tokenizer.nextTokenI()
             i4 += 1
         self.iwmajorversion = tokenizer.nextTokenI()
@@ -111,9 +116,8 @@ class IWData(object):
         self.mustupgrade = False
         self.datatouch = 0
 
-    def synchro(self, ixml:dict, key):
+    def synchro(self, ixml: dict, key):
         aes_cipher = AES.new(bytes.fromhex(key), AES.MODE_ECB)
-        """ generated source for method synchro """
         value = ixml.get("id")
         if value is not None and len(value) > 0:
             self.iwid = value
@@ -162,14 +166,14 @@ class IWData(object):
             self.iwsrvksc = ixml.get("s_ksc")
             self.iwsrvsecure = ixml.get("s_secure")
             self.iwsrvurl = ixml.get("s_url")
-            self.iwsrvonlineotp =  ixml.get("s_onlineotp")
+            self.iwsrvonlineotp = ixml.get("s_onlineotp")
             self.IW.synchroJustDone = 1
         value = ixml.get("m_n")
         if value is not None and len(value) > 0:
             self.iwmsgtime = int(time())
-            self.iwmsgn =  ixml.get("m_n")
-            self.iwmsgid =  ixml.get("m_id")
-            self.iwmsgtitle =  ixml.get("m_title")
-            self.iwmsgcontent =  ixml.get("m_content")
-            self.iwmsgack =  ixml.get("m_ack")
+            self.iwmsgn = ixml.get("m_n")
+            self.iwmsgid = ixml.get("m_id")
+            self.iwmsgtitle = ixml.get("m_title")
+            self.iwmsgcontent = ixml.get("m_content")
+            self.iwmsgack = ixml.get("m_ack")
         self.datatouch = 1

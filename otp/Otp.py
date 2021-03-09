@@ -8,15 +8,14 @@ from Cryptodome.PublicKey import RSA
 from Cryptodome import Hash
 from math import ceil
 
-
-
 from collections import defaultdict
-from xml.etree import cElementTree as ET
+from xml.etree import cElementTree as ElT
 
 from otp import oaep
 from otp.load import IWData
 import pickle
 from MyLogger import logger
+
 proxies = None
 
 
@@ -58,13 +57,14 @@ def numberToBase36(n):
 
 class Otp:
     OTP_TWICE = 10
-    OK=0
-    kPub = "11"
-    exponent = int(kPub, 16)
+    OK = 0
+    KPub = "11"
+    exponent = int(KPub, 16)
     ACTIVATE_MODE = "activate"
     OTP_MODE = "otp"
     MS_MODE = "ms"
     iw_host = "https://otp.mpsa.com"
+
     def __init__(self, inweboAccessId):
         self.Kiw = None
         self.pinmode = None
@@ -119,7 +119,7 @@ class Otp:
 
         R0 = self.challenge + ";" + iw + ";" + self.getSerial()
         R1 = self.challenge + ";" + iw + ";" + self.data.iwK1
-        logger.debug(f"{R0}\n{R1}\n{R2}")
+        logger.debug("%s\n%s\n%s", R0, R1, R2)
         return {"R0": hashlib.sha256(R0.encode("utf-8")).hexdigest(),
                 "R1": hashlib.sha256(R1.encode("utf-8")).hexdigest(),
                 "R2": hashlib.sha256(R2.encode("utf-8")).hexdigest()}
@@ -135,11 +135,11 @@ class Otp:
 
         for x in range(0, nb_block):
             if x == nb_block - 1:
-                max = len(enc_b)
+                maxi = len(enc_b)
             else:
-                max = (1 + x) * 128
-            min = x * 128
-            ciphertext = cipher.decrypt(enc_b[min:max])
+                maxi = (1 + x) * 128
+            mini = x * 128
+            ciphertext = cipher.decrypt(enc_b[mini:maxi])
             dec_string += ciphertext.hex()
         logger.debug(dec_string)
         return dec_string
@@ -159,9 +159,8 @@ class Otp:
         try:
             raw_xml = raw_xml[raw_xml.index("?>") + 2:]
             if setup:
-                return etree_to_dict(ET.XML(raw_xml))["ActionSetup"]
-            else:
-                return etree_to_dict(ET.XML(raw_xml))["ActionFinalize"]
+                return etree_to_dict(ElT.XML(raw_xml))["ActionSetup"]
+            return etree_to_dict(ElT.XML(raw_xml))["ActionFinalize"]
 
         except:
             logger.debug(raw_xml)
@@ -183,8 +182,7 @@ class Otp:
             elif self.mode == Otp.OTP_MODE:
                 self.challenge = xml["challenge"]
             return True
-        else:
-            return False
+        return False
 
     def activation_finalyze(self, random_bytes=None):
 
@@ -211,8 +209,7 @@ class Otp:
             if "J" in xml:
                 logger.debug("Need another otp request")
                 return Otp.OTP_TWICE
-            else:
-                return Otp.OK
+            return Otp.OK
 
         if "ms_n" not in xml or xml["ms_n"] == 0:
             logger.debug("no ms_n request needed")
@@ -220,8 +217,7 @@ class Otp:
 
         if int(xml["ms_n"]) > 1:
             raise NotImplementedError
-        else:
-            ms_n = "0"
+        ms_n = "0"
 
         self.challenge = xml["challenge"]
         self.action = "synchro"
@@ -263,7 +259,7 @@ class Otp:
             self.activation_start()
             self.activation_finalyze()
         otp_code = self._getOtpCode()
-        logger.debug(f"otp code: {otp_code}")
+        logger.debug("otp code: %s", otp_code)
         return otp_code
 
     def __getstate__(self):
@@ -271,20 +267,22 @@ class Otp:
         del odict['cipher']  # don't pickle this
         return odict
 
-    def __setstate__(self, dict):
-        self.__dict__.update(dict)
+    def __setstate__(self, dict_param):
+        self.__dict__.update(dict_param)
         if self.Kiw is not None:
-             key = RSA.construct((int(self.Kiw, 16), Otp.exponent))
-             self.cipher = oaep.new(key, hashAlgo=Hash.SHA256)
+            key = RSA.construct((int(self.Kiw, 16), Otp.exponent))
+            self.cipher = oaep.new(key, hashAlgo=Hash.SHA256)
 
 
 def encode_oeap(text, key):
     cipher = oaep.new(bytes.fromhex(key), hashAlgo=Hash.SHA256)
     return cipher.encrypt(text)
 
+
 def save_otp(obj):
     with open("otp.bin", 'wb') as output:
         pickle.dump(obj, output)
+
 
 def load_otp():
     try:
@@ -293,6 +291,7 @@ def load_otp():
     except:
         logger.debug(traceback.format_exc())
     return None
+
 
 def new_otp_session():
     otp = Otp("bb8e981582b0f31353108fb020bead1c")

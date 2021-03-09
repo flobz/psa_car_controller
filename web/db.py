@@ -4,6 +4,8 @@ import pytz
 
 callback_fct = None
 default_db_file = 'info.db'
+
+
 def convert_datetime(st):
     return datetime.strptime(st.decode("utf-8"), "%Y-%m-%d %H:%M:%S+00:00").replace(tzinfo=pytz.UTC)
 
@@ -11,7 +13,7 @@ def convert_datetime(st):
 def update_callback():
     if callback_fct is not None:
         callback_fct()
-    return
+
 
 def get_db(db_file=default_db_file):
     sqlite3.register_converter("DATETIME", convert_datetime)

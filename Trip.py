@@ -8,6 +8,7 @@ from web.db import get_db
 
 DEBUG = False
 
+
 class Points():
     def __init__(self, latitude, longitude):
         self.latitude = latitude
@@ -31,8 +32,8 @@ class Trip:
         self.duration = None
         self.mileage = None
 
-    def add_points(self, longitude, latitude):
-        self.positions.append(Points(longitude, latitude))
+    def add_points(self, latitude, longitude):
+        self.positions.append(Points(latitude, longitude))
 
     def get_consumption(self):
         return {
@@ -75,7 +76,7 @@ class Trips(list):
         vehicles = conn.execute(
             "SELECT DISTINCT vin FROM position;").fetchall()
         for vin in vehicles:
-            vin = vin[0]  # todo handle multiple vin
+            vin = vin[0]
             car = vehicles_list.get_car_by_vin(vin)
             battery_capacity = car.battery_power
             fuel_capacity = car.fuel_capacity
@@ -88,8 +89,8 @@ class Trips(list):
                 # res = list(map(dict,res))
                 for x in range(0, len(res) - 2):
                     if DEBUG:
-                        logger.debug(
-                            f"{res[x]['Timestamp']} mileage:{res[x]['mileage']} level:{res[x]['level']} level_fuel:{res[x]['level_fuel']}")
+                        logger.debug("%s mileage:%f level:%d level_fuel:%f",
+                                     {res[x]['Timestamp']}, res[x]['mileage'], res[x]['level'], res[x]['level_fuel'])
                     next_el = res[x + 2]
                     distance = end["mileage"] - start["mileage"]
                     duration = (end["Timestamp"] - start["Timestamp"]).total_seconds() / 3600
@@ -110,19 +111,19 @@ class Trips(list):
                     elif distance == 0 and charge > 2:
                         restart_trip = True
                         if DEBUG:
-                            logger.debug(f"charge detected")
+                            logger.debug("charge detected")
                     elif speed_average < 0.2 and duration > 0.05:  # think again if duration is really needed
                         # end["mileage"] - start["mileage"] == 0 #or \
                         # (end["Timestamp"] - start["Timestamp"]).total_seconds() / 3600 > 10:  # condition useless ???
                         restart_trip = True
                         if DEBUG:
-                            logger.debug(f"low speed detected")
+                            logger.debug("low speed detected")
                     if restart_trip:
                         start = end
                         tr = Trip()
                         if DEBUG:
-                            logger.debug(f"restart trip at {start['Timestamp']} {start['mileage']}km level:"
-                                     f"{start['level']} level_fuel:{start['level_fuel']}")
+                            logger.debug("restart trip at %d %f km level:%f level_fuel:%f", start['Timestamp'],
+                                         start['mileage'], start['level'], start['level_fuel'])
                     else:
                         distance = next_el["mileage"] - end["mileage"]  # km
                         duration = (next_el["Timestamp"] - end["Timestamp"]).total_seconds() / 3600
@@ -139,31 +140,31 @@ class Trips(list):
                         if refuel > 0:
                             end_trip = True
                             if DEBUG:
-                                logger.debug(f"refuel detected")
+                                logger.debug("refuel detected")
                         elif distance == 0 and charge > 2:
                             end_trip = True
                             if DEBUG:
-                                logger.debug(f"charge detected")
+                                logger.debug("charge detected")
                         elif speed_average < 0.2 and duration > 0.05:
                             # (distance == 0 and duration > 0.08) or duration > 2 or
                             # check the speed to handle missing point
                             end_trip = True
                             if DEBUG:
-                                logger.debug(f"low speed detected")
+                                logger.debug("low speed detected")
                         elif duration > 2:
                             end_trip = True
                             if DEBUG:
-                                logger.debug(f"too much time detected")
+                                logger.debug("too much time detected")
                         elif x == len(res) - 3:  # last record detected
                             # think if add point is needed
                             end = next_el
                             end_trip = True
                             if DEBUG:
-                                logger.debug(f"last position found")
+                                logger.debug("last position found")
                         if end_trip:
                             if DEBUG:
-                                logger.debug(f"stop trip at {end['Timestamp']} {end['mileage']}km level:{end['level']} "
-                                         f"level_fuel:{end['level_fuel']}")
+                                logger.debug("stop trip at %s %fkm level:%f level_fuel:%f",
+                                             end['Timestamp'], end['mileage'], end['level'], end['level_fuel'])
                             tr.distance = end["mileage"] - start["mileage"]  # km
                             if tr.distance > 0:
                                 tr.start_at = start["Timestamp"]
@@ -181,17 +182,17 @@ class Trips(list):
                                                                    2)  # L/100 km
                                 tr.mileage = end["mileage"]
                                 if DEBUG:
-                                    logger.debug(
-                                        f"Trip: {tr.start_at} -> {tr.end_at} {tr.distance:.1f}km {tr.duration:.2f}h {tr.speed_average:.0f}km/h "
-                                        f"{tr.consumption:.2f}kWh {tr.consumption_km:.2f}kWh/100km {tr.consumption_fuel}L {tr.consumption_fuel_km}L/100km "
-                                        f"{tr.mileage:.1f}km")
+                                    logger.debug("Trip: %s %.1fkm %.2fh %.0fkm/h %.2fkWh %:.2fkWh/100km %sL "
+                                                 "%sL/100km %:.1fkm", tr.start_at, tr.end_at, tr.distance, tr.duration,
+                                                 tr.speed_average, tr.consumption, tr.consumption_km,
+                                                 tr.consumption_fuel, tr.consumption_fuel_km, tr.mileage)
                                 # filter bad value
                                 if tr.consumption_km < 70 and (
                                         tr.consumption_fuel_km == None or tr.consumption_fuel_km < 30):
                                     trips.append(tr)
                                 else:
                                     if DEBUG:
-                                        logger.debug(f"trip discarded")
+                                        logger.debug("trip discarded")
                             start = next_el
                             tr = Trip()
                         else:

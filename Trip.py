@@ -103,7 +103,7 @@ class Trips(list):
                     restart_trip = False
                     if refuel > 0:
                         restart_trip = True
-                        logger.debugv(f"refuel detected")
+                        logger.debugv("refuel detected")
                     elif distance == 0 and charge > 2:
                         restart_trip = True
                         logger.debugv("charge detected")

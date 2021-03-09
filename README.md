@@ -78,6 +78,13 @@ We will retrieve these informations:
 
     2.5 See the dashboard (only if record is enabled)
     http://localhost:5000
+    
+    2.6 Refresh car state (ask car to send its state):
+    http://localhost:5000/wakeup/YOURVIN
+    
+    2.7 Start/Stop preconditioning
+    http://localhost:5000/preconditioning/YOURVIN/1 or 0
+
 
   3. Dashboard and stats (Beta)
      

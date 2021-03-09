@@ -41,7 +41,8 @@ def display_value(value):
     filtered_chargings = MyPSACC.get_chargings(mini, maxi)
     figures.get_figures(filtered_trips, filtered_chargings)
     consumption = "Average consumption: {:.1f} kWh/100km".format(float(figures.consumption_df.mean(numeric_only=True)))
-    return figures.trips_map, figures.consumption_fig, figures.consumption_fig_by_speed, consumption, figures.table_fig, figures.battery_info, max_millis, step, marks
+    return figures.trips_map, figures.consumption_fig, figures.consumption_fig_by_speed, consumption, figures.table_fig, figures.battery_info,
+           max_millis, step, marks
 
 
 @app.route('/getvehicles')
@@ -129,7 +130,7 @@ def update_trips():
         trips = Trips.get_trips(myp.vehicles_list)
         chargings = MyPSACC.get_chargings()
     except:
-        logger.error("update_trips: " + traceback.format_exc())
+        logger.error("update_trips: %s", traceback.format_exc())
     # update for slider
     global min_date, max_date, min_millis, max_millis, step, marks
     try:
@@ -140,7 +141,7 @@ def update_trips():
         step = (max_millis - min_millis) / 100
         marks = figures.get_marks_from_start_end(min_date, max_date)
     except:
-        logger.error("update_trips (slider): " + traceback.format_exc())
+        logger.error("update_trips (slider): %s", traceback.format_exc())
 
 
 try:

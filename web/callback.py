@@ -18,6 +18,7 @@ import web.db
 
 trips = None
 chargings = None
+min_date = max_date = min_millis = max_millis = step = marks = None
 
 
 @dash_app.callback(Output('trips_map', 'figure'),

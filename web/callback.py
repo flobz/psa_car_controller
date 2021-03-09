@@ -18,6 +18,7 @@ import web.db
 
 trips: Trips
 chargings: dict
+min_date = max_date = min_millis = max_millis = step = marks = None
 
 
 @dash_app.callback(Output('trips_map', 'figure'),
@@ -26,6 +27,9 @@ chargings: dict
                    Output('consumption', 'children'),
                    Output('tab_trips', 'children'),
                    Output('tab_battery', 'children'),
+                   Output('date-slider', 'max'),
+                   Output('date-slider', 'step'),
+                   Output('date-slider', 'marks'),
                    Input('date-slider', 'value'))
 def display_value(value):
     mini = datetime.fromtimestamp(value[0], tz=timezone.utc)
@@ -37,7 +41,8 @@ def display_value(value):
     filtered_chargings = MyPSACC.get_chargings(mini, maxi)
     figures.get_figures(filtered_trips, filtered_chargings)
     consumption = "Average consumption: {:.1f} kWh/100km".format(float(figures.consumption_df.mean(numeric_only=True)))
-    return figures.trips_map, figures.consumption_fig, figures.consumption_fig_by_speed, consumption, figures.table_fig, figures.battery_info
+    return figures.trips_map, figures.consumption_fig, figures.consumption_fig_by_speed, consumption, figures.table_fig, figures.battery_info, \
+           max_millis, step, marks
 
 
 @app.route('/getvehicles')
@@ -126,24 +131,29 @@ def update_trips():
         chargings = MyPSACC.get_chargings()
     except:
         logger.error("update_trips: %s", traceback.format_exc())
+    # update for slider
+    global min_date, max_date, min_millis, max_millis, step, marks
+    try:
+        min_date = trips[0].start_at
+        max_date = trips[-1].start_at
+        min_millis = figures.unix_time_millis(min_date)
+        max_millis = figures.unix_time_millis(max_date)
+        step = (max_millis - min_millis) / 100
+        marks = figures.get_marks_from_start_end(min_date, max_date)
+    except:
+        logger.error("update_trips (slider): %s", traceback.format_exc())
 
 
 try:
     web.db.callback_fct = update_trips
     update_trips()
-    min_date = trips[0].start_at
-    max_date = trips[-1].start_at
-    min_millis = figures.unix_time_millis(min_date)
-    max_millis = figures.unix_time_millis(max_date)
-    step = (max_millis - min_millis) / 100
     figures.get_figures(trips, chargings)
     data_div = html.Div([dcc.RangeSlider(
         id='date-slider',
         min=min_millis,
         max=max_millis,
         step=step,
-        marks=figures.get_marks_from_start_end(min_date,
-                                               max_date),
+        marks=marks,
         value=[min_millis, max_millis],
     ),
         html.Div([

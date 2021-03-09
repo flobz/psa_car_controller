@@ -44,7 +44,7 @@ def start_app(title, base_path, debug: bool, host, port):
 
 
 myp = None
-chc: ChargeControls
+chc: ChargeControls = None
 
 
 def save_config(my_peugeot: MyPSACC):

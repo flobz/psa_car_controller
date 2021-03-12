@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 import atexit
 import sys
+from os import environ
 from threading import Thread
 
 from oauth2_client.credentials_manager import OAuthError
@@ -26,8 +27,8 @@ def parse_args():
     parser.add_argument("-p", "--port", help="change server listen port", default="5000")
     parser.add_argument("-r", "--record", help="save vehicle data to db", action='store_true')
     parser.add_argument("-R", "--refresh", help="refresh vehicles status every x min",type=int)
-    parser.add_argument("-m", "--mail", help="set the email address")
-    parser.add_argument("-P", "--password", help="set the password")
+    parser.add_argument("-m", "--mail", default=environ.get('USER_EMAIL', None), help="set the email address")
+    parser.add_argument("-P", "--password", default=environ.get('USER_PASSWORD', None), help="set the password")
     parser.add_argument("--remote-disable", help="disable remote control", action='store_true')
     parser.add_argument("--offline", help="offline limited mode", action='store_true')
     parser.add_argument("-b", "--base-path", help="base path for web app",default="/")

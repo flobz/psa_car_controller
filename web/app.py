@@ -8,7 +8,7 @@ import locale
 from werkzeug import run_simple
 try:
     from werkzeug.middleware.dispatcher import DispatcherMiddleware
-except:
+except ImportError:
     from werkzeug import DispatcherMiddleware
 
 from ChargeControl import ChargeControls

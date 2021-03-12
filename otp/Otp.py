@@ -93,7 +93,7 @@ class Otp:
     def init(self, Kfact=None, Kiw=None, pinmode=None):
         self.Kfact = Kfact
         self.pinmode = pinmode
-        self.Kiw = self.decode_oeap(Kiw, self.Kfact)
+        self.Kiw = self.decode_oaep(Kiw, self.Kfact)
         key = RSA.construct((int(self.Kiw, 16), Otp.exponent))
         self.cipher = oaep.new(key, hashAlgo=Hash.SHA256)
 
@@ -124,7 +124,8 @@ class Otp:
                 "R1": hashlib.sha256(R1.encode("utf-8")).hexdigest(),
                 "R2": hashlib.sha256(R2.encode("utf-8")).hexdigest()}
 
-    def decode_oeap(self, enc, key):
+    @staticmethod
+    def decode_oaep(enc, key):
         modulus = int(key, 16)
         key = RSA.construct((modulus, Otp.exponent))
         cipher = oaep.new(key, hashAlgo=Hash.SHA256)
@@ -221,7 +222,7 @@ class Otp:
 
         self.challenge = xml["challenge"]
         self.action = "synchro"
-        res = self.decode_oeap(xml["ms_key"], self.Kfact)
+        res = self.decode_oaep(xml["ms_key"], self.Kfact)
         temp_key = RSA.construct((int(res, 16), self.exponent))
         temp_cipher = oaep.new(temp_key, hashAlgo=Hash.SHA256)
         if random_bytes is None:
@@ -286,8 +287,8 @@ def save_otp(obj):
 
 def load_otp():
     try:
-        with open("otp.bin", 'rb') as input:
-            return pickle.load(input)
+        with open("otp.bin", 'rb') as input_file:
+            return pickle.load(input_file)
     except:
         logger.debug(traceback.format_exc())
     return None

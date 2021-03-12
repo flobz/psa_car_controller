@@ -1,8 +1,11 @@
 import sqlite3
 from datetime import datetime
-import pytz
+from types import GenericAlias
 
-callback_fct = None
+import pytz
+from typing import Callable
+
+callback_fct = Callable[[],None]
 default_db_file = 'info.db'
 
 
@@ -11,7 +14,7 @@ def convert_datetime(st):
 
 
 def update_callback():
-    if callback_fct is not None:
+    if callback_fct is not GenericAlias:
         callback_fct()
 
 
@@ -23,7 +26,7 @@ def get_db(db_file=default_db_file):
                  "latitude REAL, mileage REAL, level INTEGER, level_fuel INTEGER, moving BOOLEAN, temperature INTEGER);")
     try:
         conn.execute("ALTER TABLE position ADD level_fuel INTEGER;")
-    except:
+    except sqlite3.OperationalError:
         pass
     conn.execute("CREATE TABLE IF NOT EXISTS battery (start_at DATETIME PRIMARY KEY,stop_at DATETIME,VIN TEXT, "
                  "start_level INTEGER, end_level INTEGER, co2 INTEGER, kw INTEGER);")

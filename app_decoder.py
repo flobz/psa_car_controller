@@ -50,8 +50,8 @@ def find_preferences_xml():
 
 
 def save_key_to_pem(pfx_data, pfx_password):
-    private_key, certificate, additional_certificates = pkcs12.load_key_and_certificates(pfx_data,
-                                                            bytes.fromhex(pfx_password), default_backend())
+    private_key, certificate = pkcs12.load_key_and_certificates(pfx_data,
+                                                            bytes.fromhex(pfx_password), default_backend())[:2]
     try:
         os.mkdir("certs")
     except FileExistsError:

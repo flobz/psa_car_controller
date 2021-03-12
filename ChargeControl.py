@@ -34,6 +34,9 @@ class ChargeControl:
             if self._next_stop_hour < datetime.now():
                 self._next_stop_hour += timedelta(days=1)
 
+    def get_stop_hour(self):
+        return self._stop_hour
+
     def process(self):
         now = datetime.now()
         vehicle_status = self.psacc.vehicles_list.get_car_by_vin(self.vin).status
@@ -84,22 +87,24 @@ class ChargeControl:
         return chd
 
 
-class ChargeControls:
+class ChargeControls(dict):
 
     def __init__(self):
-        self.list: dict = {}
-        self._confighash = None
+        super().__init__()
+        self._config_hash = None
 
     def save_config(self, name="charge_config.json", force=False):
         chd = {}
-        for el in self.list.values():
-            chd[el.vin] = {"percentage_threshold": el.percentage_threshold, "stop_hour": el._stop_hour}
+        chargeControl: ChargeControl
+        for chargeControl in self.values():
+            chd[chargeControl.vin] = {"percentage_threshold": chargeControl.percentage_threshold,
+                                      "stop_hour": chargeControl.get_stop_hour()}
         config_str = json.dumps(chd, sort_keys=True, indent=4).encode('utf-8')
         new_hash = md5(config_str).hexdigest()
-        if force or self._confighash != new_hash:
+        if force or self._config_hash != new_hash:
             with open(name, "wb") as f:
                 f.write(config_str)
-            self._confighash = new_hash
+            self._config_hash = new_hash
             logger.info("save config change")
 
     @staticmethod
@@ -109,15 +114,15 @@ class ChargeControls:
             chd = json.loads(config_str)
             charge_control_list = ChargeControls()
             for vin, el in chd.items():
-                charge_control_list.list[vin] = ChargeControl(psacc, vin, **el)
+                charge_control_list[vin] = ChargeControl(psacc, vin, **el)
             return charge_control_list
 
     def get(self, vin) -> ChargeControl:
         try:
-            return self.list[vin]
+            return self[vin]
         except KeyError:
             return None
 
     def start(self):
-        for charge_control in self.list.values():
+        for charge_control in self.values():
             charge_control.psacc.info_callback.append(charge_control.process)

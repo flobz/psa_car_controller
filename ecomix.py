@@ -1,6 +1,6 @@
 from datetime import datetime
 from statistics import mean, StatisticsError
-import xml.etree.ElementTree as ElT
+import xml.etree.cElementTree as ElT
 import requests
 import reverse_geocode
 

@@ -50,10 +50,11 @@ table_fig = None
 pandas_options.display.float_format = '${:.2f}'.format
 info = ""
 battery_info = dbc.Alert("No data to show", color="danger")
+battery_table = None
 
 
 def get_figures(trips: Trips, charging: List[dict]):
-    global consumption_fig, consumption_df, trips_map, consumption_fig_by_speed, table_fig, info, battery_info
+    global consumption_fig, consumption_df, trips_map, consumption_fig_by_speed, table_fig, info, battery_info, battery_table
     lats = []
     lons = []
     names = []
@@ -149,3 +150,18 @@ def get_figures(trips: Trips, charging: List[dict]):
             ]
         )
     ])
+
+    battery_table = dash_table.DataTable(
+        id='battery-table',
+        sort_action='native',
+        sort_by=[{'column_id': 'start_at', 'direction': 'desc'}],
+        columns=[{'id': 'start_at', 'name': 'start at', 'type': 'datetime'},
+                 {'id': 'stop_at', 'name': 'stop at', 'type': 'datetime'},
+                 {'id': 'start_level', 'name': 'start level', 'type': 'numeric'},
+                 {'id': 'end_level', 'name': 'end level', 'type': 'numeric'},
+                 {'id': 'co2', 'name': 'CO2', 'type': 'numeric',
+                  'format': deepcopy(nb_format).symbol_suffix(" g/kWh").precision(1)},
+                 {'id': 'kw', 'name': 'consumption', 'type': 'numeric',
+                  'format': deepcopy(nb_format).symbol_suffix(" kWh").precision(3)}],
+        data=charging,
+    )

@@ -1,11 +1,10 @@
 import sqlite3
 from datetime import datetime
-from types import GenericAlias
 
 import pytz
 from typing import Callable
 
-callback_fct = Callable[[],None]
+callback_fct: Callable[[], None] = lambda: None
 default_db_file = 'info.db'
 
 
@@ -14,8 +13,7 @@ def convert_datetime(st):
 
 
 def update_callback():
-    if callback_fct is not GenericAlias:
-        callback_fct()
+    callback_fct()
 
 
 def get_db(db_file=default_db_file):

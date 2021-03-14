@@ -160,8 +160,8 @@ print(f"\nYour vehicles: {res}")
 # Charge control
 charge_controls = ChargeControls()
 for vehicle in res:
-    chc = ChargeControl(None, vehicle.vin, 100, [0, 0])
-    charge_controls.list[vehicle.vin] = chc
+    chc = ChargeControl(psacc, vehicle.vin, 100, [0, 0])
+    charge_controls[vehicle.vin] = chc
 charge_controls.save_config(name="charge_config1.json")
 
 print("Success !!!")

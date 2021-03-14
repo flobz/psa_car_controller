@@ -18,7 +18,7 @@ from requests import Response
 import psa_connectedcar as psac
 from Car import Cars, Car
 from ecomix import Ecomix
-from otp.Otp import load_otp, new_otp_session, save_otp
+from otp.Otp import load_otp, new_otp_session, save_otp, ConfigException, Otp
 from psa_connectedcar import ApiClient
 from psa_connectedcar.rest import ApiException
 from MyLogger import logger
@@ -165,7 +165,7 @@ class MyPSACC:
         self.vehicles_list = Cars.load_cars()
         self.setProxies(proxies)
         self.customer_id = customer_id
-        self._confighash = None
+        self._configHash = None
         self.api_config.verify_ssl = False
         self.api_config.api_key['client_id'] = self.client_id
         self.api_config.api_key['x-introspect-realm'] = self.realm
@@ -200,6 +200,7 @@ class MyPSACC:
             self._proxies = proxies
             self.api_config.proxy = proxies['http']
         self.manager.proxies = self._proxies
+        Otp.set_proxies(proxies)
 
     def get_vehicle_info(self, vin):
         car = self.vehicles_list.get_car_by_vin(vin)
@@ -238,12 +239,12 @@ class MyPSACC:
         self.vehicles_list.save_cars()
         return self.vehicles_list
 
-    def load_otp(self):
+    def load_otp(self, new=False):
         otp_session = load_otp()
-        if otp_session is None:
+        if otp_session is None or new:
             self.get_sms_otp_code()
             otp_session = new_otp_session()
-        return otp_session
+        self.otp = otp_session
 
     def get_sms_otp_code(self):
         res = self.manager.post(
@@ -258,7 +259,11 @@ class MyPSACC:
     # 6 otp by day
     @rate_limit(6, 3600 * 24)
     def getOtpCode(self):
-        otp_code = self.otp.getOtpCode()
+        try:
+            otp_code = self.otp.getOtpCode()
+        except ConfigException:
+            self.load_otp(new=True)
+            otp_code = self.otp.getOtpCode()
         save_otp(self.otp)
         return otp_code
 
@@ -277,6 +282,9 @@ class MyPSACC:
             if (datetime.now() - last_update).total_seconds() < MQTT_TOKEN_TTL:
                 return None
         self.manager._refresh_token()
+        if self.remote_refresh_token is None:
+            logger.error("remote_refresh_token isn't defined")
+            self.load_otp(new=True)
         res = self.manager.post(remote_url + self.client_id,
                                 json={"grant_type": "refresh_token", "refresh_token": self.remote_refresh_token},
                                 headers=self.headers)
@@ -354,7 +362,7 @@ class MyPSACC:
             logger.error(traceback.format_exc())
 
     def start_mqtt(self):
-        self.otp = self.load_otp()
+        self.load_otp()
         self.mqtt_client = mqtt.Client(clean_session=True, protocol=mqtt.MQTTv311)
         self.refresh_remote_token()
         self.mqtt_client.tls_set_context()
@@ -487,10 +495,10 @@ class MyPSACC:
     def save_config(self, name="config.json", force=False):
         config_str = json.dumps(self, cls=MyPeugeotEncoder, sort_keys=True, indent=4).encode("utf8")
         new_hash = md5(config_str).hexdigest()
-        if force or self._confighash != new_hash:
+        if force or self._configHash != new_hash:
             with open(name, "wb") as f:
                 f.write(config_str)
-            self._confighash = new_hash
+            self._configHash = new_hash
             logger.info("save config change")
 
     @staticmethod
@@ -535,7 +543,7 @@ class MyPSACC:
                         temp = weather_rep.json()["current"]["temp"]
                         logger.debug("Temperature :%fc", temp)
                     except:
-                        logger.error("Unable to get temperature from openweathermap :%s", temp)
+                        logger.error("Unable to get temperature from openweathermap :%s", traceback.format_exc())
 
                 if level_fuel == 0:  # fix fuel level not provided when car is off
                     try:

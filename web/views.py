@@ -27,6 +27,7 @@ min_date = max_date = min_millis = max_millis = step = marks = None
                    Output('consumption', 'children'),
                    Output('tab_trips', 'children'),
                    Output('tab_battery', 'children'),
+                   Output('tab_charge', 'children'),
                    Output('date-slider', 'max'),
                    Output('date-slider', 'step'),
                    Output('date-slider', 'marks'),
@@ -41,8 +42,8 @@ def display_value(value):
     filtered_chargings = MyPSACC.get_chargings(mini, maxi)
     figures.get_figures(filtered_trips, filtered_chargings)
     consumption = "Average consumption: {:.1f} kWh/100km".format(float(figures.consumption_df.mean(numeric_only=True)))
-    return figures.trips_map, figures.consumption_fig, figures.consumption_fig_by_speed, consumption, figures.table_fig, figures.battery_info, \
-           max_millis, step, marks
+    return figures.trips_map, figures.consumption_fig, figures.consumption_fig_by_speed, consumption, figures.table_fig, \
+           figures.battery_info, figures.battery_table, max_millis, step, marks
 
 
 @app.route('/getvehicles')
@@ -167,6 +168,7 @@ try:
                 ]),
                 dbc.Tab(label="Trips", tab_id="trips", id="tab_trips", children=[figures.table_fig]),
                 dbc.Tab(label="Battery", tab_id="battery", id="tab_battery", children=[figures.battery_info]),
+                dbc.Tab(label="Charge", tab_id="charge", id="tab_charge", children=[figures.battery_table]),
                 dbc.Tab(label="Map", tab_id="map", children=[
                     dcc.Graph(figure=figures.trips_map, id="trips_map", style={"height": '90vh'})]),
             ],

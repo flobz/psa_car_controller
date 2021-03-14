@@ -16,8 +16,6 @@ from otp.load import IWData
 import pickle
 from MyLogger import logger
 
-proxies = None
-
 
 def etree_to_dict(t):
     d = {t.tag: {} if t.attrib else None}
@@ -55,15 +53,21 @@ def numberToBase36(n):
     return digits
 
 
+class ConfigException(Exception):
+    """Raise exception if otp config isn't correct"""
+
+
 class Otp:
     OTP_TWICE = 10
     OK = 0
+    NOK = -1
     KPub = "11"
     exponent = int(KPub, 16)
     ACTIVATE_MODE = "activate"
     OTP_MODE = "otp"
     MS_MODE = "ms"
     iw_host = "https://otp.mpsa.com"
+    proxies = None
 
     def __init__(self, inweboAccessId):
         self.Kiw = None
@@ -151,11 +155,12 @@ class Otp:
             headers={
                 "Connection": "Keep-Alive",
                 "Host": "otp.mpsa.com",
-                "User-Agent": "Dalvik/2.1.0 (Linux; U; Android 8.0.0; Android SDK built for x86_64 Build/OSR1.180418.004)"
+                "User-Agent": "Dalvik/2.1.0 (Linux; U; Android 8.0.0; Android SDK built for x86_64 "
+                              "Build/OSR1.180418.004) "
             },
             params=param,
-            proxies=proxies,
-            verify=proxies is None
+            proxies=self.proxies,
+            verify=self.proxies is None
         ).text
         try:
             raw_xml = raw_xml[raw_xml.index("?>") + 2:]
@@ -172,7 +177,7 @@ class Otp:
                  "version": "Generator-1.0/0.2.11", "macid": self.macid}
         if self.mode == Otp.OTP_MODE:
             param.update({"sid": self.data.iwsecid})
-        if self.mode == Otp.ACTIVATE_MODE:
+        elif self.mode == Otp.ACTIVATE_MODE:
             param.update({"code": self.smsCode})
 
         xml = self.request(param, setup=True)
@@ -202,15 +207,20 @@ class Otp:
 
         params.update(R)
         xml = self.request(params)
-
+        if xml["err"] != "OK":
+            return Otp.NOK
         self.data.synchro(xml, self.generateKMA(self.codepin))
 
         if self.mode == Otp.OTP_MODE:
-            self.defi = str(xml["defi"])
+            try:
+                self.defi = str(xml["defi"])
+            except KeyError:
+                raise ConfigException
             if "J" in xml:
                 logger.debug("Need another otp request")
                 return Otp.OTP_TWICE
             return Otp.OK
+
 
         if "ms_n" not in xml or xml["ms_n"] == 0:
             logger.debug("no ms_n request needed")
@@ -253,14 +263,18 @@ class Otp:
 
     def getOtpCode(self):
         self.mode = Otp.OTP_MODE
-        self.activation_start()
-        res = self.activation_finalyze()
-        if res == Otp.OTP_TWICE:
-            self.mode = Otp.OTP_MODE
-            self.activation_start()
-            self.activation_finalyze()
-        otp_code = self._getOtpCode()
-        logger.debug("otp code: %s", otp_code)
+        otp_code = None
+        if self.activation_start():
+            res = self.activation_finalyze()
+            if res != Otp.NOK:
+                if res == Otp.OTP_TWICE:
+                    self.mode = Otp.OTP_MODE
+                    self.activation_start()
+                    self.activation_finalyze()
+                otp_code = self._getOtpCode()
+                logger.debug("otp code: %s", otp_code)
+        if otp_code is None:
+            raise ConfigException("Can't get otp code")
         return otp_code
 
     def __getstate__(self):
@@ -273,6 +287,10 @@ class Otp:
         if self.Kiw is not None:
             key = RSA.construct((int(self.Kiw, 16), Otp.exponent))
             self.cipher = oaep.new(key, hashAlgo=Hash.SHA256)
+
+    @staticmethod
+    def set_proxies(proxies):
+        Otp.proxies = proxies
 
 
 def encode_oeap(text, key):
@@ -289,7 +307,7 @@ def load_otp():
     try:
         with open("otp.bin", 'rb') as input_file:
             return pickle.load(input_file)
-    except:
+    except FileNotFoundError:
         logger.debug(traceback.format_exc())
     return None
 

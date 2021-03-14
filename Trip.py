@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from typing import List
 
 from geojson import Feature, FeatureCollection, MultiLineString
@@ -68,18 +70,27 @@ class Trips(list):
         feature_collection = FeatureCollection(self)
         return feature_collection
 
+    def get_long_trips(self):
+        res = []
+        for tr in self:
+            if tr.consumption > 1.8:
+                res.append({"speed": tr.speed_average, "consumption_km": tr.consumption_km, "date": tr.start_at,
+                            "consumption": tr.consumption})
+        return res
+
     @staticmethod
-    def get_trips(vehicles_list: Cars) -> List[Trip]:
+    def get_trips(vehicles_list: Cars) -> dict[str, Trips]:
         conn = get_db()
         vehicles = conn.execute(
             "SELECT DISTINCT vin FROM position;").fetchall()
+        trips_by_vin = {}
         for vin in vehicles:
+            trips = Trips()
             vin = vin[0]
             car = vehicles_list.get_car_by_vin(vin)
             battery_capacity = car.battery_power
             fuel_capacity = car.fuel_capacity
-            res = conn.execute('SELECT * FROM position ORDER BY Timestamp').fetchall()
-            trips = []
+            res = conn.execute('SELECT * FROM position WHERE VIN=? ORDER BY Timestamp', (vin,)).fetchall()
             if len(res) > 1:
                 start = res[0]
                 end = res[1]
@@ -104,7 +115,7 @@ class Trips(list):
                     if refuel > 0:
                         restart_trip = True
                         logger.debugv("refuel detected")
-                    elif distance == 0 and charge > 2:
+                    elif charge > 0:
                         restart_trip = True
                         logger.debugv("charge detected")
                     elif speed_average < 0.2 and duration > 0.05:  # think again if duration is really needed
@@ -133,7 +144,7 @@ class Trips(list):
                         if refuel > 0:
                             end_trip = True
                             logger.debugv("refuel detected")
-                        elif distance == 0 and charge > 2:
+                        elif charge > 0:
                             end_trip = True
                             logger.debugv("charge detected")
                         elif speed_average < 0.2 and duration > 0.05:
@@ -165,12 +176,14 @@ class Trips(list):
                                 if start["level_fuel"] is not None and end["level_fuel"] is not None:
                                     diff_level_fuel = start["level_fuel"] - end["level_fuel"]
                                     tr.consumption_fuel = round(diff_level_fuel / 100 * fuel_capacity, 2)  # L
-                                    tr.consumption_fuel_km = round(100 * tr.consumption_fuel / tr.distance, 2)  # L/100 km
+                                    tr.consumption_fuel_km = round(100 * tr.consumption_fuel / tr.distance,
+                                                                   2)  # L/100 km
                                 else:
                                     tr.consumption_fuel = 0
                                     tr.consumption_fuel_km = 0
                                 tr.mileage = end["mileage"]
-                                logger.debugv("Trip: %s -> %s %.1fkm %.2fh %.0fkm/h %.2fkWh %.2fkWh/100km %.2fL %.2fL/100km %.1fkm",
+                                logger.debugv("Trip: %s -> %s %.1fkm %.2fh %.0fkm/h %.2fkWh %.2fkWh/100km %.2fL "
+                                              "%.2fL/100km %.1fkm",
                                               tr.start_at, tr.end_at, tr.distance, tr.duration,
                                               tr.speed_average, tr.consumption, tr.consumption_km,
                                               tr.consumption_fuel, tr.consumption_fuel_km, tr.mileage)
@@ -185,4 +198,5 @@ class Trips(list):
                         else:
                             tr.add_points(end["longitude"], end["latitude"])
                     end = next_el
-            return trips
+                trips_by_vin[vin] = trips
+        return trips_by_vin

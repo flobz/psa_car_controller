@@ -25,7 +25,7 @@ def start_app(title, base_path, debug: bool, host, port):
     try:
         lang = locale.getlocale()[0].split("_")[0]
         locale_url = [f"https://cdn.plot.ly/plotly-locale-{lang}-latest.js"]
-    except:
+    except IndexError:
         locale_url = None
         logger.warning("Can't get language")
     app = Flask(__name__)
@@ -39,7 +39,7 @@ def start_app(title, base_path, debug: bool, host, port):
     dash_app = dash.Dash(external_stylesheets=[dbc.themes.BOOTSTRAP], external_scripts=locale_url, title=title,
                          server=app, requests_pathname_prefix=requests_pathname_prefix)
     # keep this line
-    import web.callback
+    import web.views
     return run_simple(host, port, application, use_reloader=False, use_debugger=debug)
 
 

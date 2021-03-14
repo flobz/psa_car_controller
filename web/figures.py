@@ -9,9 +9,10 @@ from dateutil.relativedelta import relativedelta
 from pandas import DataFrame
 import plotly.express as px
 import plotly.graph_objects as go
-from Trip import Trip
+from Trip import Trips
 from pandas import options as pandas_options
 import dash_html_components as html
+
 
 def unix_time_millis(dt):
     return int(dt.timestamp())
@@ -51,7 +52,7 @@ info = ""
 battery_info = dbc.Alert("No data to show", color="danger")
 
 
-def get_figures(trips: List[Trip], charging: List[dict]):
+def get_figures(trips: Trips, charging: List[dict]):
     global consumption_fig, consumption_df, trips_map, consumption_fig_by_speed, table_fig, info, battery_info
     lats = []
     lons = []
@@ -81,26 +82,26 @@ def get_figures(trips: List[Trip], charging: List[dict]):
                   'format': deepcopy(nb_format).symbol_suffix(" kWh/100km")},
                  {'id': 'consumption_fuel_km', 'name': 'average consumption fuel', 'type': 'numeric',
                   'format': deepcopy(nb_format).symbol_suffix(" L/100km")},
-                 {'id': 'distance', 'name': 'distance', 'type': 'numeric', 'format': nb_format.symbol_suffix(" km").precision(1)},
-                 {'id': 'mileage', 'name': 'mileage', 'type': 'numeric', 'format': nb_format.symbol_suffix(" km").precision(1)}],
+                 {'id': 'distance', 'name': 'distance', 'type': 'numeric',
+                  'format': nb_format.symbol_suffix(" km").precision(1)},
+                 {'id': 'mileage', 'name': 'mileage', 'type': 'numeric',
+                  'format': nb_format.symbol_suffix(" km").precision(1)}],
         data=[tr.get_info() for tr in trips],
     )
     # consumption_fig
-    consumption_df = DataFrame.from_records([tr.get_consumption() for tr in trips])
+    consumption_df = DataFrame.from_records(trips.get_long_trips())
     consumption_fig = px.line(consumption_df, x="date", y="consumption", title='Consumption of the car')
     consumption_fig.update_layout(yaxis_title="Consumption kWh/100Km")
 
-    consum_df_by_speed = DataFrame.from_records(
-        [{"speed": tr.speed_average, "consumption": tr.consumption_km} for tr in trips])
-    consumption_fig_by_speed = px.histogram(consum_df_by_speed, x="speed", y="consumption", histfunc="avg",
+    consumption_fig_by_speed = px.histogram(consumption_df, x="speed", y="consumption_km", histfunc="avg",
                                             title="Consumption by speed")
     consumption_fig_by_speed.update_traces(xbins_size=15)
     consumption_fig_by_speed.update_layout(bargap=0.05)
     consumption_fig_by_speed.add_trace(
-        go.Scatter(mode="markers", x=consum_df_by_speed["speed"], y=consum_df_by_speed["consumption"],
+        go.Scatter(mode="markers", x=consumption_df["speed"], y=consumption_df["consumption_km"],
                    name="Trips"))
     consumption_fig_by_speed.update_layout(xaxis_title="average Speed km/h", yaxis_title="Consumption kWh/100Km")
-    kw_per_km = float(consumption_df.mean(numeric_only=True))
+    kw_per_km = float(consumption_df["consumption_km"].mean())
     info = "Average consumption: {:.1f} kWh/100km".format(kw_per_km)
 
     # charging
@@ -119,7 +120,32 @@ def get_figures(trips: List[Trip], charging: List[dict]):
         charge_speed = 0
     except KeyError:  # when there is no data yet:
         charge_speed = 0
-    battery_info = html.Div(children=[
-                   html.P("Average C02 emission: {:.1f} g/kWh".format(co2_per_kw)),
-                   html.P("Average CO2 emission: {:.1f} g/km".format(co2_per_km)),
-                   html.P("Average charge speed: {:.3f} kW".format(charge_speed))])
+
+    battery_info = dash_table.DataTable(
+        id='battery_info',
+        sort_action='native',
+        columns=[{'id': 'name', 'name': ''},
+                 {'id': 'value', 'name': ''}],
+        style_header={'display': 'none'},
+        style_data={'border': '0px'},
+        data=[{"name": "Average emission:", "value": "{:.1f} g/km".format(co2_per_km)},
+              {"name": " ", "value:": "{:.1f} g/kWh".format(co2_per_kw)},
+              {"name": "Average charge speed:", "value": "{:.3f} kW".format(charge_speed)}])
+    battery_info = html.Div(children=[html.Tr(
+            [
+                html.Td('Average emission:', rowSpan=2),
+                html.Td("{:.1f} g/km".format(co2_per_km)),
+            ]
+        ),
+        html. Tr(
+            [
+                "{:.1f} g/kWh".format(co2_per_kw),
+            ]
+        ),
+        html.Tr(
+            [
+                html.Td("Average charge speed:"),
+                html.Td("{:.3f} kW".format(charge_speed))
+            ]
+        )
+    ])

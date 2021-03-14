@@ -34,7 +34,7 @@ min_date = max_date = min_millis = max_millis = step = marks = None
 def display_value(value):
     mini = datetime.fromtimestamp(value[0], tz=timezone.utc)
     maxi = datetime.fromtimestamp(value[1], tz=timezone.utc)
-    filtered_trips = []
+    filtered_trips = Trips()
     for trip in trips:
         if mini <= trip.start_at <= maxi:
             filtered_trips.append(trip)
@@ -91,8 +91,8 @@ def get_position(vin):
              "url": f"http://maps.google.com/maps?q={latitude},{longitude}"})
     longitude, latitude = coordinates
     return jsonify(
-            {"longitude": longitude, "latitude": latitude,
-             "url": f"http://maps.google.com/maps?q={latitude},{longitude}"})
+        {"longitude": longitude, "latitude": latitude,
+         "url": f"http://maps.google.com/maps?q={latitude},{longitude}"})
 
 
 # Set a battery threshold and schedule an hour to stop the charge
@@ -127,7 +127,8 @@ def update_trips():
     global trips, chargings
     logger.info("update_data")
     try:
-        trips = Trips.get_trips(myp.vehicles_list)
+        trips_by_vin = Trips.get_trips(myp.vehicles_list)
+        trips = next(iter(trips_by_vin.values()))  # todo handle multiple car
         chargings = MyPSACC.get_chargings()
     except:
         logger.error("update_trips: %s", traceback.format_exc())
@@ -175,7 +176,7 @@ try:
             html.Div(id="tab-content", className="p-4"),
         ])])
 except (IndexError, TypeError):
-    logger.debug("Failed to generate figure, there is probably not enough data yet")
+    logger.debug("Failed to generate figure, there is probably not enough data yet %s", traceback.format_exc())
     data_div = dbc.Alert("No data to show, there is probably no trips recorded yet", color="danger")
 
 except:

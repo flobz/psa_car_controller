@@ -41,7 +41,7 @@ def display_value(value):
             filtered_trips.append(trip)
     filtered_chargings = MyPSACC.get_chargings(mini, maxi)
     figures.get_figures(filtered_trips, filtered_chargings)
-    consumption = "Average consumption: {:.1f} kWh/100km".format(float(figures.consumption_df["consumption_km"].mean())) #mean(numeric_only=True)
+    consumption = "Average consumption: {:.1f} kWh/100km".format(float(figures.consumption_df["consumption_km"].mean()))
     return figures.trips_map, figures.consumption_fig, figures.consumption_fig_by_speed, consumption, figures.table_fig, \
            figures.battery_info, figures.battery_table, max_millis, step, marks
 

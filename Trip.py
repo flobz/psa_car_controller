@@ -35,6 +35,23 @@ class Trip:
     def add_points(self, latitude, longitude):
         self.positions.append(Points(latitude, longitude))
 
+    def set_consumption(self, consumption: float):
+        if self.distance is None:
+            raise Exception("Distance not set")
+        if consumption < 0:
+            logger.debugv("trip has negative consumption")
+            consumption = 0
+        self.consumption = consumption
+        self.consumption_km = 100 * self.consumption / self.distance  # kw/100 km
+
+    def set_fuel_consumption(self, consumption):
+        if self.distance is None:
+            raise Exception("Distance not set")
+        if consumption < 0:
+            logger.debugv("trip has negative fuel consumption")
+        self.consumption_fuel = round(consumption, 2)  # L
+        self.consumption_fuel_km = round(100 * self.consumption_fuel / self.distance, 2)  # L/100 km
+
     def get_consumption(self):
         return {
             'date': self.start_at,
@@ -79,6 +96,13 @@ class Trips(list):
         return res
 
     @staticmethod
+    def __charge_detection(charge, distance):
+        # A margin of two is set because battery level can increase with regeneration system or temperature change.
+        # If distance is bigger than 0 but charge bigger than five there is probably missing point and we assume that
+        # regeneration/temperature can't increase by 5 percent the battery level
+        return charge > 2 and (distance == 0 or charge > 5)
+
+    @staticmethod
     def get_trips(vehicles_list: Cars) -> dict[str, Trips]:
         conn = get_db()
         vehicles = conn.execute(
@@ -115,12 +139,10 @@ class Trips(list):
                     if refuel > 0:
                         restart_trip = True
                         logger.debugv("refuel detected")
-                    elif charge > 0:
+                    elif Trips.__charge_detection(charge, distance):
                         restart_trip = True
                         logger.debugv("charge detected")
-                    elif speed_average < 0.2 and duration > 0.05:  # think again if duration is really needed
-                        # end["mileage"] - start["mileage"] == 0 #or \
-                        # (end["Timestamp"] - start["Timestamp"]).total_seconds() / 3600 > 10:  # condition useless ???
+                    elif speed_average < 0.2 and duration > 0.05:
                         restart_trip = True
                         logger.debugv("low speed detected")
                     if restart_trip:
@@ -144,7 +166,7 @@ class Trips(list):
                         if refuel > 0:
                             end_trip = True
                             logger.debugv("refuel detected")
-                        elif charge > 0:
+                        elif Trips.__charge_detection(charge, distance):
                             end_trip = True
                             logger.debugv("charge detected")
                         elif speed_average < 0.2 and duration > 0.05:
@@ -171,13 +193,10 @@ class Trips(list):
                                 tr.duration = (end["Timestamp"] - start["Timestamp"]).total_seconds() / 3600
                                 tr.speed_average = tr.distance / tr.duration
                                 diff_level = start["level"] - end["level"]
-                                tr.consumption = diff_level / 100 * battery_capacity  # kw
-                                tr.consumption_km = 100 * tr.consumption / tr.distance  # kw/100 km
+                                tr.set_consumption(diff_level / 100 * battery_capacity)  # kw
                                 if start["level_fuel"] is not None and end["level_fuel"] is not None:
                                     diff_level_fuel = start["level_fuel"] - end["level_fuel"]
-                                    tr.consumption_fuel = round(diff_level_fuel / 100 * fuel_capacity, 2)  # L
-                                    tr.consumption_fuel_km = round(100 * tr.consumption_fuel / tr.distance,
-                                                                   2)  # L/100 km
+                                    tr.set_fuel_consumption(diff_level_fuel / 100 * fuel_capacity)
                                 else:
                                     tr.consumption_fuel = 0
                                     tr.consumption_fuel_km = 0

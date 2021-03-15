@@ -35,6 +35,15 @@ class Car:
             self.battery_power = DEFAULT_BATTERY_POWER
             self.fuel_capacity = DEFAULT_FUEL_CAPACITY
 
+    def is_electric(self) -> bool:
+        return self.fuel_capacity == 0 and self.battery_power > 0
+
+    def is_thermal(self) -> bool:
+        return self.fuel_capacity > 0 and self.battery_power == 0
+
+    def is_hybrid(self) -> bool:
+        return self.fuel_capacity > 0 and self.battery_power > 0
+
     @classmethod
     def from_json(cls, data: dict):
         return cls(**data)

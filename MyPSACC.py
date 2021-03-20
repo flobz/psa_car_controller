@@ -619,6 +619,8 @@ class MyPSACC:
         res = conn.execute('SELECT * FROM position ORDER BY Timestamp')
         features_list = []
         for row in res:
+            if row["longitude"] is None or row["latitude"] is None:
+                continue
             feature = Feature(geometry=Point((row["longitude"], row["latitude"])),
                               properties={"vin": row["vin"], "date": row["Timestamp"].strftime("%x %X"),
                                           "mileage": row["mileage"],

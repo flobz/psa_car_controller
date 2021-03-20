@@ -514,15 +514,24 @@ class MyPSACC:
         self._record_enabled = value
 
     def record_info(self, vin, status: psac.models.status.Status):
-        longitude = status.last_position.geometry.coordinates[0]
-        latitude = status.last_position.geometry.coordinates[1]
-        date = status.last_position.properties.updated_at
         mileage = status.timed_odometer.mileage
         level = status.get_energy('Electric').level
         charging_status = status.get_energy('Electric').charging.status
         charge_date = status.get_energy('Electric').updated_at
         level_fuel = status.get_energy('Fuel').level
-        moving = status.kinetic.moving
+        try:
+            longitude = status.last_position.geometry.coordinates[0]
+            latitude = status.last_position.geometry.coordinates[1]
+            date = status.last_position.properties.updated_at
+        except AttributeError:
+            logger.error("last_position not available from api")
+            longitude = latitude = None
+            date = charge_date
+        try:
+            moving = status.kinetic.moving
+        except AttributeError:
+            logger.error("kinetic not available from api")
+            moving = None
         logger.debug(
             "vin:%s longitude:%s latitude:%s date:%s mileage:%s level:%s charging_status:%s charge_date:%s level_fuel:"
             "%s moving:%s", vin, longitude, latitude, date, mileage, level, charging_status, charge_date, level_fuel,

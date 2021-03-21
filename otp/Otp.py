@@ -93,10 +93,10 @@ class Otp:
         self.defi = 0
         self.otp_count = 0
 
-    def init(self, kfact=None, kiw=None, pinmode=None):
-        self.Kfact = kfact
+    def init(self, Kfact=None, Kiw=None, pinmode=None):
+        self.Kfact = Kfact
         self.pinmode = pinmode
-        self.Kiw = self.decode_oaep(kiw, self.Kfact)
+        self.Kiw = self.decode_oaep(Kiw, self.Kfact)
         key = RSA.construct((int(self.Kiw, 16), Otp.exponent))
         self.cipher = oaep.new(key, hash_algo=Hash.SHA256)
 

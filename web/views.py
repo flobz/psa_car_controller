@@ -84,16 +84,21 @@ def preconditioning(vin, activate):
 @app.route('/position/<string:vin>')
 def get_position(vin):
     res = myp.get_vehicle_info(vin)
-    coordinates = res.last_position.geometry.coordinates
+    try:
+        coordinates = res.last_position.geometry.coordinates
+    except AttributeError:
+        coordinates = []
     if len(coordinates) == 3:  # altitude is not always availlable
         longitude, latitude, altitude = coordinates
         return jsonify(
             {"longitude": longitude, "latitude": latitude, "altitude": altitude,
              "url": f"http://maps.google.com/maps?q={latitude},{longitude}"})
-    longitude, latitude = coordinates
-    return jsonify(
-        {"longitude": longitude, "latitude": latitude,
-         "url": f"http://maps.google.com/maps?q={latitude},{longitude}"})
+    if len(coordinates) == 2:
+        longitude, latitude = coordinates
+        return jsonify(
+            {"longitude": longitude, "latitude": latitude,
+             "url": f"http://maps.google.com/maps?q={latitude},{longitude}"})
+    return jsonify({'error':'last_position not available from api'})
 
 
 # Set a battery threshold and schedule an hour to stop the charge

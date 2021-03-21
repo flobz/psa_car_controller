@@ -38,8 +38,11 @@ class Ecomix:
 
     @staticmethod
     def get_co2_per_kw(start: datetime, end: datetime, latitude, longitude):
-        location = reverse_geocode.search([(latitude, longitude)])[0]
-        country_code = location["country_code"]
+        try:
+            location = reverse_geocode.search([(latitude, longitude)])[0]
+            country_code = location["country_code"]
+        except IndexError:
+            country_code = None
         # todo implement other countries
         if country_code == 'FR':
             co2_per_kw = Ecomix.get_data_france(start, end)

@@ -295,14 +295,14 @@ def encode_oeap(text, key):
     return cipher.encrypt(text)
 
 
-def save_otp(obj):
-    with open("otp.bin", 'wb') as output:
+def save_otp(obj, filename="otp.bin"):
+    with open(filename, 'wb') as output:
         pickle.dump(obj, output)
 
 
-def load_otp():
+def load_otp(filename="otp.bin"):
     try:
-        with open("otp.bin", 'rb') as input_file:
+        with open(filename, 'rb') as input_file:
             return pickle.load(input_file)
     except FileNotFoundError:
         logger.debug(traceback.format_exc())

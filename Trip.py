@@ -4,8 +4,9 @@ from typing import List
 
 from geojson import Feature, FeatureCollection, MultiLineString
 
-from Car import Cars
+from Car import Cars, Car
 from MyLogger import logger
+from trip_parser import TripParser
 from web.db import get_db
 
 
@@ -24,33 +25,36 @@ class Trip:
         self.end_at = None
         self.positions: List[Points] = []
         self.speed_average = None
-        self.consumption = None
-        self.consumption_km = None
-        self.consumption_fuel = None
-        self.consumption_fuel_km = None
+        self.consumption = 0
+        self.consumption_km = 0
+        self.consumption_fuel = 0
+        self.consumption_fuel_km = 0
         self.distance = None
         self.duration = None
         self.mileage = None
+        self.car: Car = None
 
     def add_points(self, latitude, longitude):
         self.positions.append(Points(latitude, longitude))
 
-    def set_consumption(self, consumption: float):
+    def set_consumption(self, diff_level: float) -> float:
         if self.distance is None:
-            raise Exception("Distance not set")
-        if consumption < 0:
+            raise ValueError("Distance not set")
+        if diff_level < 0:
             logger.debugv("trip has negative consumption")
-            consumption = 0
-        self.consumption = consumption
+            diff_level = 0
+        self.consumption = diff_level * self.car.battery_power/100
         self.consumption_km = 100 * self.consumption / self.distance  # kw/100 km
+        return self.consumption_km
 
-    def set_fuel_consumption(self, consumption):
+    def set_fuel_consumption(self, consumption) -> float:
         if self.distance is None:
-            raise Exception("Distance not set")
+            raise ValueError("Distance not set")
         if consumption < 0:
             logger.debugv("trip has negative fuel consumption")
         self.consumption_fuel = round(consumption, 2)  # L
         self.consumption_fuel_km = round(100 * self.consumption_fuel / self.distance, 2)  # L/100 km
+        return self.consumption_fuel_km
 
     def get_consumption(self):
         return {
@@ -95,12 +99,12 @@ class Trips(list):
                             "consumption": tr.consumption})
         return res
 
-    @staticmethod
-    def __charge_detection(charge, distance):
-        # A margin of two is set because battery level can increase with regeneration system or temperature change.
-        # If distance is bigger than 0 but charge bigger than five there is probably missing point and we assume that
-        # regeneration/temperature can't increase by 5 percent the battery level
-        return charge > 2 and (distance == 0 or charge > 5)
+    def check_and_append(self,tr:Trip):
+        if tr.consumption_km <= tr.car.max_elec_consumption and tr.consumption_fuel_km <= tr.car.max_fuel_consumption:
+            self.append(tr)
+            return True
+        logger.debugv("trip discarded")
+        return False
 
     @staticmethod
     def get_trips(vehicles_list: Cars) -> dict[str, Trips]:
@@ -111,15 +115,15 @@ class Trips(list):
         for vin in vehicles:
             trips = Trips()
             vin = vin[0]
-            car = vehicles_list.get_car_by_vin(vin)
-            battery_capacity = car.battery_power
-            fuel_capacity = car.fuel_capacity
             res = conn.execute('SELECT * FROM position WHERE VIN=? ORDER BY Timestamp', (vin,)).fetchall()
             if len(res) > 1:
+                car = vehicles_list.get_car_by_vin(vin)
+                assert car is not None
+                trip_parser = TripParser(car)
                 start = res[0]
                 end = res[1]
                 tr = Trip()
-                # res = list(map(dict,res))
+                # for debugging use this line res = list(map(dict,res))
                 for x in range(0, len(res) - 2):
                     logger.debugv("%s mileage:%.1f level:%s level_fuel:%s",
                                   res[x]['Timestamp'], res[x]['mileage'], res[x]['level'], res[x]['level_fuel'])
@@ -130,18 +134,9 @@ class Trips(list):
                         speed_average = distance / duration
                     except ZeroDivisionError:
                         speed_average = 0
-                    charge = end["level"] - start["level"]
-                    if end["level_fuel"] is not None and start["level_fuel"] is not None:
-                        refuel = end["level_fuel"] - start["level_fuel"]
-                    else:
-                        refuel = 0
                     restart_trip = False
-                    if refuel > 0:
+                    if trip_parser.is_refuel(start, end, distance ):
                         restart_trip = True
-                        logger.debugv("refuel detected")
-                    elif Trips.__charge_detection(charge, distance):
-                        restart_trip = True
-                        logger.debugv("charge detected")
                     elif speed_average < 0.2 and duration > 0.05:
                         restart_trip = True
                         logger.debugv("low speed detected")
@@ -157,18 +152,9 @@ class Trips(list):
                             speed_average = distance / duration
                         except ZeroDivisionError:
                             speed_average = 0
-                        charge = next_el["level"] - end["level"]
-                        if next_el["level_fuel"] is not None and end["level_fuel"] is not None:
-                            refuel = next_el["level_fuel"] - end["level_fuel"]
-                        else:
-                            refuel = 0
                         end_trip = False
-                        if refuel > 0:
+                        if trip_parser.is_refuel(end, next_el, distance):
                             end_trip = True
-                            logger.debugv("refuel detected")
-                        elif Trips.__charge_detection(charge, distance):
-                            end_trip = True
-                            logger.debugv("charge detected")
                         elif speed_average < 0.2 and duration > 0.05:
                             # (distance == 0 and duration > 0.08) or duration > 2 or
                             # check the speed to handle missing point
@@ -192,14 +178,12 @@ class Trips(list):
                                 tr.add_points(end["longitude"], end["latitude"])
                                 tr.duration = (end["Timestamp"] - start["Timestamp"]).total_seconds() / 3600
                                 tr.speed_average = tr.distance / tr.duration
-                                diff_level = start["level"] - end["level"]
-                                tr.set_consumption(diff_level / 100 * battery_capacity)  # kw
-                                if start["level_fuel"] is not None and end["level_fuel"] is not None:
-                                    diff_level_fuel = start["level_fuel"] - end["level_fuel"]
-                                    tr.set_fuel_consumption(diff_level_fuel / 100 * fuel_capacity)
-                                else:
-                                    tr.consumption_fuel = 0
-                                    tr.consumption_fuel_km = 0
+                                diff_level, diff_level_fuel = trip_parser.get_level_consumption(start, end)
+                                tr.car = car
+                                if diff_level != 0:
+                                    tr.set_consumption(diff_level)# kw
+                                if diff_level_fuel != 0:
+                                    tr.set_fuel_consumption(diff_level_fuel)
                                 tr.mileage = end["mileage"]
                                 logger.debugv("Trip: %s -> %s %.1fkm %.2fh %.0fkm/h %.2fkWh %.2fkWh/100km %.2fL "
                                               "%.2fL/100km %.1fkm",
@@ -207,11 +191,7 @@ class Trips(list):
                                               tr.speed_average, tr.consumption, tr.consumption_km,
                                               tr.consumption_fuel, tr.consumption_fuel_km, tr.mileage)
                                 # filter bad value
-                                if tr.consumption_km < 70 and (
-                                        tr.consumption_fuel_km is None or tr.consumption_fuel_km < 30):
-                                    trips.append(tr)
-                                else:
-                                    logger.debugv("trip discarded")
+                                trips.check_and_append(tr)
                             start = next_el
                             tr = Trip()
                         else:

@@ -77,9 +77,12 @@ if __name__ == "__main__":
                 web.app.myp.info_refresh_rate = args.refresh * 60
             if args.charge_control:
                 web.app.chc = ChargeControls.load_config(web.app.myp, name=args.charge_control)
-                web.app.chc.start()
-            Thread(target=web.app.myp.refresh_vehicle_info).start()
+                web.app.chc.init()
+            t2 = Thread(target=web.app.myp.refresh_vehicle_info)
+            t2.setDaemon(True)
+            t2.start()
 
     save_config(web.app.myp)
     t1 = Thread(target=start_app, args=["My car info", args.base_path, logger.level < 20, args.listen, int(args.port)])
+    t1.setDaemon(True)
     t1.start()

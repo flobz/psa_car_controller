@@ -7,14 +7,14 @@ class Tokenizer:
     def nextToken(self):
         if self.currentIndex >= len(self.s):
             return ""
-        indexOf = self.currentIndex + self.s[self.currentIndex:].index(self.delimiter)
-        if indexOf == -1:
+        index_of = self.currentIndex + self.s[self.currentIndex:].index(self.delimiter)
+        if index_of == -1:
             substring = self.s[self.currentIndex:]
             self.currentIndex = self.s.length()
             return substring
 
-        substring2 = self.s[self.currentIndex:indexOf]
-        self.currentIndex = indexOf + len(self.delimiter)
+        substring2 = self.s[self.currentIndex:index_of]
+        self.currentIndex = index_of + len(self.delimiter)
         return substring2
 
     def nextTokenI(self):

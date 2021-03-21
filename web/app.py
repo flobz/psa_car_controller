@@ -43,7 +43,9 @@ def start_app(title, base_path, debug: bool, host, port):
     return run_simple(host, port, application, use_reloader=False, use_debugger=debug)
 
 
-myp = None
+# noinspection PyTypeChecker
+myp:MyPSACC = None
+# noinspection PyTypeChecker
 chc: ChargeControls = None
 
 

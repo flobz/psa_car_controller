@@ -108,18 +108,15 @@ def get_figures(trips: Trips, charging: List[dict]):
     # charging
     charging_data = DataFrame.from_records(charging)
     try:
-        co2_per_kw = charging_data["co2"].sum() / charging_data["kw"].sum()
-    except ZeroDivisionError:
-        co2_per_kw = 0
-    except KeyError:  # when there is no data yet:
+        co2_data = charging_data[charging_data["co2"] > 0]
+        co2_per_kw = co2_data["co2"].sum() / co2_data["kw"].sum()
+    except (ZeroDivisionError, KeyError):
         co2_per_kw = 0
     co2_per_km = co2_per_kw * kw_per_km / 100
     try:
         charge_speed = 3600 * charging_data["kw"].mean() / \
                        (charging_data["stop_at"] - charging_data["start_at"]).mean().total_seconds()
-    except TypeError:  # when there is no data yet:
-        charge_speed = 0
-    except KeyError:  # when there is no data yet:
+    except (TypeError, KeyError):  # when there is no data yet:
         charge_speed = 0
 
     battery_info = dash_table.DataTable(

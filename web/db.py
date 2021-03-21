@@ -4,6 +4,8 @@ from datetime import datetime
 import pytz
 from typing import Callable
 
+from MyLogger import logger
+
 callback_fct: Callable[[], None] = lambda: None
 default_db_file = 'info.db'
 
@@ -33,3 +35,14 @@ def get_db(db_file=default_db_file):
                  "SELECT update_trips(); END;")
     conn.commit()
     return conn
+
+
+def clean_position(conn):
+    res = conn.execute(
+        "SELECT Timestamp,mileage,level from position ORDER BY Timestamp DESC LIMIT 3;").fetchall()
+    # Clean DB
+    if len(res) == 3 and res[0]["mileage"] == res[1]["mileage"] == res[2]["mileage"] and \
+            res[0]["level"] == res[1]["level"] == res[2]["level"]:
+        logger.debug("Delete duplicate line")
+        conn.execute("DELETE FROM position where Timestamp=?;", (res[1]["Timestamp"],))
+        conn.commit()

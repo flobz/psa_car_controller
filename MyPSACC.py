@@ -10,7 +10,6 @@ from json import JSONEncoder
 from hashlib import md5
 from time import sleep
 
-import requests
 from oauth2_client.credentials_manager import CredentialManager, ServiceInformation
 import paho.mqtt.client as mqtt
 from requests import Response
@@ -22,12 +21,14 @@ from otp.Otp import load_otp, new_otp_session, save_otp, ConfigException, Otp
 from psa_connectedcar import ApiClient
 from psa_connectedcar.rest import ApiException
 from MyLogger import logger
-from threading import Semaphore, Timer
-from functools import wraps
 
-from web.db import get_db
+from utils import get_temp, rate_limit
+from web.db import get_db, clean_position
 from geojson import Feature, Point, FeatureCollection
 from geojson import dumps as geo_dumps
+
+PSA_CORRELATION_DATE_FORMAT = "%Y%m%d%H%M%S%f"
+PSA_DATE_FORMAT = "%Y-%m-%dT%H:%M:%SZ"
 
 oauhth_url = {"clientsB2CPeugeot": "https://idpcvs.peugeot.com/am/oauth2/access_token",
               "clientsB2CCitroen": "https://idpcvs.citroen.com/am/oauth2/access_token",
@@ -43,6 +44,7 @@ MQTT_REQ_TOPIC = "psa/RemoteServices/from/cid/"
 MQTT_RESP_TOPIC = "psa/RemoteServices/to/cid/"
 MQTT_EVENT_TOPIC = "psa/RemoteServices/events/MPHRTServices/"
 MQTT_TOKEN_TTL = 890
+CARS_FILE = "cars.json"
 
 
 # add method to class Energy
@@ -54,25 +56,6 @@ def get_energy(self, energy_type):
 
 
 psac.models.status.Status.get_energy = get_energy
-
-
-def rate_limit(limit, every):
-    def limit_decorator(fn):
-        semaphore = Semaphore(limit)
-
-        @wraps(fn)
-        def wrapper(*args, **kwargs):
-            semaphore.acquire()
-            try:
-                return fn(*args, **kwargs)
-            finally:  # don't catch but ensure semaphore release
-                timer = Timer(every, semaphore.release)
-                timer.setDaemon(True)  # allows the timer to be canceled on exit
-                timer.start()
-
-        return wrapper
-
-    return limit_decorator
 
 
 class OpenIdCredentialManager(CredentialManager):
@@ -110,7 +93,7 @@ class OauthAPIClient(ApiClient):
                  response_type=None, auth_settings=None, async_req=None,
                  _return_http_data_only=None, collection_formats=None,
                  _preload_content=True, _request_timeout=None):
-        for attempt in range(0, 2):
+        for _ in range(0, 2):
             try:
                 if not async_req:
                     return self._ApiClient__call_api(resource_path, method,
@@ -134,11 +117,11 @@ class OauthAPIClient(ApiClient):
                     raise e
 
 
-def correlation_id(date):
-    date_str = date.strftime("%Y%m%d%H%M%S%f")[:-3]
+def gen_correlation_id(date):
+    date_str = date.strftime(PSA_CORRELATION_DATE_FORMAT)[:-3]
     uuid_str = str(uuid.uuid4()).replace("-", "")
-    correlationId = uuid_str + date_str
-    return correlationId
+    correlation_id = uuid_str + date_str
+    return correlation_id
 
 
 class MyPSACC:
@@ -162,10 +145,10 @@ class MyPSACC:
         self.manager.refresh_token = refresh_token
         self.remote_refresh_token = remote_refresh_token
         self.remote_access_token = None
-        self.vehicles_list = Cars.load_cars()
-        self.setProxies(proxies)
+        self.vehicles_list = Cars.load_cars(CARS_FILE)
+        self.set_proxies(proxies)
         self.customer_id = customer_id
-        self._configHash = None
+        self._config_hash = None
         self.api_config.verify_ssl = False
         self.api_config.api_key['client_id'] = self.client_id
         self.api_config.api_key['x-introspect-realm'] = self.realm
@@ -192,7 +175,7 @@ class MyPSACC:
         api_instance = psac.VehiclesApi(OauthAPIClient(self.api_config))
         return api_instance
 
-    def setProxies(self, proxies):
+    def set_proxies(self, proxies):
         if proxies is None:
             self._proxies = dict(http='', https='')
             self.api_config.proxy = None
@@ -204,10 +187,10 @@ class MyPSACC:
 
     def get_vehicle_info(self, vin):
         car = self.vehicles_list.get_car_by_vin(vin)
-        for attempt in range(0, 2):
+        for _ in range(0, 2):
             res = self.api().get_vehicle_status(car.vehicle_id, extension=["odometer"])
+            car.status = res
             if res is not None:
-                car.status = res
                 if self._record_enabled:
                     self.record_info(vin, res)
                 break
@@ -224,7 +207,7 @@ class MyPSACC:
                     callback()
 
     # monitor doesn't seem to work
-    def newMonitor(self, vin, body):
+    def new_monitor(self, vin, body):
         res = self.manager.post("https://api.groupe-psa.com/connectedcar/v4/user/vehicles/" +
                                 self.vehicles_list.get_car_by_vin(vin).id + "/status?client_id=" + self.client_id,
                                 headers=self.headers, data=body)
@@ -258,12 +241,12 @@ class MyPSACC:
 
     # 6 otp by day
     @rate_limit(6, 3600 * 24)
-    def getOtpCode(self):
+    def get_otp_code(self):
         try:
-            otp_code = self.otp.getOtpCode()
+            otp_code = self.otp.get_otp_code()
         except ConfigException:
             self.load_otp(new=True)
-            otp_code = self.otp.getOtpCode()
+            otp_code = self.otp.get_otp_code()
         save_otp(self.otp)
         return otp_code
 
@@ -297,68 +280,53 @@ class MyPSACC:
         else:
             logger.error("can't refresh_remote_token: %s\n Create a new one", data)
             self.remote_token_last_update = datetime.now()
-            otp_code = self.getOtpCode()
+            otp_code = self.get_otp_code()
             res = self.get_remote_access_token(otp_code)
         self.mqtt_client.username_pw_set("IMA_OAUTH_ACCESS_TOKEN", self.remote_access_token)
         return res
 
     def on_mqtt_connect(self, client, userdata, rc, a):
-        try:
-            logger.info("Connected with result code %s", rc)
-            topics = [MQTT_RESP_TOPIC + self.customer_id + "/#"]
-            for car in self.vehicles_list:
-                topics.append(MQTT_EVENT_TOPIC + car.vin)
-            for topic in topics:
-                client.subscribe(topic)
-                logger.info("subscribe to %s", topic)
-        except:
-            logger.error(traceback.format_exc())
+        logger.info("Connected with result code %s", rc)
+        topics = [MQTT_RESP_TOPIC + self.customer_id + "/#"]
+        for car in self.vehicles_list:
+            topics.append(MQTT_EVENT_TOPIC + car.vin)
+        for topic in topics:
+            client.subscribe(topic)
+            logger.info("subscribe to %s", topic)
 
     def on_mqtt_disconnect(self, client, userdata, rc):
-        try:
-            logger.warning("Disconnected with result code %d", rc)
-            if rc == 1:
-                self.refresh_remote_token(force=True)
-            else:
-                logger.warning(mqtt.error_string(rc))
-        except:
-            logger.error(traceback.format_exc())
+        logger.warning("Disconnected with result code %d", rc)
+        if rc == 1:
+            self.refresh_remote_token(force=True)
+        else:
+            logger.warning(mqtt.error_string(rc))
 
     def on_mqtt_message(self, client, userdata, msg):
-        charge_not_detected = False
         try:
             logger.info("mqtt msg %s %s", msg.topic, msg.payload)
             data = json.loads(msg.payload)
+            charge_info = None
             if msg.topic.startswith(MQTT_RESP_TOPIC):
-                if "return_code" in data:
-                    if data["return_code"] == "0":
-                        pass
-                    elif data["return_code"] == "400":
-                        self.refresh_remote_token(force=True)
-                        logger.error("retry last request, token was expired")
-                    elif data["return_code"] == "300":
-                        logger.error('%d', data["return_code"])
-                    else:
-                        logger.error('%s : %s', data["return_code"], data["reason"])
-                else:
+                if "return_code" not in data:
                     logger.debug("mqtt msg hasn't return code")
-            if msg.topic.startswith(MQTT_EVENT_TOPIC):
-                if data["charging_state"]['remaining_time'] != 0 and data["charging_state"]['rate'] == 0:
-                    charge_not_detected = True
-            elif msg.topic.endswith("/VehicleState"):
-                try:
-                    if data["resp_data"]["charging_state"]['remaining_time'] != 0 \
-                            and data["resp_data"]["charging_state"]['rate'] == 0:
-                        charge_not_detected = True
-                    self.precond_programs[data["vin"]] = data["resp_data"]["precond_state"]["programs"]
-                except KeyError:
-                    pass
-            if charge_not_detected:
+                elif data["return_code"] == "400":
+                    self.refresh_remote_token(force=True)
+                    logger.error("retry last request, token was expired")
+                elif data["return_code"] == "300":
+                    logger.error('%d', data["return_code"])
+                elif data["return_code"] != "0":
+                    logger.error('%s : %s', data["return_code"], data["reason"])
+                    if msg.topic.endswith("/VehicleState"):
+                        charge_info = data["resp_data"]["charging_state"]
+                        self.precond_programs[data["vin"]] = data["resp_data"]["precond_state"]["programs"]
+            elif msg.topic.startswith(MQTT_EVENT_TOPIC):
+                charge_info = data["charging_state"]
+            if charge_info is not None and charge_info['remaining_time'] != 0 and charge_info['rate'] == 0:
                 # fix a psa server bug where charge beginning without status api being properly updated
-                logger.info("charge begin")
+                logger.warning("charge begin but API isn't updated")
                 sleep(60)
                 self.wakeup(data["vin"])
-        except:
+        except KeyError:
             logger.error(traceback.format_exc())
 
     def start_mqtt(self):
@@ -376,19 +344,18 @@ class MyPSACC:
 
     def __keep_mqtt(self):  # avoid token expiration
         timeout = 3600 * 24  # 1 day
-        try:
+        if len(self.vehicles_list) > 0:
             self.get_state(self.vehicles_list[0].vin)
-        except:
-            logger.warning("keep_mqtt error")
-        threading.Timer(timeout, self.__keep_mqtt).start()
+        t = threading.Timer(timeout, self.__keep_mqtt)
+        t.setDaemon(True)
+        t.start()
 
     def mqtt_request(self, vin, req_parameters):
         self.refresh_token()
         date = datetime.utcnow()
-        date_f = "%Y-%m-%dT%H:%M:%SZ"
-        date_str = date.strftime(date_f)
+        date_str = date.strftime(PSA_DATE_FORMAT)
         data = {"access_token": self.remote_access_token, "customer_id": self.customer_id,
-                "correlation_id": correlation_id(date), "req_date": date_str, "vin": vin,
+                "correlation_id": gen_correlation_id(date), "req_date": date_str, "vin": vin,
                 "req_parameters": req_parameters}
 
         return json.dumps(data)
@@ -495,10 +462,10 @@ class MyPSACC:
     def save_config(self, name="config.json", force=False):
         config_str = json.dumps(self, cls=MyPeugeotEncoder, sort_keys=True, indent=4).encode("utf8")
         new_hash = md5(config_str).hexdigest()
-        if force or self._configHash != new_hash:
+        if force or self._config_hash != new_hash:
             with open(name, "wb") as f:
                 f.write(config_str)
-            self._configHash = new_hash
+            self._config_hash = new_hash
             logger.info("save config change")
 
     @staticmethod
@@ -543,16 +510,7 @@ class MyPSACC:
             if conn.execute("SELECT Timestamp from position where Timestamp=?", (date,)).fetchone() is None:
                 temp = None
                 if self.weather_api is not None:
-                    try:
-                        weather_rep = requests.get("https://api.openweathermap.org/data/2.5/onecall",
-                                                   params={"lat": latitude, "lon": longitude,
-                                                           "exclude": "minutely,hourly,daily,alerts",
-                                                           "appid": self.weather_api,
-                                                           "units": "metric"})
-                        temp = weather_rep.json()["current"]["temp"]
-                        logger.debug("Temperature :%fc", temp)
-                    except:
-                        logger.error("Unable to get temperature from openweathermap :%s", traceback.format_exc())
+                    temp = get_temp(latitude,longitude,self.weather_api)
 
                 if level_fuel == 0:  # fix fuel level not provided when car is off
                     try:
@@ -571,19 +529,10 @@ class MyPSACC:
 
                 conn.commit()
                 logger.info("new position recorded for %s", vin)
-                res = conn.execute(
-                    "SELECT Timestamp,mileage,level from position ORDER BY Timestamp DESC LIMIT 3;").fetchall()
-                # Clean DB
-                if len(res) == 3:
-                    if res[0]["mileage"] == res[1]["mileage"] == res[2]["mileage"]:
-                        if res[0]["level"] == res[1]["level"] == res[2]["level"]:
-                            logger.debug("Delete duplicate line")
-                            conn.execute("DELETE FROM position where Timestamp=?;", (res[1]["Timestamp"],))
-                            conn.commit()
+                clean_position(conn)
             else:
                 logger.debug("position already saved")
 
-        # todo handle battery status
         if charging_status == "InProgress":
             try:
                 in_progress = conn.execute("SELECT stop_at FROM battery WHERE VIN=? ORDER BY start_at DESC limit 1",
@@ -591,7 +540,7 @@ class MyPSACC:
             except TypeError:
                 in_progress = False
             if not in_progress:
-                res = conn.execute("INSERT INTO battery(start_at,start_level,VIN) VALUES(?,?,?)",
+                conn.execute("INSERT INTO battery(start_at,start_level,VIN) VALUES(?,?,?)",
                                    (charge_date, level, vin))
                 conn.commit()
         else:
@@ -603,14 +552,12 @@ class MyPSACC:
                 if in_progress:
                     co2_per_kw = Ecomix.get_co2_per_kw(start_at, charge_date, latitude, longitude)
                     kw = (level - start_level) / 100 * self.vehicles_list.get_car_by_vin(vin).battery_power
-                    res = conn.execute(
+                    conn.execute(
                         "UPDATE battery set stop_at=?, end_level=?, co2=?, kw=? WHERE start_at=? and VIN=?",
                         (charge_date, level, co2_per_kw, kw, start_at, vin))
                     conn.commit()
             except TypeError:
                 logger.debug("battery table is empty")
-            except:
-                logger.debug("Error when saving status %s", traceback.format_exc())
         conn.close()
 
     @staticmethod

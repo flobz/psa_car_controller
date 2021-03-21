@@ -52,7 +52,7 @@ def get_vehicules():
 
 
 @app.route('/get_vehicleinfo/<string:vin>')
-def get_vehicle_Info(vin):
+def get_vehicle_info(vin):
     response = app.response_class(
         response=json.dumps(myp.get_vehicle_info(vin).to_dict(), default=str),
         status=200,
@@ -87,18 +87,15 @@ def get_position(vin):
     try:
         coordinates = res.last_position.geometry.coordinates
     except AttributeError:
-        coordinates = []
-    if len(coordinates) == 3:  # altitude is not always availlable
-        longitude, latitude, altitude = coordinates
-        return jsonify(
-            {"longitude": longitude, "latitude": latitude, "altitude": altitude,
-             "url": f"http://maps.google.com/maps?q={latitude},{longitude}"})
-    if len(coordinates) == 2:
-        longitude, latitude = coordinates
-        return jsonify(
-            {"longitude": longitude, "latitude": latitude,
-             "url": f"http://maps.google.com/maps?q={latitude},{longitude}"})
-    return jsonify({'error':'last_position not available from api'})
+        return jsonify({'error': 'last_position not available from api'})
+    longitude, latitude, altitude = coordinates[:2]
+    if len(coordinates) == 3:  # altitude is not always available
+        altitude = coordinates[2]
+    else:
+        altitude = None
+    return jsonify(
+        {"longitude": longitude, "latitude": latitude, "altitude": altitude,
+         "url": f"https://maps.google.com/maps?q={latitude},{longitude}"})
 
 
 # Set a battery threshold and schedule an hour to stop the charge
@@ -136,7 +133,7 @@ def update_trips():
         trips_by_vin = Trips.get_trips(myp.vehicles_list)
         trips = next(iter(trips_by_vin.values()))  # todo handle multiple car
         chargings = MyPSACC.get_chargings()
-    except:
+    except (StopIteration, AssertionError):
         logger.error("update_trips: %s", traceback.format_exc())
     # update for slider
     global min_date, max_date, min_millis, max_millis, step, marks
@@ -147,7 +144,7 @@ def update_trips():
         max_millis = figures.unix_time_millis(max_date)
         step = (max_millis - min_millis) / 100
         marks = figures.get_marks_from_start_end(min_date, max_date)
-    except:
+    except (ValueError, IndexError):
         logger.error("update_trips (slider): %s", traceback.format_exc())
 
 
@@ -185,11 +182,6 @@ try:
 except (IndexError, TypeError):
     logger.debug("Failed to generate figure, there is probably not enough data yet %s", traceback.format_exc())
     data_div = dbc.Alert("No data to show, there is probably no trips recorded yet", color="danger")
-
-except:
-    logger.error("Failed to generate figure, there is probably not enough data yet")
-    logger.error(traceback.format_exc())
-    data_div = dbc.Alert("No data to show", color="danger")
 
 dash_app.layout = dbc.Container(fluid=True, children=[
     html.H1('My car info'),

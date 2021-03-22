@@ -54,7 +54,8 @@ battery_table = None
 
 
 def get_figures(trips: Trips, charging: List[dict]):
-    global consumption_fig, consumption_df, trips_map, consumption_fig_by_speed, table_fig, info, battery_info, battery_table
+    global consumption_fig, consumption_df, trips_map, consumption_fig_by_speed, table_fig, info, battery_info, \
+        battery_table
     lats = []
     lons = []
     names = []
@@ -73,7 +74,7 @@ def get_figures(trips: Trips, charging: List[dict]):
     table_fig = dash_table.DataTable(
         id='trips-table',
         sort_action='native',
-        sort_by=[{'column_id': 'start_at', 'direction': 'desc'}],
+        # sort_by=[{'column_id': 'start_at', 'direction': 'desc'}],
         columns=[{'id': 'start_at', 'name': 'start at', 'type': 'datetime'},
                  {'id': 'duration', 'name': 'duration', 'type': 'numeric',
                   'format': deepcopy(nb_format).symbol_suffix(" min").precision(0)},
@@ -87,7 +88,8 @@ def get_figures(trips: Trips, charging: List[dict]):
                   'format': nb_format.symbol_suffix(" km").precision(1)},
                  {'id': 'mileage', 'name': 'mileage', 'type': 'numeric',
                   'format': nb_format.symbol_suffix(" km").precision(1)}],
-        data=[tr.get_info() for tr in trips],
+        data=[tr.get_info() for tr in trips[::-1]],
+        page_size=50
     )
     # consumption_fig
     consumption_df = DataFrame.from_records(trips.get_long_trips())
@@ -130,12 +132,12 @@ def get_figures(trips: Trips, charging: List[dict]):
               {"name": " ", "value:": "{:.1f} g/kWh".format(co2_per_kw)},
               {"name": "Average charge speed:", "value": "{:.3f} kW".format(charge_speed)}])
     battery_info = html.Div(children=[html.Tr(
-            [
-                html.Td('Average emission:', rowSpan=2),
-                html.Td("{:.1f} g/km".format(co2_per_km)),
-            ]
-        ),
-        html. Tr(
+        [
+            html.Td('Average emission:', rowSpan=2),
+            html.Td("{:.1f} g/km".format(co2_per_km)),
+        ]
+    ),
+        html.Tr(
             [
                 "{:.1f} g/kWh".format(co2_per_kw),
             ]

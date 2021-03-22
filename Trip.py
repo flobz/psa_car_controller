@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from typing import List
 
+from dateutil import tz
 from geojson import Feature, FeatureCollection, MultiLineString
 
 from Car import Cars, Car
@@ -43,7 +44,7 @@ class Trip:
         if diff_level < 0:
             logger.debugv("trip has negative consumption")
             diff_level = 0
-        self.consumption = diff_level * self.car.battery_power/100
+        self.consumption = diff_level * self.car.battery_power / 100
         self.consumption_km = 100 * self.consumption / self.distance  # kw/100 km
         return self.consumption_km
 
@@ -76,10 +77,11 @@ class Trip:
                                                                "average consumption fuel": self.consumption_fuel_km})
 
     def get_info(self):
-        res = {"start_at": self.start_at.astimezone(None).strftime("%x %X"),
-               "end_at": self.end_at.astimezone(None).strftime("%x %X"), "duration": self.duration * 60,
-               "speed_average": self.speed_average, "consumption_km": self.consumption_km,
-               "consumption_fuel_km": self.consumption_fuel_km, "distance": self.distance, "mileage": self.mileage}
+        res = {"start_at": self.start_at.astimezone(tz.tzlocal()).replace(tzinfo=None).strftime("%x %X"),
+               # convert to naive tz,
+               "duration": self.duration * 60, "speed_average": self.speed_average,
+               "consumption_km": self.consumption_km, "consumption_fuel_km": self.consumption_fuel_km,
+               "distance": self.distance, "mileage": self.mileage}
         return res
 
 
@@ -99,7 +101,7 @@ class Trips(list):
                             "consumption": tr.consumption})
         return res
 
-    def check_and_append(self,tr:Trip):
+    def check_and_append(self, tr: Trip):
         if tr.consumption_km <= tr.car.max_elec_consumption and tr.consumption_fuel_km <= tr.car.max_fuel_consumption:
             self.append(tr)
             return True
@@ -135,7 +137,7 @@ class Trips(list):
                     except ZeroDivisionError:
                         speed_average = 0
                     restart_trip = False
-                    if trip_parser.is_refuel(start, end, distance ):
+                    if trip_parser.is_refuel(start, end, distance):
                         restart_trip = True
                     elif speed_average < 0.2 and duration > 0.05:
                         restart_trip = True
@@ -181,7 +183,7 @@ class Trips(list):
                                 diff_level, diff_level_fuel = trip_parser.get_level_consumption(start, end)
                                 tr.car = car
                                 if diff_level != 0:
-                                    tr.set_consumption(diff_level)# kw
+                                    tr.set_consumption(diff_level)  # kw
                                 if diff_level_fuel != 0:
                                     tr.set_fuel_consumption(diff_level_fuel)
                                 tr.mileage = end["mileage"]

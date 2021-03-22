@@ -19,11 +19,11 @@ app = None
 dash_app = None
 dispatcher = None
 
-
 def start_app(title, base_path, debug: bool, host, port):
     global app, dash_app, dispatcher
     try:
         lang = locale.getlocale()[0].split("_")[0]
+        locale.setlocale(locale.LC_TIME, ".".join(locale.getlocale())) #make sure LC_TIME is set
         locale_url = [f"https://cdn.plot.ly/plotly-locale-{lang}-latest.js"]
     except IndexError:
         locale_url = None

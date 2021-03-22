@@ -85,11 +85,13 @@ class Cars(list):
         for car in self:
             if car.vin == vin:
                 return car
+        return None
 
     def get_car_by_id(self, vehicle_id) -> Car:
         for car in self:
             if car.vehicle_id == vehicle_id:
                 return car
+        return None
 
     def add(self, car: Car):
         if self.get_car_by_id(car.vehicle_id) is None:

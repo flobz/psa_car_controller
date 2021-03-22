@@ -23,7 +23,6 @@ def get_temp(latitude:str, longitude:str, api_key:str) -> float:
     except KeyError:
         logger.error("Unable to get temperature from openweathermap :%s", traceback.format_exc())
 
-
 def rate_limit(limit, every):
     def limit_decorator(fn):
         semaphore = Semaphore(limit)

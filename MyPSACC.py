@@ -508,10 +508,7 @@ class MyPSACC:
             logger.error("The api return a wrong mileage for %s : %f", vin, mileage)
         else:
             if conn.execute("SELECT Timestamp from position where Timestamp=?", (date,)).fetchone() is None:
-                temp = None
-                if self.weather_api is not None:
-                    temp = get_temp(latitude,longitude,self.weather_api)
-
+                temp = get_temp(latitude,longitude,self.weather_api)
                 if level_fuel == 0:  # fix fuel level not provided when car is off
                     try:
                         level_fuel = conn.execute(
@@ -540,8 +537,7 @@ class MyPSACC:
             except TypeError:
                 in_progress = False
             if not in_progress:
-                conn.execute("INSERT INTO battery(start_at,start_level,VIN) VALUES(?,?,?)",
-                                   (charge_date, level, vin))
+                conn.execute("INSERT INTO battery(start_at,start_level,VIN) VALUES(?,?,?)", (charge_date, level, vin))
                 conn.commit()
         else:
             try:

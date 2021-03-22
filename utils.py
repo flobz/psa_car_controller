@@ -7,15 +7,17 @@ import requests
 from MyLogger import logger
 
 
-def get_temp(latitude, longitude, api_key):
+def get_temp(latitude:str, longitude:str, api_key:str) -> float:
     try:
-        weather_rep = requests.get("https://api.openweathermap.org/data/2.5/onecall",
-                                   params={"lat": latitude, "lon": longitude,
-                                           "exclude": "minutely,hourly,daily,alerts",
-                                           "appid": api_key,
-                                           "units": "metric"})
-        temp = weather_rep.json()["current"]["temp"]
-        logger.debug("Temperature :%fc", temp)
+        if not (latitude is None or longitude is None or api_key is None):
+            weather_rep = requests.get("https://api.openweathermap.org/data/2.5/onecall",
+                                       params={"lat": latitude, "lon": longitude,
+                                               "exclude": "minutely,hourly,daily,alerts",
+                                               "appid": api_key,
+                                               "units": "metric"})
+            temp = weather_rep.json()["current"]["temp"]
+            logger.debug("Temperature :%fc", temp)
+            return temp
     except ConnectionError:
         logger.error("Can't connect to openweathermap :%s", traceback.format_exc())
     except KeyError:

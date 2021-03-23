@@ -32,7 +32,10 @@ class TripParser:
     def get_hybrid_consumption(start, end):
         res = []
         for energy in [LEVEL, LEVEL_FUEL]:
-            res.append(start[energy] - end[energy])
+            if start[energy] is not None and end[energy] is not None:
+                res.append(start[energy] - end[energy])
+            else:
+                res.append(0)
         return res
 
     def __is_refuel_or_recharging(self, start, end, distance):

@@ -48,9 +48,14 @@ def display_value(value):
            figures.battery_table, max_millis, step, marks
 
 
-@app.route('/getvehicles')
+@app.route('/get_vehicles')
 def get_vehicules():
-    return jsonify(myp.get_vehicles())
+    response = app.response_class(
+        response=json.dumps(myp.get_vehicles(), default=lambda car: car.to_dict()),
+        status=200,
+        mimetype='application/json'
+    )
+    return response
 
 
 @app.route('/get_vehicleinfo/<string:vin>')

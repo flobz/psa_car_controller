@@ -4,6 +4,7 @@ from typing import List
 import dash_bootstrap_components as dbc
 import dash_table
 import numpy as np
+from dash_core_components import Graph
 from dash_table.Format import Format, Scheme, Symbol
 from dateutil.relativedelta import relativedelta
 from pandas import DataFrame
@@ -46,6 +47,7 @@ consumption_fig = None
 consumption_df = None
 trips_map = None
 consumption_fig_by_speed = None
+consumption_graph_by_temp = None
 table_fig = None
 pandas_options.display.float_format = '${:.2f}'.format
 info = ""
@@ -53,9 +55,9 @@ battery_info = dbc.Alert("No data to show", color="danger")
 battery_table = None
 
 
-def get_figures(trips: Trips, charging: List[dict]):
+def get_figures(trips: Trips, charging: tuple[dict]):
     global consumption_fig, consumption_df, trips_map, consumption_fig_by_speed, table_fig, info, battery_info, \
-        battery_table
+        battery_table, consumption_graph_by_temp
     lats = []
     lons = []
     names = []
@@ -164,3 +166,18 @@ def get_figures(trips: Trips, charging: List[dict]):
                   'format': deepcopy(nb_format).symbol_suffix(" kWh").precision(3)}],
         data=charging,
     )
+    consumption_by_temp_df = consumption_df[consumption_df["consumption_by_temp"].notnull()]
+    if len(consumption_by_temp_df) > 0:
+        consumption_fig_by_temp = px.histogram(consumption_by_temp_df, x="consumption_by_temp", y="consumption_km",
+                                               histfunc="avg", title="Consumption by temperature")
+        consumption_fig_by_temp.update_traces(xbins_size=2)
+        consumption_fig_by_temp.update_layout(bargap=0.05)
+        consumption_fig_by_temp.add_trace(
+            go.Scatter(mode="markers", x=consumption_by_temp_df["consumption_by_temp"],
+                       y=consumption_by_temp_df["consumption_km"], name="Trips"))
+        consumption_fig_by_temp.update_layout(xaxis_title="average temperature in °C",
+                                              yaxis_title="Consumption kWh/100Km")
+        consumption_graph_by_temp = Graph(figure=consumption_fig_by_temp, id="consumption_fig_by_temp")
+
+    else:
+        consumption_graph_by_temp = Graph(style={'display': 'none'})

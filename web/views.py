@@ -24,6 +24,7 @@ min_date = max_date = min_millis = max_millis = step = marks = None
 @dash_app.callback(Output('trips_map', 'figure'),
                    Output('consumption_fig', 'figure'),
                    Output('consumption_fig_by_speed', 'figure'),
+                   Output('consumption_fig_by_temp', 'graph'),
                    Output('consumption', 'children'),
                    Output('tab_trips', 'children'),
                    Output('tab_battery', 'children'),
@@ -42,13 +43,14 @@ def display_value(value):
     filtered_chargings = MyPSACC.get_chargings(mini, maxi)
     figures.get_figures(filtered_trips, filtered_chargings)
     consumption = "Average consumption: {:.1f} kWh/100km".format(float(figures.consumption_df["consumption_km"].mean()))
-    return figures.trips_map, figures.consumption_fig, figures.consumption_fig_by_speed, consumption, figures.table_fig, \
-           figures.battery_info, figures.battery_table, max_millis, step, marks
+    return figures.trips_map, figures.consumption_fig, figures.consumption_fig_by_speed,\
+           figures.consumption_graph_by_temp, consumption, figures.table_fig, figures.battery_info, \
+           figures.battery_table, max_millis, step, marks
 
 
 @app.route('/getvehicles')
 def get_vehicules():
-    return jsonify(myp.getVIN())
+    return jsonify(myp.get_vehicles())
 
 
 @app.route('/get_vehicleinfo/<string:vin>')
@@ -166,7 +168,8 @@ try:
                     html.H2(id="consumption",
                             children=figures.info),
                     dcc.Graph(figure=figures.consumption_fig, id="consumption_fig"),
-                    dcc.Graph(figure=figures.consumption_fig_by_speed, id="consumption_fig_by_speed")
+                    dcc.Graph(figure=figures.consumption_fig_by_speed, id="consumption_fig_by_speed"),
+                    figures.consumption_graph_by_temp
                 ]),
                 dbc.Tab(label="Trips", tab_id="trips", id="tab_trips", children=[figures.table_fig]),
                 dbc.Tab(label="Battery", tab_id="battery", id="tab_battery", children=[figures.battery_info]),

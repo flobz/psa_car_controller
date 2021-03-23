@@ -580,7 +580,7 @@ class MyPSACC:
         return geo_dumps(feature_collection, sort_keys=True)
 
     @staticmethod
-    def get_chargings(mini=None, maxi=None):
+    def get_chargings(mini=None, maxi=None) -> tuple[dict]:
         conn = get_db()
         if mini is not None:
             if maxi is not None:

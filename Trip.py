@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from statistics import mean
 from typing import List
 
 from dateutil import tz
@@ -34,9 +35,18 @@ class Trip:
         self.duration = None
         self.mileage = None
         self.car: Car = None
+        self.temperatures = []
 
     def add_points(self, latitude, longitude):
         self.positions.append(Points(latitude, longitude))
+
+    def add_temperature(self, temp):
+        self.temperatures.append(temp)
+
+    def get_temperature(self):
+        if len(self.temperatures) > 0:
+            return float(mean(self.temperatures))
+        return None
 
     def set_consumption(self, diff_level: float) -> float:
         if self.distance is None:
@@ -98,7 +108,7 @@ class Trips(list):
         for tr in self:
             if tr.consumption > 1.8:
                 res.append({"speed": tr.speed_average, "consumption_km": tr.consumption_km, "date": tr.start_at,
-                            "consumption": tr.consumption})
+                            "consumption": tr.consumption, "consumption_by_temp": tr.get_temperature()})
         return res
 
     def check_and_append(self, tr: Trip):
@@ -178,6 +188,8 @@ class Trips(list):
                                 tr.start_at = start["Timestamp"]
                                 tr.end_at = end["Timestamp"]
                                 tr.add_points(end["longitude"], end["latitude"])
+                                if end["temperature"] is not None and start["temperature"] is not None:
+                                    tr.add_temperature(end["temperature"])
                                 tr.duration = (end["Timestamp"] - start["Timestamp"]).total_seconds() / 3600
                                 tr.speed_average = tr.distance / tr.duration
                                 diff_level, diff_level_fuel = trip_parser.get_level_consumption(start, end)

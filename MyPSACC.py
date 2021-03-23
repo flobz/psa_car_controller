@@ -228,11 +228,11 @@ class MyPSACC:
             logger.error(traceback.format_exc())
         return self.vehicles_list
 
-    def load_otp(self, new=False):
+    def load_otp(self, force_new=False):
         otp_session = load_otp()
-        if otp_session is None or new:
+        if otp_session is None or force_new:
             self.get_sms_otp_code()
-            otp_session = new_otp_session()
+            otp_session = new_otp_session(otp_session)
         self.otp = otp_session
 
     def get_sms_otp_code(self):
@@ -251,7 +251,7 @@ class MyPSACC:
         try:
             otp_code = self.otp.get_otp_code()
         except ConfigException:
-            self.load_otp(new=True)
+            self.load_otp(force_new=True)
             otp_code = self.otp.get_otp_code()
         save_otp(self.otp)
         return otp_code
@@ -273,7 +273,7 @@ class MyPSACC:
         self.manager._refresh_token()
         if self.remote_refresh_token is None:
             logger.error("remote_refresh_token isn't defined")
-            self.load_otp(new=True)
+            self.load_otp(force_new=True)
         res = self.manager.post(remote_url + self.client_id,
                                 json={"grant_type": "refresh_token", "refresh_token": self.remote_refresh_token},
                                 headers=self.headers)

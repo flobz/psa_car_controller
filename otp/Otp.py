@@ -69,7 +69,7 @@ class Otp:
     iw_host = "https://otp.mpsa.com"
     proxies = None
 
-    def __init__(self, inwebo_access_id):
+    def __init__(self, inwebo_access_id, device_id=token_hex(8)):
         self.Kiw = None
         self.pinmode = None
         self.Kfact = None
@@ -78,7 +78,7 @@ class Otp:
         self.serviceid = None
         self.alias = None
         self.iwalea = token_hex(16)
-        self.device_id = token_hex(8)
+        self.device_id = device_id
         self.codepin = None
         self.challenge = ""
         self.action = ""
@@ -309,8 +309,11 @@ def load_otp(filename="otp.bin"):
     return None
 
 
-def new_otp_session():
-    otp = Otp("bb8e981582b0f31353108fb020bead1c")
+def new_otp_session(old_otp_session: Otp = None):
+    if old_otp_session is None:
+        otp = Otp("bb8e981582b0f31353108fb020bead1c")
+    else:
+        otp = Otp("bb8e981582b0f31353108fb020bead1c", device_id=old_otp_session.device_id)
     otp.smsCode = input("What is the code you just received by SMS ?")
     otp.codepin = input("What is your app pin code ?")
     otp.activation_start()

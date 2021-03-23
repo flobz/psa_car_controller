@@ -1,5 +1,5 @@
 from copy import deepcopy
-from typing import List
+from typing import List, Tuple
 
 import dash_bootstrap_components as dbc
 import dash_table
@@ -55,7 +55,7 @@ battery_info = dbc.Alert("No data to show", color="danger")
 battery_table = None
 
 
-def get_figures(trips: Trips, charging: tuple[dict]):
+def get_figures(trips: Trips, charging: Tuple[dict]):
     global consumption_fig, consumption_df, trips_map, consumption_fig_by_speed, table_fig, info, battery_info, \
         battery_table, consumption_graph_by_temp
     lats = []

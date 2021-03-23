@@ -186,14 +186,18 @@ class MyPSACC:
         Otp.set_proxies(proxies)
 
     def get_vehicle_info(self, vin):
+        res = None
         car = self.vehicles_list.get_car_by_vin(vin)
         for _ in range(0, 2):
-            res = self.api().get_vehicle_status(car.vehicle_id, extension=["odometer"])
-            car.status = res
-            if res is not None:
-                if self._record_enabled:
-                    self.record_info(vin, res)
-                break
+            try:
+                res = self.api().get_vehicle_status(car.vehicle_id, extension=["odometer"])
+                if res is not None:
+                    if self._record_enabled:
+                        self.record_info(vin, res)
+                    break
+            except ApiException:
+                logger.error(traceback.format_exc())
+        car.status = res
         return res
 
     def refresh_vehicle_info(self):
@@ -215,11 +219,13 @@ class MyPSACC:
         return data
 
     def get_vehicles(self):
-        res = self.api().get_vehicles_by_device()
-        for vehicle in res.embedded.vehicles:
-            vin = vehicle.vin
-            self.vehicles_list.add(Car(vin, vehicle.id, vehicle.brand, vehicle.label))
-        self.vehicles_list.save_cars()
+        try:
+            res = self.api().get_vehicles_by_device()
+            for vehicle in res.embedded.vehicles:
+                self.vehicles_list.add(Car(vehicle.vin, vehicle.id, vehicle.brand, vehicle.label))
+            self.vehicles_list.save_cars()
+        except ApiException:
+            logger.error(traceback.format_exc())
         return self.vehicles_list
 
     def load_otp(self, new=False):

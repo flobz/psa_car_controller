@@ -13,6 +13,7 @@ from time import sleep
 from oauth2_client.credentials_manager import CredentialManager, ServiceInformation
 import paho.mqtt.client as mqtt
 from requests import Response
+from typing import Tuple
 
 import psa_connectedcar as psac
 from Car import Cars, Car
@@ -580,7 +581,7 @@ class MyPSACC:
         return geo_dumps(feature_collection, sort_keys=True)
 
     @staticmethod
-    def get_chargings(mini=None, maxi=None) -> tuple[dict]:
+    def get_chargings(mini=None, maxi=None) -> Tuple[dict]:
         conn = get_db()
         if mini is not None:
             if maxi is not None:

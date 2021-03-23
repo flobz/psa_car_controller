@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from statistics import mean
-from typing import List
+from typing import List, Dict
 
 from dateutil import tz
 from geojson import Feature, FeatureCollection, MultiLineString
@@ -119,7 +119,7 @@ class Trips(list):
         return False
 
     @staticmethod
-    def get_trips(vehicles_list: Cars) -> dict[str, Trips]:
+    def get_trips(vehicles_list: Cars) -> Dict[str, Trips]:
         conn = get_db()
         vehicles = conn.execute(
             "SELECT DISTINCT vin FROM position;").fetchall()

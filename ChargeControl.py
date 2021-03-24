@@ -88,6 +88,8 @@ class ChargeControl:
                             thread.start()
             else:
                 self.retry_count = 0
+        except AttributeError:
+            logger.error("Probably can't retrieve all information from API: %s", traceback.format_exc())
         except:
             logger.error(traceback.format_exc())
 

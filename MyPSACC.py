@@ -490,9 +490,14 @@ class MyPSACC:
     def record_info(self, vin, status: psac.models.status.Status):
         mileage = status.timed_odometer.mileage
         level = status.get_energy('Electric').level
-        charging_status = status.get_energy('Electric').charging.status
-        charge_date = status.get_energy('Electric').updated_at
         level_fuel = status.get_energy('Fuel').level
+        charge_date = status.get_energy('Electric').updated_at
+        try:
+            moving = status.kinetic.moving
+            logger.debug("")
+        except AttributeError:
+            logger.error("kinetic not available from api")
+            moving = None
         try:
             longitude = status.last_position.geometry.coordinates[0]
             latitude = status.last_position.geometry.coordinates[1]
@@ -501,35 +506,38 @@ class MyPSACC:
             logger.error("last_position not available from api")
             longitude = latitude = None
             date = charge_date
+        logger.debug("vin:%s longitude:%s latitude:%s date:%s mileage:%s level:%s charge_date:%s level_fuel:"
+                     "%s moving:%s", vin, longitude, latitude, date, mileage, level, charge_date, level_fuel,
+                     moving)
+        self.record_position(vin, mileage, latitude, longitude, date, level, level_fuel, moving)
         try:
-            moving = status.kinetic.moving
+            charging_status = status.get_energy('Electric').charging.status
+            self.record_charging(vin, charging_status, charge_date, level, latitude, longitude)
+            logger.debug("charging_status:%s ", charging_status)
         except AttributeError:
-            logger.error("kinetic not available from api")
-            moving = None
-        logger.debug(
-            "vin:%s longitude:%s latitude:%s date:%s mileage:%s level:%s charging_status:%s charge_date:%s level_fuel:"
-            "%s moving:%s", vin, longitude, latitude, date, mileage, level, charging_status, charge_date, level_fuel,
-            moving)
+            logger.error("charging status not available from api")
+
+    def record_position(self, vin, mileage, latitude, longitude, date, level, level_fuel, moving):
         conn = get_db()
         if mileage == 0:  # fix a bug of the api
             logger.error("The api return a wrong mileage for %s : %f", vin, mileage)
         else:
             if conn.execute("SELECT Timestamp from position where Timestamp=?", (date,)).fetchone() is None:
-                temp = get_temp(latitude,longitude,self.weather_api)
+                temp = get_temp(latitude, longitude, self.weather_api)
                 if level_fuel == 0:  # fix fuel level not provided when car is off
                     try:
                         level_fuel = conn.execute(
-                            "SELECT level_fuel FROM position WHERE level_fuel>0 AND VIN=? ORDER BY Timestamp DESC LIMIT 1",
+                            "SELECT level_fuel FROM position WHERE level_fuel>0 AND VIN=? ORDER BY Timestamp DESC "
+                            "LIMIT 1",
                             (vin,)).fetchone()[0]
                         logger.info("level_fuel fixed with last real value %f for %s", level_fuel, vin)
                     except TypeError:
                         level_fuel = None
                         logger.info("level_fuel unfixed for %s", vin)
 
-                conn.execute(
-                    "INSERT INTO position(Timestamp,VIN,longitude,latitude,mileage,level,level_fuel,moving,temperature) "
-                    "VALUES(?,?,?,?,?,?,?,?,?)",
-                    (date, vin, longitude, latitude, mileage, level, level_fuel, moving, temp))
+                conn.execute("INSERT INTO position(Timestamp,VIN,longitude,latitude,mileage,level,level_fuel,moving,"
+                             "temperature) VALUES(?,?,?,?,?,?,?,?,?)",
+                             (date, vin, longitude, latitude, mileage, level, level_fuel, moving, temp))
 
                 conn.commit()
                 logger.info("new position recorded for %s", vin)
@@ -537,6 +545,8 @@ class MyPSACC:
             else:
                 logger.debug("position already saved")
 
+    def record_charging(self, vin, charging_status, charge_date, level, latitude, longitude):
+        conn = get_db()
         if charging_status == "InProgress":
             try:
                 in_progress = conn.execute("SELECT stop_at FROM battery WHERE VIN=? ORDER BY start_at DESC limit 1",

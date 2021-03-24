@@ -16,9 +16,10 @@ from web import figures
 from web.app import app, dash_app, myp, chc
 import web.db
 
+ERROR_DIV = dbc.Alert("No data to show, there is probably no trips recorded yet", color="danger")
 trips: Trips
 chargings: dict
-min_date = max_date = min_millis = max_millis = step = marks = None
+min_date = max_date = min_millis = max_millis = step = marks = cached_layout = None
 
 
 @dash_app.callback(Output('trips_map', 'figure'),
@@ -43,7 +44,7 @@ def display_value(value):
     filtered_chargings = MyPSACC.get_chargings(mini, maxi)
     figures.get_figures(filtered_trips, filtered_chargings)
     consumption = "Average consumption: {:.1f} kWh/100km".format(float(figures.consumption_df["consumption_km"].mean()))
-    return figures.trips_map, figures.consumption_fig, figures.consumption_fig_by_speed,\
+    return figures.trips_map, figures.consumption_fig, figures.consumption_fig_by_speed, \
            figures.consumption_graph_by_temp, consumption, figures.table_fig, figures.battery_info, \
            figures.battery_table, max_millis, step, marks
 
@@ -134,7 +135,7 @@ def after_request(response):
 
 
 def update_trips():
-    global trips, chargings
+    global trips, chargings, cached_layout
     logger.info("update_data")
     try:
         trips_by_vin = Trips.get_trips(myp.vehicles_list)
@@ -151,47 +152,57 @@ def update_trips():
         max_millis = figures.unix_time_millis(max_date)
         step = (max_millis - min_millis) / 100
         marks = figures.get_marks_from_start_end(min_date, max_date)
+        cached_layout = None  # force regenerate layout
     except (ValueError, IndexError):
         logger.error("update_trips (slider): %s", traceback.format_exc())
+
+
+def serve_layout():
+    global cached_layout
+    if cached_layout is None:
+        logger.debug("Create new layout")
+        try:
+            figures.get_figures(trips, chargings)
+            data_div = html.Div([dcc.RangeSlider(
+                id='date-slider',
+                min=min_millis,
+                max=max_millis,
+                step=step,
+                marks=marks,
+                value=[min_millis, max_millis],
+            ),
+                html.Div([
+                    dbc.Tabs([
+                        dbc.Tab(label="Summary", tab_id="summary", children=[
+                            html.H2(id="consumption",
+                                    children=figures.info),
+                            dcc.Graph(figure=figures.consumption_fig, id="consumption_fig"),
+                            dcc.Graph(figure=figures.consumption_fig_by_speed, id="consumption_fig_by_speed"),
+                            figures.consumption_graph_by_temp
+                        ]),
+                        dbc.Tab(label="Trips", tab_id="trips", id="tab_trips", children=[figures.table_fig]),
+                        dbc.Tab(label="Battery", tab_id="battery", id="tab_battery", children=[figures.battery_info]),
+                        dbc.Tab(label="Charge", tab_id="charge", id="tab_charge", children=[figures.battery_table]),
+                        dbc.Tab(label="Map", tab_id="map", children=[
+                            dcc.Graph(figure=figures.trips_map, id="trips_map", style={"height": '90vh'})]),
+                    ],
+                        id="tabs",
+                        active_tab="summary",
+                    ),
+                    html.Div(id="tab-content", className="p-4"),
+                ])])
+
+        except (IndexError, TypeError):
+            logger.debug("Failed to generate figure, there is probably not enough data yet %s", traceback.format_exc())
+            data_div = ERROR_DIV
+        cached_layout = dbc.Container(fluid=True, children=[html.H1('My car info'), data_div])
+    return cached_layout
 
 
 try:
     web.db.callback_fct = update_trips
     update_trips()
-    figures.get_figures(trips, chargings)
-    data_div = html.Div([dcc.RangeSlider(
-        id='date-slider',
-        min=min_millis,
-        max=max_millis,
-        step=step,
-        marks=marks,
-        value=[min_millis, max_millis],
-    ),
-        html.Div([
-            dbc.Tabs([
-                dbc.Tab(label="Summary", tab_id="summary", children=[
-                    html.H2(id="consumption",
-                            children=figures.info),
-                    dcc.Graph(figure=figures.consumption_fig, id="consumption_fig"),
-                    dcc.Graph(figure=figures.consumption_fig_by_speed, id="consumption_fig_by_speed"),
-                    figures.consumption_graph_by_temp
-                ]),
-                dbc.Tab(label="Trips", tab_id="trips", id="tab_trips", children=[figures.table_fig]),
-                dbc.Tab(label="Battery", tab_id="battery", id="tab_battery", children=[figures.battery_info]),
-                dbc.Tab(label="Charge", tab_id="charge", id="tab_charge", children=[figures.battery_table]),
-                dbc.Tab(label="Map", tab_id="map", children=[
-                    dcc.Graph(figure=figures.trips_map, id="trips_map", style={"height": '90vh'})]),
-            ],
-                id="tabs",
-                active_tab="summary",
-            ),
-            html.Div(id="tab-content", className="p-4"),
-        ])])
 except (IndexError, TypeError):
-    logger.debug("Failed to generate figure, there is probably not enough data yet %s", traceback.format_exc())
-    data_div = dbc.Alert("No data to show, there is probably no trips recorded yet", color="danger")
+    logger.debug("Failed to get trips, there is probably not enough data yet %s", traceback.format_exc())
 
-dash_app.layout = dbc.Container(fluid=True, children=[
-    html.H1('My car info'),
-    data_div
-])
+dash_app.layout = serve_layout

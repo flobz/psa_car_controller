@@ -73,6 +73,7 @@ class ChargeControl:
             if status == "InProgress":
                 self.force_update()
                 if level >= self.percentage_threshold and self.retry_count < 2:
+                    logger.info("Charge threshold is reached, stop the charge")
                     self.control_charge_with_ack(False)
                 elif self._next_stop_hour is not None:
                     if self._next_stop_hour < now:
@@ -87,6 +88,8 @@ class ChargeControl:
                             thread.setDaemon(True)
                             thread.start()
             else:
+                if self._next_stop_hour < now:
+                    self._next_stop_hour += timedelta(days=1)
                 self.retry_count = 0
         except AttributeError:
             logger.error("Probably can't retrieve all information from API: %s", traceback.format_exc())

@@ -7,7 +7,7 @@ import requests
 from MyLogger import logger
 
 
-def get_temp(latitude:str, longitude:str, api_key:str) -> float:
+def get_temp(latitude: str, longitude: str, api_key: str) -> float:
     try:
         if not (latitude is None or longitude is None or api_key is None):
             weather_rep = requests.get("https://api.openweathermap.org/data/2.5/onecall",
@@ -22,6 +22,8 @@ def get_temp(latitude:str, longitude:str, api_key:str) -> float:
         logger.error("Can't connect to openweathermap :%s", traceback.format_exc())
     except KeyError:
         logger.error("Unable to get temperature from openweathermap :%s", traceback.format_exc())
+    return None
+
 
 def rate_limit(limit, every):
     def limit_decorator(fn):

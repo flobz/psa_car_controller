@@ -19,6 +19,7 @@ class TripParser:
             return TripParser.get_thermal_consumption, self.__is_refuel
         if self.car.is_hybrid():
             return TripParser.get_hybrid_consumption, self.__is_refuel_or_recharging
+        raise ValueError("Unknown car type")
 
     @staticmethod
     def get_thermal_consumption(start, end):
@@ -43,24 +44,24 @@ class TripParser:
         if fuel_consumption < 0:
             logger.debugv("refuel detected")
             return True
-        elif TripParser.is_recharging(decharge, fuel_consumption, distance):
+        if TripParser.is_recharging(decharge, distance):
             logger.debugv("charge detected")
             return True
         return False
 
     def __is_refuel(self, start, end, distance):
-        decharge, fuel_consumption = self.get_level_consumption(start, end)
+        fuel_consumption = self.get_level_consumption(start, end)[1]
         if fuel_consumption < 0:
             logger.debugv("refuel detected")
             return True
         return False
 
     def __is_recharging(self, start, end, distance):
-        decharge, fuel_consumption = self.get_level_consumption(start, end)
-        return TripParser.is_recharging(decharge, fuel_consumption, distance)
+        decharge = self.get_level_consumption(start, end)[0]
+        return TripParser.is_recharging(decharge, distance)
 
     @staticmethod
-    def is_recharging(decharge, _, distance):
+    def is_recharging(decharge, distance):
         # A margin of two is set because battery level can increase with regeneration system or temperature change.
         # If distance is bigger than 0 but charge bigger than five there is probably missing point and we assume that
         # regeneration/temperature can't increase by 5 percent the battery level

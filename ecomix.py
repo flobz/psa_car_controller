@@ -4,6 +4,8 @@ import xml.etree.cElementTree as ElT
 import requests
 import reverse_geocode
 
+from MyLogger import logger
+
 
 class Ecomix:
     @staticmethod
@@ -41,6 +43,9 @@ class Ecomix:
         try:
             location = reverse_geocode.search([(latitude, longitude)])[0]
             country_code = location["country_code"]
+        except UnicodeDecodeError:
+            logger.error("Can't find country for %s %s", latitude, longitude)
+            country_code = None
         except IndexError:
             country_code = None
         # todo implement other countries

@@ -1,8 +1,10 @@
-from datetime import datetime, timedelta
+from datetime import datetime
 from statistics import mean, StatisticsError
-import xml.etree.ElementTree as ET
+import xml.etree.cElementTree as ElT
 import requests
 import reverse_geocode
+
+from MyLogger import logger
 
 
 class Ecomix:
@@ -18,7 +20,7 @@ class Ecomix:
             }
         )
 
-        etree = ET.fromstring(res.text)
+        etree = ElT.fromstring(res.text)
         period_start = (start.hour + int(start.minute / 30)) * 4
         period_end = (end.hour + int(end.minute / 30)) * 4
 
@@ -38,12 +40,17 @@ class Ecomix:
 
     @staticmethod
     def get_co2_per_kw(start: datetime, end: datetime, latitude, longitude):
-        location = reverse_geocode.search([(latitude, longitude)])[0]
-        country_code = location["country_code"]
+        try:
+            location = reverse_geocode.search([(latitude, longitude)])[0]
+            country_code = location["country_code"]
+        except UnicodeDecodeError:
+            logger.error("Can't find country for %s %s", latitude, longitude)
+            country_code = None
+        except IndexError:
+            country_code = None
         # todo implement other countries
         if country_code == 'FR':
             co2_per_kw = Ecomix.get_data_france(start, end)
         else:
             co2_per_kw = None
         return co2_per_kw
-

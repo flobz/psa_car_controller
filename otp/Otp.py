@@ -8,16 +8,13 @@ from Cryptodome.PublicKey import RSA
 from Cryptodome import Hash
 from math import ceil
 
-
-
 from collections import defaultdict
-from xml.etree import cElementTree as ET
+from xml.etree import cElementTree as ElT
 
 from otp import oaep
 from otp.load import IWData
 import pickle
 from MyLogger import logger
-proxies = None
 
 
 def etree_to_dict(t):
@@ -45,7 +42,7 @@ base36 = ["a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k", "l", "m", "n", 
           "w", "x", "y", "z", "0", "1", "2", "3", "4", "5", "6", "7", "8", "9"]
 
 
-def numberToBase36(n):
+def number_to_base36(n):
     b = 36
     if n == 0:
         return [0]
@@ -56,26 +53,32 @@ def numberToBase36(n):
     return digits
 
 
+class ConfigException(Exception):
+    """Raise exception if otp config isn't correct"""
+
+
 class Otp:
     OTP_TWICE = 10
-    OK=0
-    kPub = "11"
-    exponent = int(kPub, 16)
+    OK = 0
+    NOK = -1
+    KPub = "11"
+    exponent = int(KPub, 16)
     ACTIVATE_MODE = "activate"
     OTP_MODE = "otp"
     MS_MODE = "ms"
     iw_host = "https://otp.mpsa.com"
-    def __init__(self, inweboAccessId):
+    proxies = None
+
+    def __init__(self, inwebo_access_id, device_id=token_hex(8)):
         self.Kiw = None
         self.pinmode = None
         self.Kfact = None
-        self.Kiw = None
         self.pinmode = None
         self.needsync = None
         self.serviceid = None
         self.alias = None
         self.iwalea = token_hex(16)
-        self.device_id = token_hex(8)
+        self.device_id = device_id
         self.codepin = None
         self.challenge = ""
         self.action = ""
@@ -84,7 +87,7 @@ class Otp:
         self.isMac = True
         self.data = IWData(self)
         self.cipher = None
-        self.macid = inweboAccessId
+        self.macid = inwebo_access_id
         self.smsCode = None
         self.mode = Otp.ACTIVATE_MODE
         self.defi = 0
@@ -93,20 +96,20 @@ class Otp:
     def init(self, Kfact=None, Kiw=None, pinmode=None):
         self.Kfact = Kfact
         self.pinmode = pinmode
-        self.Kiw = self.decode_oeap(Kiw, self.Kfact)
+        self.Kiw = self.decode_oaep(Kiw, self.Kfact)
         key = RSA.construct((int(self.Kiw, 16), Otp.exponent))
-        self.cipher = oaep.new(key, hashAlgo=Hash.SHA256)
+        self.cipher = oaep.new(key, hash_algo=Hash.SHA256)
 
-    def getSerial(self):
+    def get_serial(self):
         return self.device_id + "/_/" + self.iwalea
 
-    def generateKMA(self, codepin):
-        serial = self.getSerial()
+    def generate_kma(self, codepin):
+        serial = self.get_serial()
         kma_str = codepin + ";" + serial
         kma = hashlib.sha256(kma_str.encode("utf-8")).hexdigest()[:32]
         return kma
 
-    def getR(self):
+    def get_r(self):
         if self.action == "upgrade":
             iw = self.data.iwK1
             # not correctly implemented
@@ -117,17 +120,18 @@ class Otp:
         else:
             R2 = self.challenge + ";" + iw + ";"
 
-        R0 = self.challenge + ";" + iw + ";" + self.getSerial()
+        R0 = self.challenge + ";" + iw + ";" + self.get_serial()
         R1 = self.challenge + ";" + iw + ";" + self.data.iwK1
-        logger.debug(f"{R0}\n{R1}\n{R2}")
+        logger.debug("%s\n%s\n%s", R0, R1, R2)
         return {"R0": hashlib.sha256(R0.encode("utf-8")).hexdigest(),
                 "R1": hashlib.sha256(R1.encode("utf-8")).hexdigest(),
                 "R2": hashlib.sha256(R2.encode("utf-8")).hexdigest()}
 
-    def decode_oeap(self, enc, key):
+    @staticmethod
+    def decode_oaep(enc, key):
         modulus = int(key, 16)
         key = RSA.construct((modulus, Otp.exponent))
-        cipher = oaep.new(key, hashAlgo=Hash.SHA256)
+        cipher = oaep.new(key, hash_algo=Hash.SHA256)
         block_size = 128
         dec_string = ""
         enc_b = bytes.fromhex(enc)
@@ -135,11 +139,11 @@ class Otp:
 
         for x in range(0, nb_block):
             if x == nb_block - 1:
-                max = len(enc_b)
+                maxi = len(enc_b)
             else:
-                max = (1 + x) * 128
-            min = x * 128
-            ciphertext = cipher.decrypt(enc_b[min:max])
+                maxi = (1 + x) * 128
+            mini = x * 128
+            ciphertext = cipher.decrypt(enc_b[mini:maxi])
             dec_string += ciphertext.hex()
         logger.debug(dec_string)
         return dec_string
@@ -150,29 +154,28 @@ class Otp:
             headers={
                 "Connection": "Keep-Alive",
                 "Host": "otp.mpsa.com",
-                "User-Agent": "Dalvik/2.1.0 (Linux; U; Android 8.0.0; Android SDK built for x86_64 Build/OSR1.180418.004)"
+                "User-Agent": "Dalvik/2.1.0 (Linux; U; Android 8.0.0; Android SDK built for x86_64 "
+                              "Build/OSR1.180418.004) "
             },
             params=param,
-            proxies=proxies,
-            verify=False
+            proxies=self.proxies,
+            verify=self.proxies is None
         ).text
         try:
             raw_xml = raw_xml[raw_xml.index("?>") + 2:]
             if setup:
-                return etree_to_dict(ET.XML(raw_xml))["ActionSetup"]
-            else:
-                return etree_to_dict(ET.XML(raw_xml))["ActionFinalize"]
-
-        except:
+                return etree_to_dict(ElT.XML(raw_xml))["ActionSetup"]
+            return etree_to_dict(ElT.XML(raw_xml))["ActionFinalize"]
+        except KeyError:
             logger.debug(raw_xml)
-            raise Exception("Bad return from server")
+            raise ValueError("Bad response from server")
 
     def activation_start(self):
         param = {"action": "ActionSetup", "mode": self.mode, "id": self.data.iwid, "lastsync": self.data.iwTsync,
                  "version": "Generator-1.0/0.2.11", "macid": self.macid}
         if self.mode == Otp.OTP_MODE:
             param.update({"sid": self.data.iwsecid})
-        if self.mode == Otp.ACTIVATE_MODE:
+        elif self.mode == Otp.ACTIVATE_MODE:
             param.update({"code": self.smsCode})
 
         xml = self.request(param, setup=True)
@@ -183,12 +186,11 @@ class Otp:
             elif self.mode == Otp.OTP_MODE:
                 self.challenge = xml["challenge"]
             return True
-        else:
-            return False
+        return False
 
     def activation_finalyze(self, random_bytes=None):
 
-        R = self.getR()
+        R = self.get_r()
         params = {"action": "ActionFinalize", "mode": self.mode, "id": self.data.iwid, "lastsync": self.data.iwTsync,
                   "version": "Generator-1.0/0.2.11",
                   "lang": "fr", "ack": "", "macid": self.macid}
@@ -196,23 +198,26 @@ class Otp:
             params.update({"keytype": '0', "sid": self.data.iwsecid})
 
         elif self.mode == Otp.ACTIVATE_MODE:
-            kma_crypt = self.cipher.encrypt(bytes.fromhex(self.generateKMA(self.codepin))).hex()
+            kma_crypt = self.cipher.encrypt(bytes.fromhex(self.generate_kma(self.codepin))).hex()
             pin_crypt = self.cipher.encrypt(self.codepin.encode("utf-8")).hex()
-            params.update({"serial": self.getSerial(), "code": self.smsCode,
+            params.update({"serial": self.get_serial(), "code": self.smsCode,
                            "Kma": kma_crypt, "pin": pin_crypt, "name": "Android SDK built for x86_64 / UNKNOWN", })
 
         params.update(R)
         xml = self.request(params)
-
-        self.data.synchro(xml, self.generateKMA(self.codepin))
+        if xml["err"] != "OK":
+            return Otp.NOK
+        self.data.synchro(xml, self.generate_kma(self.codepin))
 
         if self.mode == Otp.OTP_MODE:
-            self.defi = str(xml["defi"])
+            try:
+                self.defi = str(xml["defi"])
+            except KeyError:
+                raise ConfigException
             if "J" in xml:
                 logger.debug("Need another otp request")
                 return Otp.OTP_TWICE
-            else:
-                return Otp.OK
+            return Otp.OK
 
         if "ms_n" not in xml or xml["ms_n"] == 0:
             logger.debug("no ms_n request needed")
@@ -220,50 +225,53 @@ class Otp:
 
         if int(xml["ms_n"]) > 1:
             raise NotImplementedError
-        else:
-            ms_n = "0"
+        ms_n = "0"
 
         self.challenge = xml["challenge"]
         self.action = "synchro"
-        res = self.decode_oeap(xml["ms_key"], self.Kfact)
+        res = self.decode_oaep(xml["ms_key"], self.Kfact)
         temp_key = RSA.construct((int(res, 16), self.exponent))
-        temp_cipher = oaep.new(temp_key, hashAlgo=Hash.SHA256)
+        temp_cipher = oaep.new(temp_key, hash_algo=Hash.SHA256)
         if random_bytes is None:
             random_bytes = token_bytes(16)
-        KpubEncode = temp_cipher.encrypt(random_bytes)
+        kpub_encode = temp_cipher.encrypt(random_bytes)
 
-        aes_cipher = AES.new(bytes.fromhex(self.generateKMA(self.codepin)), AES.MODE_ECB)
-        encodeAesFromHex = aes_cipher.encrypt(random_bytes).hex()
-        self.data.iwsecval = encodeAesFromHex
+        aes_cipher = AES.new(bytes.fromhex(self.generate_kma(self.codepin)), AES.MODE_ECB)
+        encode_aes_from_hex = aes_cipher.encrypt(random_bytes).hex()
+        self.data.iwsecval = encode_aes_from_hex
         self.data.iwsecid = xml["s_id"]
         self.data.iwsecn = 1
 
         req_param = {"action": "ActionFinalize", "mode": Otp.MS_MODE, "ms_id" + ms_n: xml["ms_id"],
-                     "ms_val" + ms_n: KpubEncode.hex(), "macid": self.macid}
+                     "ms_val" + ms_n: kpub_encode.hex(), "macid": self.macid}
         req_param.update({"id": self.data.iwid, "lastsync": self.data.iwTsync, "ms_n": 1})
-        req_param.update(self.getR())
+        req_param.update(self.get_r())
         xml = self.request(req_param)
-        self.data.synchro(xml, self.generateKMA(self.codepin))
+        self.data.synchro(xml, self.generate_kma(self.codepin))
         return Otp.OK
 
-    def _getOtpCode(self):
-        password = self.data.iwK1 + ":" + self.defi + ":" + self.data.iwsecval
+    def _get_otp_code(self):
+        password = self.data.iwK1 + ":" + str(self.defi) + ":" + self.data.iwsecval
         res = bytes(hashlib.sha256(password.encode("utf-8")).digest())
         nb = ((int.from_bytes(res[:4], byteorder="big") & 0xfffffff) * 1024) + (
                 int.from_bytes(res[4:8], byteorder="big") & 1023)
-        otp = numberToBase36(nb)
+        otp = number_to_base36(nb)
         return otp
 
-    def getOtpCode(self):
+    def get_otp_code(self):
         self.mode = Otp.OTP_MODE
-        self.activation_start()
-        res = self.activation_finalyze()
-        if res == Otp.OTP_TWICE:
-            self.mode = Otp.OTP_MODE
-            self.activation_start()
-            self.activation_finalyze()
-        otp_code = self._getOtpCode()
-        logger.debug(f"otp code: {otp_code}")
+        otp_code = None
+        if self.activation_start():
+            res = self.activation_finalyze()
+            if res != Otp.NOK:
+                if res == Otp.OTP_TWICE:
+                    self.mode = Otp.OTP_MODE
+                    self.activation_start()
+                    self.activation_finalyze()
+                otp_code = self._get_otp_code()
+                logger.debug("otp code: %s", otp_code)
+        if otp_code is None:
+            raise ConfigException("Can't get otp code")
         return otp_code
 
     def __getstate__(self):
@@ -271,31 +279,41 @@ class Otp:
         del odict['cipher']  # don't pickle this
         return odict
 
-    def __setstate__(self, dict):
-        self.__dict__.update(dict)
+    def __setstate__(self, dict_param):
+        self.__dict__.update(dict_param)
         if self.Kiw is not None:
-             key = RSA.construct((int(self.Kiw, 16), Otp.exponent))
-             self.cipher = oaep.new(key, hashAlgo=Hash.SHA256)
+            key = RSA.construct((int(self.Kiw, 16), Otp.exponent))
+            self.cipher = oaep.new(key, hash_algo=Hash.SHA256)
+
+    @staticmethod
+    def set_proxies(proxies):
+        Otp.proxies = proxies
 
 
 def encode_oeap(text, key):
-    cipher = oaep.new(bytes.fromhex(key), hashAlgo=Hash.SHA256)
+    cipher = oaep.new(bytes.fromhex(key), hash_algo=Hash.SHA256)
     return cipher.encrypt(text)
 
-def save_otp(obj):
-    with open("otp.bin", 'wb') as output:
+
+def save_otp(obj, filename="otp.bin"):
+    with open(filename, 'wb') as output:
         pickle.dump(obj, output)
 
-def load_otp():
+
+def load_otp(filename="otp.bin"):
     try:
-        with open("otp.bin", 'rb') as input:
-            return pickle.load(input)
-    except:
+        with open(filename, 'rb') as input_file:
+            return pickle.load(input_file)
+    except FileNotFoundError:
         logger.debug(traceback.format_exc())
     return None
 
-def new_otp_session():
-    otp = Otp("bb8e981582b0f31353108fb020bead1c")
+
+def new_otp_session(old_otp_session: Otp = None):
+    if old_otp_session is None:
+        otp = Otp("bb8e981582b0f31353108fb020bead1c")
+    else:
+        otp = Otp("bb8e981582b0f31353108fb020bead1c", device_id=old_otp_session.device_id)
     otp.smsCode = input("What is the code you just received by SMS ?")
     otp.codepin = input("What is your app pin code ?")
     otp.activation_start()

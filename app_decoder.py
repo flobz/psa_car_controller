@@ -23,11 +23,9 @@ BRAND = {"com.psa.mym.myopel":     {"realm": "clientsB2COpel",     "brand_code":
          "com.psa.mym.myvauxhall": {"realm": "clientsB2CVauxhall", "brand_code": "0V", "app_name": "MyVauxall"}
          }
 
-
 def getxmlvalue(root, name):
     for child in root.findall("*[@name='" + name + "']"):
         return child.text
-
 
 def find_app_path():
     base_dir = 'apps/'
@@ -52,13 +50,16 @@ def find_preferences_xml():
 
 
 def save_key_to_pem(pfx_data, pfx_password):
-    private_key, certificate, additional_certificates = pkcs12.load_key_and_certificates(pfx_data,
-                                                                                         bytes.fromhex(pfx_password),
-                                                                                         default_backend())
-    with open("public.pem", "wb") as f:
+    private_key, certificate = pkcs12.load_key_and_certificates(pfx_data,
+                                                            bytes.fromhex(pfx_password), default_backend())[:2]
+    try:
+        os.mkdir("certs")
+    except FileExistsError:
+        pass
+    with open("certs/public.pem", "wb") as f:
         f.write(certificate.public_bytes(encoding=serialization.Encoding.PEM))
 
-    with open("private.pem", "wb") as f:
+    with open("certs/private.pem", "wb") as f:
         f.write(private_key.private_bytes(encoding=serialization.Encoding.PEM,
                                           format=serialization.PrivateFormat.TraditionalOpenSSL,
                                           encryption_algorithm=serialization.NoEncryption()))
@@ -71,7 +72,7 @@ if sys.version_info < (3, 6):
 
 if not argv[1].endswith(".apk"):
     print("No apk given")
-    exit(1)
+    sys.exit(1)
 print("APK loading...")
 a = APK(argv[1])
 package_name = a.get_package()
@@ -109,7 +110,7 @@ except:
     traceback.print_exc()
     print(f"HOST_BRANDID : {HOST_BRANDID_PROD} sitecode: {site_code}")
     print(res.text)
-    exit(1)
+    sys.exit(1)
 
 save_key_to_pem(pfx_cert, "")
 
@@ -125,7 +126,7 @@ try:
             "User-Agent": "okhttp/4.8.0",
             "Version": "1.27.0"
         },
-        cert=("public.pem", "private.pem"),
+        cert=("certs/public.pem", "certs/private.pem"),
     )
 
     res_dict = res2.json()["success"]
@@ -134,29 +135,33 @@ try:
 except:
     traceback.print_exc()
     print(res2.text)
-    exit(1)
+    sys.exit(1)
 
 # Psacc
 
-psacc = MyPSACC(None, client_id, client_secret, remote_refresh_token, customer_id, BRAND[package_name]["realm"])
+psacc = MyPSACC(None, client_id, client_secret, remote_refresh_token, customer_id, BRAND[package_name]["realm"],
+                country_code)
 psacc.connect(client_email, client_password)
 
 os.chdir(current_dir)
 psacc.save_config(name="test.json")
 res = psacc.get_vehicles()
+
+for vehicle in res_dict["vehicles"]:
+    label = vehicle["short_label"].split(" ")[-1]
+    car = psacc.vehicles_list.get_car_by_vin(vehicle["vin"])
+    if car.label == "unknown":
+        car.label = label
+        car.set_energy_capacity()
+psacc.vehicles_list.save_cars()
+
 print(f"\nYour vehicles: {res}")
 
-## Charge control
+# Charge control
 charge_controls = ChargeControls()
-for vin, vehicle in res.items():
-    chc = ChargeControl(None, vin, 100, [0, 0])
-    charge_controls.list[vin] = chc
+for vehicle in res:
+    chc = ChargeControl(psacc, vehicle.vin, 100, [0, 0])
+    charge_controls[vehicle.vin] = chc
 charge_controls.save_config(name="charge_config1.json")
-
-try:
-    os.remove("private.pem")
-    os.remove("public.pem")
-except:
-    print("Error when deleting temp files")
 
 print("Success !!!")

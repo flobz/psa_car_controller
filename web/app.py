@@ -8,7 +8,7 @@ import locale
 from werkzeug import run_simple
 try:
     from werkzeug.middleware.dispatcher import DispatcherMiddleware
-except:
+except ImportError:
     from werkzeug import DispatcherMiddleware
 
 from ChargeControl import ChargeControls
@@ -19,15 +19,15 @@ app = None
 dash_app = None
 dispatcher = None
 
-
 def start_app(title, base_path, debug: bool, host, port):
     global app, dash_app, dispatcher
     try:
         lang = locale.getlocale()[0].split("_")[0]
+        locale.setlocale(locale.LC_TIME, ".".join(locale.getlocale())) #make sure LC_TIME is set
         locale_url = [f"https://cdn.plot.ly/plotly-locale-{lang}-latest.js"]
-    except:
+    except (IndexError, locale.Error):
         locale_url = None
-        logger.warn("Can't get language")
+        logger.warning("Can't get language")
     app = Flask(__name__)
     app.config["DEBUG"] = debug
     if base_path == "/":
@@ -39,11 +39,13 @@ def start_app(title, base_path, debug: bool, host, port):
     dash_app = dash.Dash(external_stylesheets=[dbc.themes.BOOTSTRAP], external_scripts=locale_url, title=title,
                          server=app, requests_pathname_prefix=requests_pathname_prefix)
     # keep this line
-    import web.callback
+    import web.views
     return run_simple(host, port, application, use_reloader=False, use_debugger=debug)
 
 
-myp = None
+# noinspection PyTypeChecker
+myp:MyPSACC = None
+# noinspection PyTypeChecker
 chc: ChargeControls = None
 
 

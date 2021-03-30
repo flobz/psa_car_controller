@@ -102,7 +102,7 @@ We will retrieve these informations:
     You can add an api key for  https://home.openweathermap.org/ in your config file.
     In the future version of the dashboard you will be able to see your consumption vs exterior temperature.  
 ## Connect your home automation system:
-- Domoticz (soon)
+- [Domoticz](docs/domoticz/Domoticz.md)
 - [HomeAssistant](https://github.com/Flodu31/HomeAssistant-PeugeotIntegration)
 - Jeedom (Anyone can share the procedure ?)
 

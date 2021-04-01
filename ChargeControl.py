@@ -88,7 +88,7 @@ class ChargeControl:
                             thread.setDaemon(True)
                             thread.start()
             else:
-                if self._next_stop_hour < now:
+                if self._next_stop_hour is not None and self._next_stop_hour < now:
                     self._next_stop_hour += timedelta(days=1)
                 self.retry_count = 0
         except AttributeError:

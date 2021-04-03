@@ -19,7 +19,7 @@ parser = argparse.ArgumentParser()
 
 def parse_args():
     parser = argparse.ArgumentParser()
-    parser.add_argument("-f", "--config", help="config file, default file: config.json", type=argparse.FileType('r'))
+    parser.add_argument("-f", "--config", help="config file, default file: config.json", type=argparse.FileType('r'), default="config.json")
     parser.add_argument("-c", "--charge-control", help="enable charge control, default charge_config.json",
                         const="charge_config.json", nargs='?', metavar='charge config file')
     parser.add_argument("-d", "--debug", help="enable debug", const=10, default=20, nargs='?', metavar='Debug level number')
@@ -48,10 +48,10 @@ if __name__ == "__main__":
     my_logger(handler_level=args.debug)
     logger.info("server start")
     if args.config:
-        config_name = args.config.config_name
-        web.app.myp = MyPSACC.load_config(name=config_name)
+        config_name = args.config.name
     else:
-        web.app.myp = MyPSACC.load_config()
+        config_name = "config.json"
+    web.app.myp = MyPSACC.load_config(name=config_name)
     atexit.register(web.app.myp.save_config)
     if args.record:
         web.app.myp.set_record(True)

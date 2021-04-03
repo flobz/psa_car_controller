@@ -19,7 +19,7 @@ parser = argparse.ArgumentParser()
 
 def parse_args():
     parser = argparse.ArgumentParser()
-    parser.add_argument("-f", "--config", help="config file, default file: config.json", type=argparse.FileType('r'))
+    parser.add_argument("-f", "--config", help="config file, default file: config.json", type=argparse.FileType('r'), default="config.json")
     parser.add_argument("-c", "--charge-control", help="enable charge control, default charge_config.json",
                         const="charge_config.json", nargs='?', metavar='charge config file')
     parser.add_argument("-d", "--debug", help="enable debug", const=10, default=20, nargs='?', metavar='Debug level number')
@@ -48,9 +48,10 @@ if __name__ == "__main__":
     my_logger(handler_level=args.debug)
     logger.info("server start")
     if args.config:
-        web.app.myp = MyPSACC.load_config(name=args.config.name)
+        config_name = args.config.name
     else:
-        web.app.myp = MyPSACC.load_config()
+        config_name = "config.json"
+    web.app.myp = MyPSACC.load_config(name=config_name)
     atexit.register(web.app.myp.save_config)
     if args.record:
         web.app.myp.set_record(True)
@@ -82,7 +83,7 @@ if __name__ == "__main__":
             t2.setDaemon(True)
             t2.start()
 
-    save_config(web.app.myp)
+    save_config(web.app.myp, config_name)
     t1 = Thread(target=start_app, args=["My car info", args.base_path, logger.level < 20, args.listen, int(args.port)])
     t1.setDaemon(True)
     t1.start()

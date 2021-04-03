@@ -5,14 +5,17 @@ from MyLogger import logger
 
 ENERGY_CAPACITY = {'SUV 3008': {'BATTERY_POWER': 10.8, 'FUEL_CAPACITY': 43},
                    'C5 Aircross': {'BATTERY_POWER': 10.8, 'FUEL_CAPACITY': 43},
-                   'e-208': {'BATTERY_POWER': 46, 'FUEL_CAPACITY': 0},
-                   'e-2008': {'BATTERY_POWER': 46, 'FUEL_CAPACITY': 0}
+                   'e-208': {'BATTERY_POWER': 46, 'FUEL_CAPACITY': 0, "ABRP_NAME": "peugeot:e208:20:50"},
+                   'e-2008': {'BATTERY_POWER': 46, 'FUEL_CAPACITY': 0, "ABRP_NAME": "peugeot:e2008:20:48"},
+                   'C': {'BATTERY_POWER': 46, 'FUEL_CAPACITY': 0, "ABRP_NAME": "opel:corsae:20:50"} # corsa-e
                    }
 DEFAULT_BATTERY_POWER = 46
 DEFAULT_FUEL_CAPACITY = 0
 DEFAULT_MAX_ELEC_CONSUMPTION = 70
 DEFAULT_MAX_FUEL_CONSUMPTION = 30
+DEFAULT_ABRP_NAME = "peugeot:e208:20:50"
 CARS_FILE = "cars.json"
+
 
 class Car:
     def __init__(self, vin, vehicle_id, brand, label="unknown", battery_power=None, fuel_capacity=None,

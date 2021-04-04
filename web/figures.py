@@ -114,7 +114,7 @@ def get_figures(trips: Trips, charging: Tuple[dict]):
         consumption_fig_by_speed.update_layout(xaxis_title="average Speed km/h", yaxis_title="Consumption kWh/100Km")
         kw_per_km = float(consumption_df["consumption_km"].mean())
         info = "Average consumption: {:.1f} kWh/100km".format(kw_per_km)
-    except:
+    except (TypeError, KeyError, NameError):
         logger.warning("Can't identify consumption figures due to missing data: %s", traceback.format_exc())
 
     # charging
@@ -182,15 +182,18 @@ def get_figures(trips: Trips, charging: Tuple[dict]):
         logger.warning("Can't identify consumption by temp due to missing data: %s", traceback.format_exc())
 
     if len(consumption_by_temp_df) > 0:
-            consumption_fig_by_temp = px.histogram(consumption_by_temp_df, x="consumption_by_temp", y="consumption_km",
-                                                histfunc="avg", title="Consumption by temperature")
-            consumption_fig_by_temp.update_traces(xbins_size=2)
-            consumption_fig_by_temp.update_layout(bargap=0.05)
-            consumption_fig_by_temp.add_trace(
-                go.Scatter(mode="markers", x=consumption_by_temp_df["consumption_by_temp"],
+        consumption_fig_by_temp = px.histogram(consumption_by_temp_df, 
+                                                x="consumption_by_temp", 
+                                                y="consumption_km", 
+                                                histfunc="avg", 
+                                                title="Consumption by temperature")
+        consumption_fig_by_temp.update_traces(xbins_size=2)
+        consumption_fig_by_temp.update_layout(bargap=0.05)
+        consumption_fig_by_temp.add_trace(
+            go.Scatter(mode="markers", x=consumption_by_temp_df["consumption_by_temp"],
                         y=consumption_by_temp_df["consumption_km"], name="Trips"))
-            consumption_fig_by_temp.update_layout(xaxis_title="average temperature in °C",
-                                                yaxis_title="Consumption kWh/100Km")
-            consumption_graph_by_temp = Graph(figure=consumption_fig_by_temp, id="consumption_fig_by_temp")
+        consumption_fig_by_temp.update_layout(xaxis_title="average temperature in °C",
+                                            yaxis_title="Consumption kWh/100Km")
+        consumption_graph_by_temp = Graph(figure=consumption_fig_by_temp, id="consumption_fig_by_temp")
     else:
         consumption_graph_by_temp = Graph(style={'display': 'none'})

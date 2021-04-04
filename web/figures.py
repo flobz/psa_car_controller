@@ -182,10 +182,10 @@ def get_figures(trips: Trips, charging: Tuple[dict]):
         logger.warning("Can't identify consumption by temp due to missing data: %s", traceback.format_exc())
 
     if len(consumption_by_temp_df) > 0:
-        consumption_fig_by_temp = px.histogram(consumption_by_temp_df, 
-                                                x="consumption_by_temp", 
-                                                y="consumption_km", 
-                                                histfunc="avg", 
+        consumption_fig_by_temp = px.histogram(consumption_by_temp_df,
+                                                x="consumption_by_temp",
+                                                y="consumption_km",
+                                                histfunc="avg",
                                                 title="Consumption by temperature")
         consumption_fig_by_temp.update_traces(xbins_size=2)
         consumption_fig_by_temp.update_layout(bargap=0.05)

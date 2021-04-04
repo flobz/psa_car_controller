@@ -178,7 +178,7 @@ def get_figures(trips: Trips, charging: Tuple[dict]):
     consumption_by_temp_df = []
     try:
         consumption_by_temp_df = consumption_df[consumption_df["consumption_by_temp"].notnull()]
-    except:
+    except (ValueError, TypeError, KeyError, NameError):
         logger.warning("Can't identify consumption by temp due to missing data: %s", traceback.format_exc())
 
     if len(consumption_by_temp_df) > 0:

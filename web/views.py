@@ -137,14 +137,24 @@ def after_request(response):
 def update_trips():
     global trips, chargings, cached_layout
     logger.info("update_data")
+    trips = Trips()
+    #chargings = tuple()
     try:
+        chargings = MyPSACC.get_chargings()
         trips_by_vin = Trips.get_trips(myp.vehicles_list)
         trips = next(iter(trips_by_vin.values()))  # todo handle multiple car
-        chargings = MyPSACC.get_chargings()
+#        chargings = MyPSACC.get_chargings()
     except (StopIteration, AssertionError):
         logger.error("update_trips: %s", traceback.format_exc())
     # update for slider
     global min_date, max_date, min_millis, max_millis, step, marks
+    min_date = None
+    max_date = None
+    min_millis = 0
+    max_millis = 0
+    step = 0
+    marks = None
+    cached_layout= None
     try:
         min_date = trips[0].start_at
         max_date = trips[-1].start_at

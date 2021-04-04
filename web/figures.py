@@ -13,7 +13,8 @@ import plotly.graph_objects as go
 from Trip import Trips
 from pandas import options as pandas_options
 import dash_html_components as html
-
+from MyLogger import logger
+import traceback
 
 def unix_time_millis(dt):
     return int(dt.timestamp())
@@ -93,21 +94,28 @@ def get_figures(trips: Trips, charging: Tuple[dict]):
         data=[tr.get_info() for tr in trips[::-1]],
         page_size=50
     )
-    # consumption_fig
-    consumption_df = DataFrame.from_records(trips.get_long_trips())
-    consumption_fig = px.line(consumption_df, x="date", y="consumption", title='Consumption of the car')
-    consumption_fig.update_layout(yaxis_title="Consumption kWh/100Km")
+    # defaults for empty trips, based on official Corsa-e c
+    kw_per_km = 17.4
+    info = "Average consumption (default): {:.1f} kWh/100km".format(kw_per_km)
 
-    consumption_fig_by_speed = px.histogram(consumption_df, x="speed", y="consumption_km", histfunc="avg",
-                                            title="Consumption by speed")
-    consumption_fig_by_speed.update_traces(xbins_size=15)
-    consumption_fig_by_speed.update_layout(bargap=0.05)
-    consumption_fig_by_speed.add_trace(
-        go.Scatter(mode="markers", x=consumption_df["speed"], y=consumption_df["consumption_km"],
-                   name="Trips"))
-    consumption_fig_by_speed.update_layout(xaxis_title="average Speed km/h", yaxis_title="Consumption kWh/100Km")
-    kw_per_km = float(consumption_df["consumption_km"].mean())
-    info = "Average consumption: {:.1f} kWh/100km".format(kw_per_km)
+    try:
+        # consumption_fig
+        consumption_df = DataFrame.from_records(trips.get_long_trips())
+        consumption_fig = px.line(consumption_df, x="date", y="consumption", title='Consumption of the car')
+        consumption_fig.update_layout(yaxis_title="Consumption kWh/100Km")
+
+        consumption_fig_by_speed = px.histogram(consumption_df, x="speed", y="consumption_km", histfunc="avg",
+                                                title="Consumption by speed")
+        consumption_fig_by_speed.update_traces(xbins_size=15)
+        consumption_fig_by_speed.update_layout(bargap=0.05)
+        consumption_fig_by_speed.add_trace(
+            go.Scatter(mode="markers", x=consumption_df["speed"], y=consumption_df["consumption_km"],
+                    name="Trips"))
+        consumption_fig_by_speed.update_layout(xaxis_title="average Speed km/h", yaxis_title="Consumption kWh/100Km")
+        kw_per_km = float(consumption_df["consumption_km"].mean())
+        info = "Average consumption: {:.1f} kWh/100km".format(kw_per_km)
+    except:
+        logger.warning("Can't identify consumption figures due to missing data: %s", traceback.format_exc())
 
     # charging
     charging_data = DataFrame.from_records(charging)
@@ -166,18 +174,23 @@ def get_figures(trips: Trips, charging: Tuple[dict]):
                   'format': deepcopy(nb_format).symbol_suffix(" kWh").precision(3)}],
         data=charging,
     )
-    consumption_by_temp_df = consumption_df[consumption_df["consumption_by_temp"].notnull()]
-    if len(consumption_by_temp_df) > 0:
-        consumption_fig_by_temp = px.histogram(consumption_by_temp_df, x="consumption_by_temp", y="consumption_km",
-                                               histfunc="avg", title="Consumption by temperature")
-        consumption_fig_by_temp.update_traces(xbins_size=2)
-        consumption_fig_by_temp.update_layout(bargap=0.05)
-        consumption_fig_by_temp.add_trace(
-            go.Scatter(mode="markers", x=consumption_by_temp_df["consumption_by_temp"],
-                       y=consumption_by_temp_df["consumption_km"], name="Trips"))
-        consumption_fig_by_temp.update_layout(xaxis_title="average temperature in °C",
-                                              yaxis_title="Consumption kWh/100Km")
-        consumption_graph_by_temp = Graph(figure=consumption_fig_by_temp, id="consumption_fig_by_temp")
 
+    consumption_by_temp_df = []
+    try:
+        consumption_by_temp_df = consumption_df[consumption_df["consumption_by_temp"].notnull()]
+    except:
+        logger.warning("Can't identify consumption by temp due to missing data: %s", traceback.format_exc())
+
+    if len(consumption_by_temp_df) > 0:
+            consumption_fig_by_temp = px.histogram(consumption_by_temp_df, x="consumption_by_temp", y="consumption_km",
+                                                histfunc="avg", title="Consumption by temperature")
+            consumption_fig_by_temp.update_traces(xbins_size=2)
+            consumption_fig_by_temp.update_layout(bargap=0.05)
+            consumption_fig_by_temp.add_trace(
+                go.Scatter(mode="markers", x=consumption_by_temp_df["consumption_by_temp"],
+                        y=consumption_by_temp_df["consumption_km"], name="Trips"))
+            consumption_fig_by_temp.update_layout(xaxis_title="average temperature in °C",
+                                                yaxis_title="Consumption kWh/100Km")
+            consumption_graph_by_temp = Graph(figure=consumption_fig_by_temp, id="consumption_fig_by_temp")
     else:
         consumption_graph_by_temp = Graph(style={'display': 'none'})

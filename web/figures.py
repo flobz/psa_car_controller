@@ -114,7 +114,7 @@ def get_figures(trips: Trips, charging: Tuple[dict]):
         consumption_fig_by_speed.update_layout(xaxis_title="average Speed km/h", yaxis_title="Consumption kWh/100Km")
         kw_per_km = float(consumption_df["consumption_km"].mean())
         info = "Average consumption: {:.1f} kWh/100km".format(kw_per_km)
-    except (TypeError, KeyError, NameError):
+    except (ValueError, TypeError, KeyError, NameError):
         logger.warning("Can't identify consumption figures due to missing data: %s", traceback.format_exc())
 
     # charging

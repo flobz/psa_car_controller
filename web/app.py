@@ -49,6 +49,6 @@ myp:MyPSACC = None
 chc: ChargeControls = None
 
 
-def save_config(my_peugeot: MyPSACC):
-    my_peugeot.save_config()
-    threading.Timer(30, save_config, args=[my_peugeot]).start()
+def save_config(my_peugeot: MyPSACC, name):
+    my_peugeot.save_config(name)
+    threading.Timer(30, save_config, args=[my_peugeot, name]).start()

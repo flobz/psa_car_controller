@@ -104,11 +104,12 @@ class ChargeControl:
 
 class ChargeControls(dict):
 
-    def __init__(self):
+    def __init__(self, file_name="charge_config.json"):
+        self.file_name = file_name
         super().__init__()
         self._config_hash = None
 
-    def save_config(self, name="charge_config.json", force=False):
+    def save_config(self, force=False):
         chd = {}
         charge_control: ChargeControl
         for charge_control in self.values():
@@ -117,7 +118,7 @@ class ChargeControls(dict):
         config_str = json.dumps(chd, sort_keys=True, indent=4).encode('utf-8')
         new_hash = md5(config_str).hexdigest()
         if force or self._config_hash != new_hash:
-            with open(name, "wb") as f:
+            with open(self.file_name, "wb") as f:
                 f.write(config_str)
             self._config_hash = new_hash
             logger.info("save config change")
@@ -127,7 +128,7 @@ class ChargeControls(dict):
         with open(name, "r") as f:
             config_str = f.read()
             chd = json.loads(config_str)
-            charge_control_list = ChargeControls()
+            charge_control_list = ChargeControls(name)
             for vin, el in chd.items():
                 charge_control_list[vin] = ChargeControl(psacc, vin, **el)
             return charge_control_list

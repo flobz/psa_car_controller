@@ -141,7 +141,10 @@ def update_trips():
         trips_by_vin = Trips.get_trips(myp.vehicles_list)
         trips = next(iter(trips_by_vin.values()))  # todo handle multiple car
         chargings = MyPSACC.get_chargings()
-    except (StopIteration, AssertionError):
+    except StopIteration:
+        logger.debug("No trips yet")
+        return
+    except AssertionError:
         logger.error("update_trips: %s", traceback.format_exc())
     # update for slider
     global min_date, max_date, min_millis, max_millis, step, marks
@@ -155,7 +158,7 @@ def update_trips():
         cached_layout = None  # force regenerate layout
     except (ValueError, IndexError):
         logger.error("update_trips (slider): %s", traceback.format_exc())
-
+    return
 
 def serve_layout():
     global cached_layout
@@ -192,8 +195,9 @@ def serve_layout():
                     html.Div(id="tab-content", className="p-4"),
                 ])])
 
-        except (IndexError, TypeError):
-            logger.debug("Failed to generate figure, there is probably not enough data yet %s", traceback.format_exc())
+        except (IndexError, TypeError, NameError):
+            logger.warning("Failed to generate figure, there is probably not enough data yet")
+            logger.debug(traceback.format_exc())
             data_div = ERROR_DIV
         cached_layout = dbc.Container(fluid=True, children=[html.H1('My car info'), data_div])
     return cached_layout

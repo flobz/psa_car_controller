@@ -111,11 +111,7 @@ def get_figures(trips: Trips, charging: Tuple[dict]):
 
     # charging
     charging_data = DataFrame.from_records(charging)
-    try:
-        co2_data = charging_data[charging_data["co2"] > 0]
-        co2_per_kw = co2_data["co2"].sum() / co2_data["kw"].sum()
-    except (ZeroDivisionError, KeyError):
-        co2_per_kw = 0
+    co2_per_kw = __calculate_co2_per_kw(charging_data)
     co2_per_km = co2_per_kw * kw_per_km / 100
     try:
         charge_speed = 3600 * charging_data["kw"].mean() / \
@@ -181,3 +177,14 @@ def get_figures(trips: Trips, charging: Tuple[dict]):
 
     else:
         consumption_graph_by_temp = Graph(style={'display': 'none'})
+
+
+def __calculate_co2_per_kw(charging_data):
+    try:
+        co2_data = charging_data[charging_data["co2"] > 0]
+        co2_kw_sum = co2_data["kw"].sum()
+        if co2_kw_sum > 0:
+            return co2_data["co2"].sum() / co2_kw_sum
+    except KeyError:
+        return 0
+    return 0

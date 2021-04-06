@@ -24,6 +24,7 @@ from psa_connectedcar.rest import ApiException
 from MyLogger import logger
 
 from utils import get_temp, rate_limit
+from web.abrp import Abrp
 from web.db import get_db, clean_position
 from geojson import Feature, Point, FeatureCollection
 from geojson import dumps as geo_dumps
@@ -49,7 +50,7 @@ CARS_FILE = "cars.json"
 
 
 # add method to class Energy
-def get_energy(self, energy_type):
+def get_energy(self, energy_type) -> psac.models.energy.Energy:
     for energy in self._energy:
         if energy.type == energy_type:
             return energy
@@ -132,7 +133,7 @@ class MyPSACC:
         self.manager.init_with_user_credentials(user, password, self.realm)
 
     def __init__(self, refresh_token, client_id, client_secret, remote_refresh_token, customer_id, realm, country_code,
-                 proxies=None, weather_api=None):
+                 proxies=None, weather_api=None, abrp=None):
         self.realm = realm
         self.service_information = ServiceInformation(authorize_service,
                                                       oauhth_url[self.realm],
@@ -147,7 +148,6 @@ class MyPSACC:
         self.remote_refresh_token = remote_refresh_token
         self.remote_access_token = None
         self.vehicles_list = Cars.load_cars(CARS_FILE)
-        self.set_proxies(proxies)
         self.customer_id = customer_id
         self._config_hash = None
         self.api_config.verify_ssl = False
@@ -167,6 +167,10 @@ class MyPSACC:
         self.precond_programs = {}
         self.info_callback = []
         self.info_refresh_rate = 120
+        if abrp is None:
+            abrp = {"enable": False, "token": ""}
+        self.abrp: Abrp = Abrp(**abrp)
+        self.set_proxies(proxies)
 
     def refresh_token(self):
         self.manager._refresh_token()
@@ -183,6 +187,7 @@ class MyPSACC:
         else:
             self._proxies = proxies
             self.api_config.proxy = proxies['http']
+            self.abrp.proxies = proxies
         self.manager.proxies = self._proxies
         Otp.set_proxies(proxies)
 
@@ -482,7 +487,10 @@ class MyPSACC:
             config = dict(**json.loads(config_str))
             if "country_code" not in config:
                 config["country_code"] = input("What is your country code ? (ex: FR, GB, DE, ES...)\n")
-            return MyPSACC(**config)
+            if "abrp" not in config:
+                    config["abrp"] = {"token": "", "enable": False}
+            psacc = MyPSACC(**config)
+            return psacc
 
     def set_record(self, value: bool):
         self._record_enabled = value
@@ -524,6 +532,7 @@ class MyPSACC:
         else:
             if conn.execute("SELECT Timestamp from position where Timestamp=?", (date,)).fetchone() is None:
                 temp = get_temp(latitude, longitude, self.weather_api)
+
                 if level_fuel == 0:  # fix fuel level not provided when car is off
                     try:
                         level_fuel = conn.execute(
@@ -609,7 +618,7 @@ class MyPeugeotEncoder(JSONEncoder):
     def default(self, mp: MyPSACC):
         data = copy(mp.__dict__)
         mpd = {"proxies": data["_proxies"], "refresh_token": mp.manager.refresh_token,
-               "client_secret": mp.service_information.client_secret}
+               "client_secret": mp.service_information.client_secret, "abrp":mp.abrp.__dict__}
         for el in ["client_id", "realm", "remote_refresh_token", "customer_id", "weather_api", "country_code"]:
             mpd[el] = data[el]
         return mpd

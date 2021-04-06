@@ -108,6 +108,15 @@ We will retrieve these informations:
 
 ## FAQ
 If you have a problem, or a question please check if the answer isn't in the [FAQ](FAQ.md). 
+## Connect to A better Route Planner
+You can connect the app to ABRP.
+Thank's to this you will no longer have to edit manually:
+- Exterior temperature
+- Autonomy left
+- Consumption 
+  
+ABRP will optimize your itinerary with these parameter.
+[model list](https://api.iternio.com/1/tlm/get_carmodels_list?api_key=32b2162f-9599-4647-8139-66e9f9528370)
 
 ## API documentation
 The api documentation is described here : [api_spec.md](api_spec.md).

@@ -19,7 +19,7 @@ CARS_FILE = "cars.json"
 
 class Car:
     def __init__(self, vin, vehicle_id, brand, label="unknown", battery_power=None, fuel_capacity=None,
-                 max_elec_consumption=None, max_fuel_consumption=None):
+                 max_elec_consumption=None, max_fuel_consumption=None, abrp_name=None):
         self.vin = vin
         self.vehicle_id = vehicle_id
         self.label = label
@@ -30,6 +30,8 @@ class Car:
         self.max_fuel_consumption = 0  # L/100Km
         self.set_energy_capacity(battery_power, fuel_capacity, max_elec_consumption, max_fuel_consumption)
         self.status = None
+        self.abrp_name = None
+        self.set_abrp_name(abrp_name)
 
     def set_energy_capacity(self, battery_power=None, fuel_capacity=None, max_elec_consumption=None,
                             max_fuel_consumption=None):
@@ -62,6 +64,13 @@ class Car:
 
     def __is_opel_corsa(self):
         return self.brand == "C" and self.label is None
+
+    def set_abrp_name(self, name):
+        if name is None:
+            try:
+                self.abrp_name = ENERGY_CAPACITY[self.label]["ABRP_NAME"]
+            except KeyError:
+                self.abrp_name = DEFAULT_ABRP_NAME
 
     def is_electric(self) -> bool:
         return self.fuel_capacity == 0 and self.battery_power > 0

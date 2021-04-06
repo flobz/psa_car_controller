@@ -189,7 +189,6 @@ class Otp:
         return False
 
     def activation_finalyze(self, random_bytes=None):
-
         R = self.get_r()
         params = {"action": "ActionFinalize", "mode": self.mode, "id": self.data.iwid, "lastsync": self.data.iwTsync,
                   "version": "Generator-1.0/0.2.11",

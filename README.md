@@ -106,6 +106,9 @@ We will retrieve these informations:
 - [HomeAssistant](https://github.com/Flodu31/HomeAssistant-PeugeotIntegration)
 - Jeedom (Anyone can share the procedure ?)
 
+## FAQ
+If you have a problem, or a question please check if the answer isn't in the [FAQ](FAQ.md). 
+
 ## API documentation
 The api documentation is described here : [api_spec.md](api_spec.md).
 You can use all functions from the doc, for example :

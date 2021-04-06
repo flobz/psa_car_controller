@@ -1,5 +1,5 @@
 from copy import deepcopy
-from typing import List, Tuple
+from typing import Tuple
 
 import dash_bootstrap_components as dbc
 import dash_table

@@ -182,8 +182,9 @@ def get_figures(trips: Trips, charging: Tuple[dict]):
 def __calculate_co2_per_kw(charging_data):
     try:
         co2_data = charging_data[charging_data["co2"] > 0]
-        if co2_data["kw"].sum() > 0:
-            return co2_data["co2"].sum() / co2_data["kw"].sum()
+        co2_kw_sum = co2_data["kw"].sum()
+        if co2_kw_sum > 0:
+            return co2_data["co2"].sum() / co2_kw_sum
     except KeyError:
         return 0
     return 0

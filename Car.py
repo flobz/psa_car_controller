@@ -7,7 +7,7 @@ ENERGY_CAPACITY = {'SUV 3008': {'BATTERY_POWER': 10.8, 'FUEL_CAPACITY': 43},
                    'C5 Aircross': {'BATTERY_POWER': 10.8, 'FUEL_CAPACITY': 43},
                    'e-208': {'BATTERY_POWER': 46, 'FUEL_CAPACITY': 0, "ABRP_NAME": "peugeot:e208:20:50"},
                    'e-2008': {'BATTERY_POWER': 46, 'FUEL_CAPACITY': 0, "ABRP_NAME": "peugeot:e2008:20:48"},
-                   'C': {'BATTERY_POWER': 46, 'FUEL_CAPACITY': 0, "ABRP_NAME": "opel:corsae:20:50"} # corsa-e
+                   'corsa-e': {'BATTERY_POWER': 46, 'FUEL_CAPACITY': 0, "ABRP_NAME": "opel:corsae:20:50"}
                    }
 DEFAULT_BATTERY_POWER = 46
 DEFAULT_FUEL_CAPACITY = 0
@@ -36,9 +36,10 @@ class Car:
         if battery_power is not None and fuel_capacity is not None:
             self.battery_power = battery_power
             self.fuel_capacity = fuel_capacity
-        elif self.label in ENERGY_CAPACITY:
-            self.battery_power = ENERGY_CAPACITY[self.label]["BATTERY_POWER"]
-            self.fuel_capacity = ENERGY_CAPACITY[self.label]["FUEL_CAPACITY"]
+        elif self.__get_model_name() is not None:
+            model_name = self.__get_model_name()
+            self.battery_power = ENERGY_CAPACITY[model_name]["BATTERY_POWER"]
+            self.fuel_capacity = ENERGY_CAPACITY[model_name]["FUEL_CAPACITY"]
         else:
             logger.warning("Can't get car model please check %s", CARS_FILE)
             self.battery_power = DEFAULT_BATTERY_POWER
@@ -51,6 +52,16 @@ class Car:
             self.max_elec_consumption = 0
         else:
             self.max_elec_consumption = max_elec_consumption or DEFAULT_MAX_ELEC_CONSUMPTION
+
+    def __get_model_name(self):
+        if self.label in ENERGY_CAPACITY:
+            return self.label
+        if self.__is_opel_corsa():
+            return "corsa-e"
+        return None
+
+    def __is_opel_corsa(self):
+        return self.brand == "C" and self.label is None
 
     def is_electric(self) -> bool:
         return self.fuel_capacity == 0 and self.battery_power > 0

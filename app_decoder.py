@@ -16,16 +16,18 @@ from sys import argv
 import sys
 import re
 
-BRAND = {"com.psa.mym.myopel":     {"realm": "clientsB2COpel",     "brand_code": "OP", "app_name": "MyOpel"},
-         "com.psa.mym.mypeugeot":  {"realm": "clientsB2CPeugeot",  "brand_code": "AP", "app_name": "MyPeugeot"},
-         "com.psa.mym.mycitroen":  {"realm": "clientsB2CCitroen",  "brand_code": "AC", "app_name": "MyCitroen"},
-         "com.psa.mym.myds":       {"realm": "clientsB2CDS",       "brand_code": "AC", "app_name": "MyDS"},
+BRAND = {"com.psa.mym.myopel": {"realm": "clientsB2COpel", "brand_code": "OP", "app_name": "MyOpel"},
+         "com.psa.mym.mypeugeot": {"realm": "clientsB2CPeugeot", "brand_code": "AP", "app_name": "MyPeugeot"},
+         "com.psa.mym.mycitroen": {"realm": "clientsB2CCitroen", "brand_code": "AC", "app_name": "MyCitroen"},
+         "com.psa.mym.myds": {"realm": "clientsB2CDS", "brand_code": "AC", "app_name": "MyDS"},
          "com.psa.mym.myvauxhall": {"realm": "clientsB2CVauxhall", "brand_code": "0V", "app_name": "MyVauxall"}
          }
+
 
 def getxmlvalue(root, name):
     for child in root.findall("*[@name='" + name + "']"):
         return child.text
+
 
 def find_app_path():
     base_dir = 'apps/'
@@ -51,7 +53,7 @@ def find_preferences_xml():
 
 def save_key_to_pem(pfx_data, pfx_password):
     private_key, certificate = pkcs12.load_key_and_certificates(pfx_data,
-                                                            bytes.fromhex(pfx_password), default_backend())[:2]
+                                                                bytes.fromhex(pfx_password), default_backend())[:2]
     try:
         os.mkdir("certs")
     except FileExistsError:
@@ -148,11 +150,14 @@ psacc.save_config(name="test.json")
 res = psacc.get_vehicles()
 
 for vehicle in res_dict["vehicles"]:
-    label = vehicle["short_label"].split(" ")[-1]
     car = psacc.vehicles_list.get_car_by_vin(vehicle["vin"])
-    if car.label == "unknown":
-        car.label = label
-        car.set_energy_capacity()
+    if "short_label" not in vehicle:
+        print(vehicle)
+    else:
+        label = vehicle["short_label"].split(" ")[-1]  # remove new, ,nouvelle, neu word....
+        if car.label == "unknown":
+            car.label = label
+            car.set_energy_capacity()
 psacc.vehicles_list.save_cars()
 
 print(f"\nYour vehicles: {res}")

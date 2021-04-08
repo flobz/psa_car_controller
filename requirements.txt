@@ -1,5 +1,6 @@
 paho-mqtt>=1.5.0
 dash>=1.18.0
+dash_daq
 plotly>=4
 cryptography>=3.0
 Werkzeug>=1.0.0

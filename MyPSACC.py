@@ -3,7 +3,6 @@ import re
 import threading
 import traceback
 import uuid
-from copy import copy
 from datetime import datetime
 from http import HTTPStatus
 from json import JSONEncoder
@@ -25,7 +24,7 @@ from MyLogger import logger
 
 from utils import get_temp, rate_limit
 from web.abrp import Abrp
-from web.db import get_db, clean_position
+from web.db import get_db, clean_position, get_last_temp
 from geojson import Feature, Point, FeatureCollection
 from geojson import dumps as geo_dumps
 
@@ -168,8 +167,9 @@ class MyPSACC:
         self.info_callback = []
         self.info_refresh_rate = 120
         if abrp is None:
-            abrp = {"enable": False, "token": ""}
-        self.abrp: Abrp = Abrp(**abrp)
+            self.abrp = Abrp()
+        else:
+            self.abrp: Abrp = Abrp(**abrp)
         self.set_proxies(proxies)
 
     def refresh_token(self):
@@ -198,9 +198,10 @@ class MyPSACC:
             try:
                 res = self.api().get_vehicle_status(car.vehicle_id, extension=["odometer"])
                 if res is not None:
+                    car.status = res
                     if self._record_enabled:
-                        self.record_info(vin, res)
-                    break
+                        self.record_info(car)
+                    return res
             except ApiException:
                 logger.error(traceback.format_exc())
         car.status = res
@@ -210,7 +211,7 @@ class MyPSACC:
         if self.info_refresh_rate is not None:
             while True:
                 sleep(self.info_refresh_rate)
-                logger.info("refresh_vehicle_info")
+                logger.debug("refresh_vehicle_info")
                 for car in self.vehicles_list:
                     self.get_vehicle_info(car.vin)
                 for callback in self.info_callback:
@@ -488,39 +489,40 @@ class MyPSACC:
             if "country_code" not in config:
                 config["country_code"] = input("What is your country code ? (ex: FR, GB, DE, ES...)\n")
             if "abrp" not in config:
-                    config["abrp"] = {"token": "", "enable": False}
+                    config["abrp"] = None
             psacc = MyPSACC(**config)
             return psacc
 
     def set_record(self, value: bool):
         self._record_enabled = value
 
-    def record_info(self, vin, status: psac.models.status.Status):
-        mileage = status.timed_odometer.mileage
-        level = status.get_energy('Electric').level
-        level_fuel = status.get_energy('Fuel').level
-        charge_date = status.get_energy('Electric').updated_at
+    def record_info(self, car:Car):
+        mileage = car.status.timed_odometer.mileage
+        level = car.status.get_energy('Electric').level
+        level_fuel = car.status.get_energy('Fuel').level
+        charge_date = car.status.get_energy('Electric').updated_at
         try:
-            moving = status.kinetic.moving
+            moving = car.status.kinetic.moving
             logger.debug("")
         except AttributeError:
             logger.error("kinetic not available from api")
             moving = None
         try:
-            longitude = status.last_position.geometry.coordinates[0]
-            latitude = status.last_position.geometry.coordinates[1]
-            date = status.last_position.properties.updated_at
+            longitude = car.status.last_position.geometry.coordinates[0]
+            latitude = car.status.last_position.geometry.coordinates[1]
+            date = car.status.last_position.properties.updated_at
         except AttributeError:
             logger.error("last_position not available from api")
             longitude = latitude = None
             date = charge_date
         logger.debug("vin:%s longitude:%s latitude:%s date:%s mileage:%s level:%s charge_date:%s level_fuel:"
-                     "%s moving:%s", vin, longitude, latitude, date, mileage, level, charge_date, level_fuel,
+                     "%s moving:%s", car.vin, longitude, latitude, date, mileage, level, charge_date, level_fuel,
                      moving)
-        self.record_position(vin, mileage, latitude, longitude, date, level, level_fuel, moving)
+        self.record_position(car.vin, mileage, latitude, longitude, date, level, level_fuel, moving)
+        self.abrp.call(car, get_last_temp(car.vin))
         try:
-            charging_status = status.get_energy('Electric').charging.status
-            self.record_charging(vin, charging_status, charge_date, level, latitude, longitude)
+            charging_status = car.status.get_energy('Electric').charging.status
+            self.record_charging(car.vin, charging_status, charge_date, level, latitude, longitude)
             logger.debug("charging_status:%s ", charging_status)
         except AttributeError:
             logger.error("charging status not available from api")
@@ -532,7 +534,6 @@ class MyPSACC:
         else:
             if conn.execute("SELECT Timestamp from position where Timestamp=?", (date,)).fetchone() is None:
                 temp = get_temp(latitude, longitude, self.weather_api)
-
                 if level_fuel == 0:  # fix fuel level not provided when car is off
                     try:
                         level_fuel = conn.execute(
@@ -551,8 +552,9 @@ class MyPSACC:
                 conn.commit()
                 logger.info("new position recorded for %s", vin)
                 clean_position(conn)
-            else:
-                logger.debug("position already saved")
+                return True
+            logger.debug("position already saved")
+        return False
 
     def record_charging(self, vin, charging_status, charge_date, level, latitude, longitude):
         conn = get_db()
@@ -613,12 +615,15 @@ class MyPSACC:
             res = conn.execute("select * from battery").fetchall()
         return tuple(map(dict, res))
 
+    def __iter__(self):
+        for key, value in self.__dict__.items():
+            yield key, value
 
 class MyPeugeotEncoder(JSONEncoder):
     def default(self, mp: MyPSACC):
-        data = copy(mp.__dict__)
+        data = dict(mp)
         mpd = {"proxies": data["_proxies"], "refresh_token": mp.manager.refresh_token,
-               "client_secret": mp.service_information.client_secret, "abrp":mp.abrp.__dict__}
+               "client_secret": mp.service_information.client_secret, "abrp":dict(mp.abrp)}
         for el in ["client_id", "realm", "remote_refresh_token", "customer_id", "weather_api", "country_code"]:
             mpd[el] = data[el]
         return mpd

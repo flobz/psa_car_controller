@@ -173,10 +173,10 @@ def get_figures(trips: Trips, charging: Tuple[dict]):
                        y=consumption_by_temp_df["consumption_km"], name="Trips"))
         consumption_fig_by_temp.update_layout(xaxis_title="average temperature in °C",
                                               yaxis_title="Consumption kWh/100Km")
-        consumption_graph_by_temp = Graph(figure=consumption_fig_by_temp, id="consumption_fig_by_temp")
+        consumption_graph_by_temp = html.Div(Graph(figure=consumption_fig_by_temp), id="consumption_graph_by_temp")
 
     else:
-        consumption_graph_by_temp = Graph(style={'display': 'none'})
+        consumption_graph_by_temp = html.Div(Graph(style={'display': 'none'}), id="consumption_graph_by_temp")
 
 
 def __calculate_co2_per_kw(charging_data):

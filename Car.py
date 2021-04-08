@@ -13,7 +13,6 @@ DEFAULT_BATTERY_POWER = 46
 DEFAULT_FUEL_CAPACITY = 0
 DEFAULT_MAX_ELEC_CONSUMPTION = 70
 DEFAULT_MAX_FUEL_CONSUMPTION = 30
-DEFAULT_ABRP_NAME = "peugeot:e208:20:50"
 CARS_FILE = "cars.json"
 
 
@@ -70,7 +69,7 @@ class Car:
             try:
                 self.abrp_name = ENERGY_CAPACITY[self.label]["ABRP_NAME"]
             except KeyError:
-                self.abrp_name = DEFAULT_ABRP_NAME
+                self.abrp_name = None
 
     def is_electric(self) -> bool:
         return self.fuel_capacity == 0 and self.battery_power > 0
@@ -99,6 +98,10 @@ class Car:
     def __str__(self):
         return str(self.to_dict())
 
+    def get_abrp_name(self):
+        if self.abrp_name is not None:
+            return self.abrp_name
+        raise ValueError("ABRP model is not set")
 
 class Cars(list):
     def __init__(self, *args):

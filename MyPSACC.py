@@ -46,7 +46,7 @@ MQTT_RESP_TOPIC = "psa/RemoteServices/to/cid/"
 MQTT_EVENT_TOPIC = "psa/RemoteServices/events/MPHRTServices/"
 MQTT_TOKEN_TTL = 890
 CARS_FILE = "cars.json"
-
+DEFAULT_CONFIG_FILENAME = "config.json"
 
 # add method to class Energy
 def get_energy(self, energy_type) -> psac.models.energy.Energy:
@@ -171,6 +171,7 @@ class MyPSACC:
         else:
             self.abrp: Abrp = Abrp(**abrp)
         self.set_proxies(proxies)
+        self.config_file = DEFAULT_CONFIG_FILENAME
 
     def refresh_token(self):
         self.manager._refresh_token()
@@ -472,7 +473,9 @@ class MyPSACC:
         self.mqtt_client.publish(MQTT_REQ_TOPIC + self.customer_id + "/ThermalPrecond", msg)
         return True
 
-    def save_config(self, name="config.json", force=False):
+    def save_config(self, name=None, force=False):
+        if name is None:
+            name = self.config_file
         config_str = json.dumps(self, cls=MyPeugeotEncoder, sort_keys=True, indent=4).encode("utf8")
         new_hash = md5(config_str).hexdigest()
         if force or self._config_hash != new_hash:
@@ -491,6 +494,7 @@ class MyPSACC:
             if "abrp" not in config:
                     config["abrp"] = None
             psacc = MyPSACC(**config)
+            psacc.config_file = name
             return psacc
 
     def set_record(self, value: bool):

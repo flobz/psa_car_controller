@@ -51,7 +51,7 @@ def clean_position(conn):
 def get_last_temp(vin):
     conn = get_db()
     res = conn.execute("SELECT temperature FROM position WHERE VIN=? ORDER BY Timestamp DESC limit 1",
-                       (vin,)).fetchone()[0]
+                       (vin,)).fetchone()
     if res is None:
         return None
     return res[0]

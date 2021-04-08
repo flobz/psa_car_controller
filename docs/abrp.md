@@ -24,7 +24,7 @@ http://localhost:5000/abrp?token=YOURTOKEN
 7. Go to [http://localhost:5000](http://localhost:5000)
 8. Click on control tab
 9. Enable ABRP for your car
-10. Open car.json 
+10. Open cars.json 
 11. If abrp_name is null:
     
     11.1 Get the name from this list : [model list](https://api.iternio.com/1/tlm/get_carmodels_list?api_key=32b2162f-9599-4647-8139-66e9f9528370)

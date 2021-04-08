@@ -21,7 +21,6 @@ ABRP will optimize your itinerary with these parameters.
 ```
 http://localhost:5000/abrp?token=YOURTOKEN
 ```
-6. Add the value copied
 7. Go to [http://localhost:5000](http://localhost:5000)
 8. Click on control tab
 9. Enable ABRP for your car

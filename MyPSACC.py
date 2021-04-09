@@ -48,15 +48,7 @@ MQTT_TOKEN_TTL = 890
 CARS_FILE = "cars.json"
 DEFAULT_CONFIG_FILENAME = "config.json"
 
-# add method to class Energy
-def get_energy(self, energy_type) -> psac.models.energy.Energy:
-    for energy in self._energy:
-        if energy.type == energy_type:
-            return energy
-    return psac.models.energy.Energy(charging=psac.models.energy_charging.EnergyCharging())
 
-
-psac.models.status.Status.get_energy = get_energy
 
 
 class OpenIdCredentialManager(CredentialManager):
@@ -126,8 +118,6 @@ def gen_correlation_id(date):
 
 
 class MyPSACC:
-    vehicles_url = "https://idpcvs.peugeot.com/api/connectedcar/v2/oauth/authorize"
-
     def connect(self, user, password):
         self.manager.init_with_user_credentials(user, password, self.realm)
 
@@ -279,7 +269,7 @@ class MyPSACC:
             last_update: datetime = self.remote_token_last_update
             if (datetime.now() - last_update).total_seconds() < MQTT_TOKEN_TTL:
                 return None
-        self.manager._refresh_token()
+        self.refresh_token()
         if self.remote_refresh_token is None:
             logger.error("remote_refresh_token isn't defined")
             self.load_otp(force_new=True)
@@ -502,24 +492,17 @@ class MyPSACC:
     def set_record(self, value: bool):
         self._record_enabled = value
 
-    def record_info(self, car:Car):
+    def record_info(self, car: Car):
         mileage = car.status.timed_odometer.mileage
         level = car.status.get_energy('Electric').level
         level_fuel = car.status.get_energy('Fuel').level
         charge_date = car.status.get_energy('Electric').updated_at
-        try:
-            moving = car.status.kinetic.moving
-            logger.debug("")
-        except AttributeError:
-            logger.error("kinetic not available from api")
-            moving = None
-        try:
-            longitude = car.status.last_position.geometry.coordinates[0]
-            latitude = car.status.last_position.geometry.coordinates[1]
-            date = car.status.last_position.properties.updated_at
-        except AttributeError:
-            logger.error("last_position not available from api")
-            longitude = latitude = None
+        moving = car.status.kinetic.moving
+
+        longitude = car.status.last_position.geometry.coordinates[0]
+        latitude = car.status.last_position.geometry.coordinates[1]
+        date = car.status.last_position.properties.updated_at
+        if date is None:
             date = charge_date
         logger.debug("vin:%s longitude:%s latitude:%s date:%s mileage:%s level:%s charge_date:%s level_fuel:"
                      "%s moving:%s", car.vin, longitude, latitude, date, mileage, level, charge_date, level_fuel,

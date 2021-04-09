@@ -2,6 +2,7 @@ import json
 from copy import copy
 
 from MyLogger import logger
+from libs.car_status import CarStatus
 
 ENERGY_CAPACITY = {'SUV 3008': {'BATTERY_POWER': 10.8, 'FUEL_CAPACITY': 43},
                    'C5 Aircross': {'BATTERY_POWER': 10.8, 'FUEL_CAPACITY': 43},
@@ -28,7 +29,7 @@ class Car:
         self.max_elec_consumption = 0  # kwh/100Km
         self.max_fuel_consumption = 0  # L/100Km
         self.set_energy_capacity(battery_power, fuel_capacity, max_elec_consumption, max_fuel_consumption)
-        self.status = None
+        self._status = None
         self.abrp_name = None
         self.set_abrp_name(abrp_name)
 
@@ -99,7 +100,7 @@ class Car:
 
     def to_dict(self):
         car_dict = copy(self.__dict__)
-        car_dict.pop("status")
+        car_dict.pop("_status")
         return car_dict
 
     def __str__(self):
@@ -109,6 +110,17 @@ class Car:
         if self.abrp_name is not None:
             return self.abrp_name
         raise ValueError("ABRP model is not set")
+
+    @property
+    def status(self):
+        return self._status
+
+    @status.setter
+    def status(self, value: CarStatus):
+        self._status = value
+        if self._status is not None and self.status.__class__ != CarStatus:
+            self._status.__class__ = CarStatus
+            self._status.correct()
 
 class Cars(list):
     def __init__(self, *args):

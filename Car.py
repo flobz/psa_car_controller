@@ -70,6 +70,8 @@ class Car:
                 self.abrp_name = ENERGY_CAPACITY[self.label]["ABRP_NAME"]
             except KeyError:
                 self.abrp_name = None
+        else:
+            self.abrp_name = name
 
     def set_model_name(self, name):
         self.label = name
@@ -146,7 +148,9 @@ class Cars(list):
         try:
             with open(name, "r") as f:
                 json_str = f.read()
-                return Cars.from_json(json.loads(json_str))
+                cars=Cars.from_json(json.loads(json_str))
+                cars.save_cars()
+                return cars
         except (FileNotFoundError, TypeError) as e:
             logger.debug(e)
             return Cars()

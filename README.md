@@ -24,7 +24,7 @@ We will retrieve these informations:
  - client-id and client-secret  for the api
  - some url to login
 
-1.1 Download the app on your computer, the original MyPeugeot app can be downloaded [here](https://apkpure.com/fr/mypeugeot-app/com.psa.mym.mypeugeot) for example.
+1.1 Download the app on your computer, the original MyPeugeot app can be downloaded [here](https://apkpure.com/fr/mypeugeot-app/com.psa.mym.mypeugeot/download/2107-APK?from=versions%2Fversion) for example (please download version 1.27).
 
 1.2 Install requirements :
 

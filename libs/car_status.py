@@ -1,6 +1,5 @@
 from MyLogger import logger
-from psa_connectedcar import Position, Geometry, PositionProperties, Kinetic, Energy, EnergyCharging
-from psa_connectedcar.models.status import Status
+from psa_connectedcar import Position, Geometry, PositionProperties, Kinetic, Energy, EnergyCharging, Status
 
 
 class CarStatus(Status):

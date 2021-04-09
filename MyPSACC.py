@@ -175,6 +175,7 @@ class MyPSACC:
 
     def refresh_token(self):
         self.manager._refresh_token()
+        self.save_config()
 
     def api(self) -> psac.VehiclesApi:
         self.api_config.access_token = self.manager._access_token
@@ -297,6 +298,7 @@ class MyPSACC:
             otp_code = self.get_otp_code()
             res = self.get_remote_access_token(otp_code)
         self.mqtt_client.username_pw_set("IMA_OAUTH_ACCESS_TOKEN", self.remote_access_token)
+        self.save_config()
         return res
 
     def on_mqtt_connect(self, client, userdata, rc, a):

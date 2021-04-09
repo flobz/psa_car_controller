@@ -64,12 +64,17 @@ class Car:
     def __is_opel_corsa(self):
         return self.brand == "C" and self.label is None
 
-    def set_abrp_name(self, name):
+    def set_abrp_name(self, name=None):
         if name is None:
             try:
                 self.abrp_name = ENERGY_CAPACITY[self.label]["ABRP_NAME"]
             except KeyError:
                 self.abrp_name = None
+
+    def set_model_name(self, name):
+        self.label = name
+        self.set_energy_capacity()
+        self.set_abrp_name()
 
     def is_electric(self) -> bool:
         return self.fuel_capacity == 0 and self.battery_power > 0

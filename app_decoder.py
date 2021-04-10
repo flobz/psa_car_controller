@@ -10,6 +10,8 @@ from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.serialization import pkcs12
 from cryptography.hazmat.backends import default_backend
 
+from getpass import getpass
+
 from ChargeControl import ChargeControl, ChargeControls
 from MyPSACC import MyPSACC
 from sys import argv
@@ -20,7 +22,7 @@ BRAND = {"com.psa.mym.myopel": {"realm": "clientsB2COpel", "brand_code": "OP", "
          "com.psa.mym.mypeugeot": {"realm": "clientsB2CPeugeot", "brand_code": "AP", "app_name": "MyPeugeot"},
          "com.psa.mym.mycitroen": {"realm": "clientsB2CCitroen", "brand_code": "AC", "app_name": "MyCitroen"},
          "com.psa.mym.myds": {"realm": "clientsB2CDS", "brand_code": "AC", "app_name": "MyDS"},
-         "com.psa.mym.myvauxhall": {"realm": "clientsB2CVauxhall", "brand_code": "0V", "app_name": "MyVauxall"}
+         "com.psa.mym.myvauxhall": {"realm": "clientsB2CVauxhall", "brand_code": "0V", "app_name": "MyVauxhall"}
          }
 
 
@@ -87,7 +89,7 @@ remote_refresh_token = None
 print("APK loaded !")
 
 client_email = input(f"{BRAND[package_name]['app_name']} email: ")
-client_password = input(f"{BRAND[package_name]['app_name']} password: ")
+client_password = getpass(f"{BRAND[package_name]['app_name']} password: ")
 
 country_code = input("What is your country code ? (ex: FR, GB, DE, ES...)\n")
 

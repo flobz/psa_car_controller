@@ -31,11 +31,13 @@ from geojson import dumps as geo_dumps
 PSA_CORRELATION_DATE_FORMAT = "%Y%m%d%H%M%S%f"
 PSA_DATE_FORMAT = "%Y-%m-%dT%H:%M:%SZ"
 
-oauhth_url = {"clientsB2CPeugeot": "https://idpcvs.peugeot.com/am/oauth2/access_token",
-              "clientsB2CCitroen": "https://idpcvs.citroen.com/am/oauth2/access_token",
-              "clientsB2CDS": "https://idpcvs.driveds.com/am/oauth2/access_token",
-              "clientsB2COpel": "https://idpcvs.opel.com/am/oauth2/access_token",
-              "clientsB2CVauxhall": "https://idpcvs.vauxhall.co.uk/am/oauth2/access_token"}
+realm_info = {
+    "clientsB2CPeugeot": {"oauth_url": "https://idpcvs.peugeot.com/am/oauth2/access_token", "app_name": "MyPeugeot"},
+    "clientsB2CCitroen": {"oauth_url": "https://idpcvs.citroen.com/am/oauth2/access_token", "app_name": "MyCitroen"},
+    "clientsB2CDS": {"oauth_url": "https://idpcvs.driveds.com/am/oauth2/access_token", "app_name": "MyDS"},
+    "clientsB2COpel": {"oauth_url": "https://idpcvs.opel.com/am/oauth2/access_token", "app_name": "MyOpel"},
+    "clientsB2CVauxhall": {"oauth_url": "https://idpcvs.vauxhall.co.uk/am/oauth2/access_token", "app_name": "MyVauxhall"}
+}
 
 authorize_service = "https://api.mpsa.com/api/connectedcar/v2/oauth/authorize"
 remote_url = "https://api.groupe-psa.com/connectedcar/v4/virtualkey/remoteaccess/token?client_id="
@@ -135,7 +137,7 @@ class MyPSACC:
                  proxies=None, weather_api=None):
         self.realm = realm
         self.service_information = ServiceInformation(authorize_service,
-                                                      oauhth_url[self.realm],
+                                                      realm_info[self.realm]['oauth_url'],
                                                       client_id,
                                                       client_secret,
                                                       scopes, False)
@@ -167,6 +169,9 @@ class MyPSACC:
         self.precond_programs = {}
         self.info_callback = []
         self.info_refresh_rate = 120
+
+    def get_app_name(self):
+        return realm_info[self.realm]['app_name']
 
     def refresh_token(self):
         self.manager._refresh_token()

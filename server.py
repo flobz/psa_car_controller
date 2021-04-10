@@ -6,6 +6,8 @@ from threading import Thread
 
 from oauth2_client.credentials_manager import OAuthError
 
+from getpass import getpass
+
 import web.app
 from ChargeControl import ChargeControls
 from MyLogger import my_logger
@@ -65,8 +67,8 @@ if __name__ == "__main__":
                 client_email = args.mail
                 client_password = args.password
             else:
-                client_email = input("mypeugeot email: ")
-                client_password = input("mypeugeot password: ")
+                client_email = input(f"{web.app.myp.get_app_name()} email: ")
+                client_password = getpass(f"{web.app.myp.get_app_name()} password: ")
             web.app.myp.connect(client_email, client_password)
         logger.info(str(web.app.myp.get_vehicles()))
         if args.remote_disable:

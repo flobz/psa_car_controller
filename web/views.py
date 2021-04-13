@@ -2,9 +2,10 @@ import json
 import traceback
 from datetime import datetime, timezone
 import dash_bootstrap_components as dbc
-from dash.dependencies import Output, Input
+from dash.dependencies import Output, Input, MATCH
 import dash_core_components as dcc
 import dash_html_components as html
+import dash_daq as daq
 
 from MyLogger import logger
 from flask import jsonify, request, Response as FlaskResponse
@@ -16,6 +17,12 @@ from web import figures
 from web.app import app, dash_app, myp, chc
 import web.db
 
+RESPONSE = "-response"
+
+EMPTY_DIV = "empty-div"
+
+ABRP_SWITCH = 'abrp-switch'
+
 ERROR_DIV = dbc.Alert("No data to show, there is probably no trips recorded yet", color="danger")
 trips: Trips
 chargings: dict
@@ -25,7 +32,7 @@ min_date = max_date = min_millis = max_millis = step = marks = cached_layout = N
 @dash_app.callback(Output('trips_map', 'figure'),
                    Output('consumption_fig', 'figure'),
                    Output('consumption_fig_by_speed', 'figure'),
-                   Output('consumption_fig_by_temp', 'graph'),
+                   Output('consumption_graph_by_temp', 'children'),
                    Output('consumption', 'children'),
                    Output('tab_trips', 'children'),
                    Output('tab_battery', 'children'),
@@ -47,6 +54,19 @@ def display_value(value):
     return figures.trips_map, figures.consumption_fig, figures.consumption_fig_by_speed, \
            figures.consumption_graph_by_temp, consumption, figures.table_fig, figures.battery_info, \
            figures.battery_table, max_millis, step, marks
+
+
+@dash_app.callback(Output({'role': ABRP_SWITCH + RESPONSE, 'vin': MATCH}, 'children'),
+                   Input({'role': ABRP_SWITCH, 'vin': MATCH}, 'id'),
+                   Input({'role': ABRP_SWITCH, 'vin': MATCH}, 'value'))
+def update_abrp(div_id, value):
+    vin = div_id["vin"]
+    if value:
+        myp.abrp.abrp_enable_vin.add(vin)
+    else:
+        myp.abrp.abrp_enable_vin.discard(vin)
+    myp.save_config()
+    return " "
 
 
 @app.route('/get_vehicles')
@@ -127,6 +147,21 @@ def get_recorded_position():
     return FlaskResponse(myp.get_recorded_position(), mimetype='application/json')
 
 
+@app.route('/abrp')
+def abrp():
+    vin = request.args.get('vin', None)
+    enable = request.args.get('enable', None)
+    token = request.args.get('token', None)
+    if vin is not None and enable is not None:
+        if enable == '1':
+            myp.abrp.abrp_enable_vin.add(vin)
+        else:
+            myp.abrp.abrp_enable_vin.discard(vin)
+    if token is not None:
+        myp.abrp.token = token
+    return jsonify(dict(myp.abrp))
+
+
 @app.after_request
 def after_request(response):
     header = response.headers
@@ -160,6 +195,25 @@ def update_trips():
         logger.error("update_trips (slider): %s", traceback.format_exc())
     return
 
+
+def __get_control_tabs():
+    tabs = []
+    for car in myp.vehicles_list:
+        if car.label is None:
+            label = car.vin
+        else:
+            label = car.label
+        tabs.append(dbc.Tab(label=label, id="tab-" + car.vin, children=[
+            daq.ToggleSwitch(
+                id={'role': ABRP_SWITCH, 'vin': car.vin},
+                value=car.vin in myp.abrp.abrp_enable_vin,
+                label="Send data to ABRP"
+            ),
+            html.Div(id={'role': ABRP_SWITCH + RESPONSE, 'vin': car.vin})
+        ]))
+    return tabs
+
+
 def serve_layout():
     global cached_layout
     if cached_layout is None:
@@ -188,13 +242,14 @@ def serve_layout():
                         dbc.Tab(label="Charge", tab_id="charge", id="tab_charge", children=[figures.battery_table]),
                         dbc.Tab(label="Map", tab_id="map", children=[
                             dcc.Graph(figure=figures.trips_map, id="trips_map", style={"height": '90vh'})]),
+                        dbc.Tab(label="Control", tab_id="control", children=dbc.Tabs(id="control-tabs",
+                                                                                     children=__get_control_tabs()))
                     ],
                         id="tabs",
                         active_tab="summary",
                     ),
-                    html.Div(id="tab-content", className="p-4"),
+                    html.Div(id=EMPTY_DIV),
                 ])])
-
         except (IndexError, TypeError, NameError):
             logger.warning("Failed to generate figure, there is probably not enough data yet")
             logger.debug(traceback.format_exc())

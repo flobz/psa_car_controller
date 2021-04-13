@@ -61,7 +61,7 @@ if __name__ == "__main__":
         logger.info("offline mode")
     else:
         try:
-            web.app.myp.manager._refresh_token()
+            web.app.myp.refresh_token()
         except OAuthError:
             if args.mail and args.password:
                 client_email = args.mail

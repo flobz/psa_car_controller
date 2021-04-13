@@ -3,7 +3,6 @@ import re
 import threading
 import traceback
 import uuid
-from copy import copy
 from datetime import datetime
 from http import HTTPStatus
 from json import JSONEncoder
@@ -24,7 +23,8 @@ from psa_connectedcar.rest import ApiException
 from MyLogger import logger
 
 from utils import get_temp, rate_limit
-from web.db import get_db, clean_position
+from web.abrp import Abrp
+from web.db import get_db, clean_position, get_last_temp
 from geojson import Feature, Point, FeatureCollection
 from geojson import dumps as geo_dumps
 
@@ -48,17 +48,9 @@ MQTT_RESP_TOPIC = "psa/RemoteServices/to/cid/"
 MQTT_EVENT_TOPIC = "psa/RemoteServices/events/MPHRTServices/"
 MQTT_TOKEN_TTL = 890
 CARS_FILE = "cars.json"
+DEFAULT_CONFIG_FILENAME = "config.json"
 
 
-# add method to class Energy
-def get_energy(self, energy_type):
-    for energy in self._energy:
-        if energy.type == energy_type:
-            return energy
-    return psac.models.energy.Energy(charging=psac.models.energy_charging.EnergyCharging())
-
-
-psac.models.status.Status.get_energy = get_energy
 
 
 class OpenIdCredentialManager(CredentialManager):
@@ -128,13 +120,11 @@ def gen_correlation_id(date):
 
 
 class MyPSACC:
-    vehicles_url = "https://idpcvs.peugeot.com/api/connectedcar/v2/oauth/authorize"
-
     def connect(self, user, password):
         self.manager.init_with_user_credentials(user, password, self.realm)
 
     def __init__(self, refresh_token, client_id, client_secret, remote_refresh_token, customer_id, realm, country_code,
-                 proxies=None, weather_api=None):
+                 proxies=None, weather_api=None, abrp=None):
         self.realm = realm
         self.service_information = ServiceInformation(authorize_service,
                                                       realm_info[self.realm]['oauth_url'],
@@ -149,7 +139,6 @@ class MyPSACC:
         self.remote_refresh_token = remote_refresh_token
         self.remote_access_token = None
         self.vehicles_list = Cars.load_cars(CARS_FILE)
-        self.set_proxies(proxies)
         self.customer_id = customer_id
         self._config_hash = None
         self.api_config.verify_ssl = False
@@ -169,12 +158,19 @@ class MyPSACC:
         self.precond_programs = {}
         self.info_callback = []
         self.info_refresh_rate = 120
+        if abrp is None:
+            self.abrp = Abrp()
+        else:
+            self.abrp: Abrp = Abrp(**abrp)
+        self.set_proxies(proxies)
+        self.config_file = DEFAULT_CONFIG_FILENAME
 
     def get_app_name(self):
         return realm_info[self.realm]['app_name']
 
     def refresh_token(self):
         self.manager._refresh_token()
+        self.save_config()
 
     def api(self) -> psac.VehiclesApi:
         self.api_config.access_token = self.manager._access_token
@@ -188,6 +184,7 @@ class MyPSACC:
         else:
             self._proxies = proxies
             self.api_config.proxy = proxies['http']
+            self.abrp.proxies = proxies
         self.manager.proxies = self._proxies
         Otp.set_proxies(proxies)
 
@@ -198,9 +195,10 @@ class MyPSACC:
             try:
                 res = self.api().get_vehicle_status(car.vehicle_id, extension=["odometer"])
                 if res is not None:
+                    car.status = res
                     if self._record_enabled:
-                        self.record_info(vin, res)
-                    break
+                        self.record_info(car)
+                    return res
             except ApiException:
                 logger.error(traceback.format_exc())
         car.status = res
@@ -210,7 +208,7 @@ class MyPSACC:
         if self.info_refresh_rate is not None:
             while True:
                 sleep(self.info_refresh_rate)
-                logger.info("refresh_vehicle_info")
+                logger.debug("refresh_vehicle_info")
                 for car in self.vehicles_list:
                     self.get_vehicle_info(car.vin)
                 for callback in self.info_callback:
@@ -276,7 +274,7 @@ class MyPSACC:
             last_update: datetime = self.remote_token_last_update
             if (datetime.now() - last_update).total_seconds() < MQTT_TOKEN_TTL:
                 return None
-        self.manager._refresh_token()
+        self.refresh_token()
         if self.remote_refresh_token is None:
             logger.error("remote_refresh_token isn't defined")
             self.load_otp(force_new=True)
@@ -295,6 +293,7 @@ class MyPSACC:
             otp_code = self.get_otp_code()
             res = self.get_remote_access_token(otp_code)
         self.mqtt_client.username_pw_set("IMA_OAUTH_ACCESS_TOKEN", self.remote_access_token)
+        self.save_config()
         return res
 
     def on_mqtt_connect(self, client, userdata, rc, a):
@@ -471,7 +470,9 @@ class MyPSACC:
         self.mqtt_client.publish(MQTT_REQ_TOPIC + self.customer_id + "/ThermalPrecond", msg)
         return True
 
-    def save_config(self, name="config.json", force=False):
+    def save_config(self, name=None, force=False):
+        if name is None:
+            name = self.config_file
         config_str = json.dumps(self, cls=MyPeugeotEncoder, sort_keys=True, indent=4).encode("utf8")
         new_hash = md5(config_str).hexdigest()
         if force or self._config_hash != new_hash:
@@ -487,37 +488,35 @@ class MyPSACC:
             config = dict(**json.loads(config_str))
             if "country_code" not in config:
                 config["country_code"] = input("What is your country code ? (ex: FR, GB, DE, ES...)\n")
-            return MyPSACC(**config)
+            if "abrp" not in config:
+                config["abrp"] = None
+            psacc = MyPSACC(**config)
+            psacc.config_file = name
+            return psacc
 
     def set_record(self, value: bool):
         self._record_enabled = value
 
-    def record_info(self, vin, status: psac.models.status.Status):
-        mileage = status.timed_odometer.mileage
-        level = status.get_energy('Electric').level
-        level_fuel = status.get_energy('Fuel').level
-        charge_date = status.get_energy('Electric').updated_at
-        try:
-            moving = status.kinetic.moving
-            logger.debug("")
-        except AttributeError:
-            logger.error("kinetic not available from api")
-            moving = None
-        try:
-            longitude = status.last_position.geometry.coordinates[0]
-            latitude = status.last_position.geometry.coordinates[1]
-            date = status.last_position.properties.updated_at
-        except AttributeError:
-            logger.error("last_position not available from api")
-            longitude = latitude = None
+    def record_info(self, car: Car):
+        mileage = car.status.timed_odometer.mileage
+        level = car.status.get_energy('Electric').level
+        level_fuel = car.status.get_energy('Fuel').level
+        charge_date = car.status.get_energy('Electric').updated_at
+        moving = car.status.kinetic.moving
+
+        longitude = car.status.last_position.geometry.coordinates[0]
+        latitude = car.status.last_position.geometry.coordinates[1]
+        date = car.status.last_position.properties.updated_at
+        if date is None:
             date = charge_date
         logger.debug("vin:%s longitude:%s latitude:%s date:%s mileage:%s level:%s charge_date:%s level_fuel:"
-                     "%s moving:%s", vin, longitude, latitude, date, mileage, level, charge_date, level_fuel,
+                     "%s moving:%s", car.vin, longitude, latitude, date, mileage, level, charge_date, level_fuel,
                      moving)
-        self.record_position(vin, mileage, latitude, longitude, date, level, level_fuel, moving)
+        self.record_position(car.vin, mileage, latitude, longitude, date, level, level_fuel, moving)
+        self.abrp.call(car, get_last_temp(car.vin))
         try:
-            charging_status = status.get_energy('Electric').charging.status
-            self.record_charging(vin, charging_status, charge_date, level, latitude, longitude)
+            charging_status = car.status.get_energy('Electric').charging.status
+            self.record_charging(car.vin, charging_status, charge_date, level, latitude, longitude)
             logger.debug("charging_status:%s ", charging_status)
         except AttributeError:
             logger.error("charging status not available from api")
@@ -547,8 +546,9 @@ class MyPSACC:
                 conn.commit()
                 logger.info("new position recorded for %s", vin)
                 clean_position(conn)
-            else:
-                logger.debug("position already saved")
+                return True
+            logger.debug("position already saved")
+        return False
 
     def record_charging(self, vin, charging_status, charge_date, level, latitude, longitude):
         conn = get_db()
@@ -609,12 +609,15 @@ class MyPSACC:
             res = conn.execute("select * from battery").fetchall()
         return tuple(map(dict, res))
 
+    def __iter__(self):
+        for key, value in self.__dict__.items():
+            yield key, value
 
 class MyPeugeotEncoder(JSONEncoder):
     def default(self, mp: MyPSACC):
-        data = copy(mp.__dict__)
+        data = dict(mp)
         mpd = {"proxies": data["_proxies"], "refresh_token": mp.manager.refresh_token,
-               "client_secret": mp.service_information.client_secret}
+               "client_secret": mp.service_information.client_secret, "abrp":dict(mp.abrp)}
         for el in ["client_id", "realm", "remote_refresh_token", "customer_id", "weather_api", "country_code"]:
             mpd[el] = data[el]
         return mpd

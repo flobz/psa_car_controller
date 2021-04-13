@@ -46,3 +46,12 @@ def clean_position(conn):
         logger.debug("Delete duplicate line")
         conn.execute("DELETE FROM position where Timestamp=?;", (res[1]["Timestamp"],))
         conn.commit()
+
+
+def get_last_temp(vin):
+    conn = get_db()
+    res = conn.execute("SELECT temperature FROM position WHERE VIN=? ORDER BY Timestamp DESC limit 1",
+                       (vin,)).fetchone()
+    if res is None:
+        return None
+    return res[0]

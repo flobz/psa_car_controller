@@ -5,7 +5,6 @@ from MyLogger import logger
 from libs.car_model import CarModel
 from libs.car_status import CarStatus
 
-CARS_FILE = "cars.json"
 
 
 class Car:
@@ -77,6 +76,7 @@ class Car:
 class Cars(list):
     def __init__(self, *args):
         list.__init__(self, *args)
+        self.config_filename = "cars.json"
 
     def get_car_by_vin(self, vin) -> Car:
         for car in self:
@@ -102,17 +102,22 @@ class Cars(list):
     def __str__(self):
         return str(list(map(str, self)))
 
-    def save_cars(self, name=CARS_FILE):
+    def save_cars(self, name=None):
+        if name is None:
+            name = self.config_filename
         config_str = json.dumps(self, default=lambda car: car.to_dict(), sort_keys=True, indent=4)
         with open(name, "w") as f:
             f.write(config_str)
 
     @staticmethod
-    def load_cars(name=CARS_FILE):
+    def load_cars(name=None):
+        if name is None:
+            name = Cars().config_filename
         try:
             with open(name, "r") as f:
                 json_str = f.read()
                 cars=Cars.from_json(json.loads(json_str))
+                cars.config_filename = name
                 cars.save_cars()
                 return cars
         except (FileNotFoundError, TypeError) as e:

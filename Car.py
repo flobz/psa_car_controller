@@ -12,9 +12,10 @@ class Car:
     def __init__(self, vin, vehicle_id, brand, label=None, battery_power=None, fuel_capacity=None,
                  max_elec_consumption=None, max_fuel_consumption=None, abrp_name=None):
         self.vin = vin
+        model = None
         if label is not None:
             model = CarModel.find_model_by_name(label)
-        else:
+        if model is None:
             model = CarModel.find_model_by_vin(self.vin)
             label = model.name
         self.vehicle_id = vehicle_id

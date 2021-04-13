@@ -20,6 +20,8 @@ class CarModel:
         self.max_fuel_consumption = max_fuel_consumption
 
     def match(self, vin):
+        if self.reg is None:
+            return False
         return re.match(self.reg, vin) is not None
 
     @staticmethod

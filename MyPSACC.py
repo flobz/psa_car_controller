@@ -484,7 +484,7 @@ class MyPSACC:
             if "country_code" not in config:
                 config["country_code"] = input("What is your country code ? (ex: FR, GB, DE, ES...)\n")
             if "abrp" not in config:
-                    config["abrp"] = None
+                config["abrp"] = None
             psacc = MyPSACC(**config)
             psacc.config_file = name
             return psacc

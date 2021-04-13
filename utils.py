@@ -3,6 +3,7 @@ from functools import wraps
 from threading import Semaphore, Timer
 
 import requests
+import socket
 
 from MyLogger import logger
 
@@ -42,3 +43,8 @@ def rate_limit(limit, every):
         return wrapper
 
     return limit_decorator
+
+
+def is_port_in_use(ip, port):
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+        return s.connect_ex((ip, port)) == 0

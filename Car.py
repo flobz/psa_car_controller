@@ -6,7 +6,6 @@ from libs.car_model import CarModel
 from libs.car_status import CarStatus
 
 
-
 class Car:
     def __init__(self, vin, vehicle_id, brand, label=None, battery_power=None, fuel_capacity=None,
                  max_elec_consumption=None, max_fuel_consumption=None, abrp_name=None):
@@ -73,6 +72,7 @@ class Car:
             self._status.__class__ = CarStatus
             self._status.correct()
 
+
 class Cars(list):
     def __init__(self, *args):
         list.__init__(self, *args)
@@ -116,7 +116,7 @@ class Cars(list):
         try:
             with open(name, "r") as f:
                 json_str = f.read()
-                cars=Cars.from_json(json.loads(json_str))
+                cars = Cars.from_json(json.loads(json_str))
                 cars.config_filename = name
                 cars.save_cars()
                 return cars

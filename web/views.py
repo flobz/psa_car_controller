@@ -175,12 +175,11 @@ def update_trips():
     try:
         trips_by_vin = Trips.get_trips(myp.vehicles_list)
         trips = next(iter(trips_by_vin.values()))  # todo handle multiple car
+        assert len(trips) > 0
         chargings = MyPSACC.get_chargings()
-    except StopIteration:
+    except (StopIteration, AssertionError):
         logger.debug("No trips yet")
         return
-    except AssertionError:
-        logger.error("update_trips: %s", traceback.format_exc())
     # update for slider
     global min_date, max_date, min_millis, max_millis, step, marks
     try:

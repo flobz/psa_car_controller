@@ -36,7 +36,8 @@ realm_info = {
     "clientsB2CCitroen": {"oauth_url": "https://idpcvs.citroen.com/am/oauth2/access_token", "app_name": "MyCitroen"},
     "clientsB2CDS": {"oauth_url": "https://idpcvs.driveds.com/am/oauth2/access_token", "app_name": "MyDS"},
     "clientsB2COpel": {"oauth_url": "https://idpcvs.opel.com/am/oauth2/access_token", "app_name": "MyOpel"},
-    "clientsB2CVauxhall": {"oauth_url": "https://idpcvs.vauxhall.co.uk/am/oauth2/access_token", "app_name": "MyVauxhall"}
+    "clientsB2CVauxhall": {"oauth_url": "https://idpcvs.vauxhall.co.uk/am/oauth2/access_token",
+                           "app_name": "MyVauxhall"}
 }
 
 authorize_service = "https://api.mpsa.com/api/connectedcar/v2/oauth/authorize"
@@ -49,8 +50,6 @@ MQTT_EVENT_TOPIC = "psa/RemoteServices/events/MPHRTServices/"
 MQTT_TOKEN_TTL = 890
 CARS_FILE = "cars.json"
 DEFAULT_CONFIG_FILENAME = "config.json"
-
-
 
 
 class OpenIdCredentialManager(CredentialManager):
@@ -124,7 +123,7 @@ class MyPSACC:
         self.manager.init_with_user_credentials(user, password, self.realm)
 
     def __init__(self, refresh_token, client_id, client_secret, remote_refresh_token, customer_id, realm, country_code,
-                 proxies=None, weather_api=None, abrp=None):
+                 proxies=None, weather_api=None, abrp=None, co2_signal_api=None):
         self.realm = realm
         self.service_information = ServiceInformation(authorize_service,
                                                       realm_info[self.realm]['oauth_url'],
@@ -164,6 +163,7 @@ class MyPSACC:
             self.abrp: Abrp = Abrp(**abrp)
         self.set_proxies(proxies)
         self.config_file = DEFAULT_CONFIG_FILENAME
+        self.co2_signal_api = co2_signal_api
 
     def get_app_name(self):
         return realm_info[self.realm]['app_name']
@@ -488,8 +488,9 @@ class MyPSACC:
             config = dict(**json.loads(config_str))
             if "country_code" not in config:
                 config["country_code"] = input("What is your country code ? (ex: FR, GB, DE, ES...)\n")
-            if "abrp" not in config:
-                config["abrp"] = None
+            for new_el in ["abrp", "co2_signal_api"]:
+                if new_el not in config:
+                    config[new_el] = None
             psacc = MyPSACC(**config)
             psacc.config_file = name
             return psacc
@@ -561,6 +562,7 @@ class MyPSACC:
             if not in_progress:
                 conn.execute("INSERT INTO battery(start_at,start_level,VIN) VALUES(?,?,?)", (charge_date, level, vin))
                 conn.commit()
+            Ecomix.get_data_from_co2_signal(latitude, longitude, self.co2_signal_api)
         else:
             try:
                 start_at, stop_at, start_level = conn.execute(
@@ -568,7 +570,8 @@ class MyPSACC:
                     "DESC limit 1", (vin,)).fetchone()
                 in_progress = stop_at is None
                 if in_progress:
-                    co2_per_kw = Ecomix.get_co2_per_kw(start_at, charge_date, latitude, longitude)
+                    co2_per_kw = Ecomix.get_co2_per_kw(start_at, charge_date, latitude, longitude,
+                                                       from_cache=self.co2_signal_api is not None)
                     kw = (level - start_level) / 100 * self.vehicles_list.get_car_by_vin(vin).battery_power
                     conn.execute(
                         "UPDATE battery set stop_at=?, end_level=?, co2=?, kw=? WHERE start_at=? and VIN=?",
@@ -613,11 +616,13 @@ class MyPSACC:
         for key, value in self.__dict__.items():
             yield key, value
 
+
 class MyPeugeotEncoder(JSONEncoder):
     def default(self, mp: MyPSACC):
         data = dict(mp)
         mpd = {"proxies": data["_proxies"], "refresh_token": mp.manager.refresh_token,
-               "client_secret": mp.service_information.client_secret, "abrp":dict(mp.abrp)}
-        for el in ["client_id", "realm", "remote_refresh_token", "customer_id", "weather_api", "country_code"]:
+               "client_secret": mp.service_information.client_secret, "abrp": dict(mp.abrp)}
+        for el in ["client_id", "realm", "remote_refresh_token", "customer_id", "weather_api", "country_code",
+                   "co2_signal_api"]:
             mpd[el] = data[el]
         return mpd

@@ -99,7 +99,8 @@ We will retrieve these informations:
     
      
 ![Screenshot_20210128_104519](https://user-images.githubusercontent.com/48728684/106119895-01c98d80-6156-11eb-8969-9e8bc24f3677.png)
-    You have to add an api key from https://home.openweathermap.org/ in your config file, to be able to see your consumption vs exterior temperature.  
+- You have to add an api key from https://home.openweathermap.org/ in your config file, to be able to see your consumption vs exterior temperature.
+- You have to add an api key from https://co2signal.com/ to have your C02 emission by KM (in France the key isn't needed). 
 ## Connect your home automation system:
 - [Domoticz](docs/domoticz/Domoticz.md)
 - [HomeAssistant](https://github.com/Flodu31/HomeAssistant-PeugeotIntegration)

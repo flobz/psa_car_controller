@@ -22,7 +22,7 @@ class Abrp:
     def call(self, car: Car, ext_temp: float = None):
         try:
             if self.token is None or len(self.token) == 0:
-                logger.error("No token provided")
+                logger.debug("No abrp token provided")
             elif car.vin in self.abrp_enable_vin:
                 energy = car.status.get_energy('Electric')
                 tlm = {"utc": int(datetime.timestamp(energy.updated_at)),

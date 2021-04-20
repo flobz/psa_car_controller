@@ -6,6 +6,7 @@ from flask import Flask
 import locale
 
 from werkzeug import run_simple
+
 try:
     from werkzeug.middleware.dispatcher import DispatcherMiddleware
 except ImportError:
@@ -18,6 +19,10 @@ from MyPSACC import MyPSACC
 app = None
 dash_app = None
 dispatcher = None
+# noinspection PyTypeChecker
+myp:MyPSACC = None
+# noinspection PyTypeChecker
+chc: ChargeControls = None
 
 def start_app(title, base_path, debug: bool, host, port):
     global app, dash_app, dispatcher
@@ -41,13 +46,6 @@ def start_app(title, base_path, debug: bool, host, port):
     # keep this line
     import web.views
     return run_simple(host, port, application, use_reloader=False, use_debugger=debug)
-
-
-# noinspection PyTypeChecker
-myp:MyPSACC = None
-# noinspection PyTypeChecker
-chc: ChargeControls = None
-
 
 def save_config(my_peugeot: MyPSACC, name):
     my_peugeot.save_config(name)

@@ -1,5 +1,4 @@
 from copy import deepcopy
-from typing import Tuple
 
 import dash_bootstrap_components as dbc
 import dash_table
@@ -13,6 +12,8 @@ import plotly.graph_objects as go
 from Trip import Trips
 from pandas import options as pandas_options
 import dash_html_components as html
+
+from libs.elec_price import ElecPrice
 
 
 def unix_time_millis(dt):
@@ -55,7 +56,7 @@ battery_info = dbc.Alert("No data to show", color="danger")
 battery_table = None
 
 
-def get_figures(trips: Trips, charging: Tuple[dict]):
+def get_figures(trips: Trips, charging: list[dict]):
     global consumption_fig, consumption_df, trips_map, consumption_fig_by_speed, table_fig, info, battery_info, \
         battery_table, consumption_graph_by_temp
     lats = []
@@ -116,8 +117,10 @@ def get_figures(trips: Trips, charging: Tuple[dict]):
     try:
         charge_speed = 3600 * charging_data["kw"].mean() / \
                        (charging_data["stop_at"] - charging_data["start_at"]).mean().total_seconds()
+        price_kw = (charging_data["price"] / charging_data["kw"]).mean()
     except (TypeError, KeyError):  # when there is no data yet:
         charge_speed = 0
+        price_kw = 0
 
     battery_info = dash_table.DataTable(
         id='battery_info',
@@ -145,7 +148,18 @@ def get_figures(trips: Trips, charging: Tuple[dict]):
                 html.Td("Average charge speed:"),
                 html.Td("{:.3f} kW".format(charge_speed))
             ]
-        )
+        ),
+        html.Tr(
+            [
+                html.Td('Average Price:', rowSpan=2),
+                html.Td("{:.2f} {}/100km".format(price_kw*kw_per_km, ElecPrice.currency)),
+            ]
+        ),
+        html.Tr(
+            [
+                "{:.2f} {}/kW".format(price_kw, ElecPrice.currency),
+            ]
+        ),
     ])
 
     battery_table = dash_table.DataTable(
@@ -159,8 +173,11 @@ def get_figures(trips: Trips, charging: Tuple[dict]):
                  {'id': 'co2', 'name': 'CO2', 'type': 'numeric',
                   'format': deepcopy(nb_format).symbol_suffix(" g/kWh").precision(1)},
                  {'id': 'kw', 'name': 'consumption', 'type': 'numeric',
-                  'format': deepcopy(nb_format).symbol_suffix(" kWh").precision(3)}],
+                  'format': deepcopy(nb_format).symbol_suffix(" kWh").precision(2)},
+                 {'id': 'price', 'name': 'price', 'type': 'numeric',
+                 'format': deepcopy(nb_format).symbol_suffix(" "+ElecPrice.currency).precision(2)}],
         data=charging,
+        editable=True
     )
     consumption_by_temp_df = consumption_df[consumption_df["consumption_by_temp"].notnull()]
     if len(consumption_by_temp_df) > 0:

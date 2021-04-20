@@ -12,11 +12,11 @@ from time import sleep
 from oauth2_client.credentials_manager import CredentialManager, ServiceInformation
 import paho.mqtt.client as mqtt
 from requests import Response
-from typing import Tuple
 
 import psa_connectedcar as psac
 from Car import Cars, Car
 from ecomix import Ecomix
+from libs.charging import Charging
 from otp.Otp import load_otp, new_otp_session, save_otp, ConfigException, Otp
 from psa_connectedcar import ApiClient
 from psa_connectedcar.rest import ApiException
@@ -573,9 +573,8 @@ class MyPSACC:
                     co2_per_kw = Ecomix.get_co2_per_kw(start_at, charge_date, latitude, longitude,
                                                        from_cache=self.co2_signal_api is not None)
                     kw = (level - start_level) / 100 * self.vehicles_list.get_car_by_vin(vin).battery_power
-                    conn.execute(
-                        "UPDATE battery set stop_at=?, end_level=?, co2=?, kw=? WHERE start_at=? and VIN=?",
-                        (charge_date, level, co2_per_kw, kw, start_at, vin))
+
+                    Charging.update_chargings(conn, start_at, charge_date, level, co2_per_kw, kw, vin)
                     conn.commit()
             except TypeError:
                 logger.debug("battery table is empty")
@@ -597,20 +596,6 @@ class MyPSACC:
         feature_collection = FeatureCollection(features_list)
         conn.close()
         return geo_dumps(feature_collection, sort_keys=True)
-
-    @staticmethod
-    def get_chargings(mini=None, maxi=None) -> Tuple[dict]:
-        conn = get_db()
-        if mini is not None:
-            if maxi is not None:
-                res = conn.execute("select * from battery WHERE start_at>=? and start_at<=?", (mini, maxi)).fetchall()
-            else:
-                res = conn.execute("select * from battery WHERE start_at>=?", (mini,)).fetchall()
-        elif maxi is not None:
-            res = conn.execute("select * from battery WHERE start_at<=?", (maxi,)).fetchall()
-        else:
-            res = conn.execute("select * from battery").fetchall()
-        return tuple(map(dict, res))
 
     def __iter__(self):
         for key, value in self.__dict__.items():

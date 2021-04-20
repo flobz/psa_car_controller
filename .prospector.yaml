@@ -1,3 +1,7 @@
 doc-warnings: false
+pylint:
+  disable:
+    - C0114
+    - C0111
 ignore-paths:
   - psa_connectedcar

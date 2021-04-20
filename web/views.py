@@ -2,31 +2,55 @@ import json
 import traceback
 from datetime import datetime, timezone
 import dash_bootstrap_components as dbc
-from dash.dependencies import Output, Input, MATCH
+from dash.dependencies import Output, Input, MATCH, State
 import dash_core_components as dcc
 import dash_html_components as html
 import dash_daq as daq
+import pandas as pd
+from dash.exceptions import PreventUpdate
 
 from MyLogger import logger
 from flask import jsonify, request, Response as FlaskResponse
 
-from MyPSACC import MyPSACC
 from Trip import Trips
+
+from libs.charging import Charging
 from web import figures
 
 from web.app import app, dash_app, myp, chc
-import web.db
+from web.db import set_chargings_price, get_db, set_db_callback
 
 RESPONSE = "-response"
-
 EMPTY_DIV = "empty-div"
-
 ABRP_SWITCH = 'abrp-switch'
 
 ERROR_DIV = dbc.Alert("No data to show, there is probably no trips recorded yet", color="danger")
 trips: Trips
-chargings: dict
+chargings: list[dict]
 min_date = max_date = min_millis = max_millis = step = marks = cached_layout = None
+
+
+def diff_dashtable(data, data_previous, row_id_name="row_id"):
+    df, df_previous = pd.DataFrame(data=data), pd.DataFrame(data_previous)
+    for _df in [df, df_previous]:
+        assert row_id_name in _df.columns
+        _df = _df.set_index(row_id_name)
+    mask = df.ne(df_previous)
+    df_diff = df[mask].dropna(how="all", axis="columns").dropna(how="all", axis="rows")
+    changes = []
+    for idx, row in df_diff.iterrows():
+        row_id = row.name
+        row.dropna(inplace=True)
+        for change in row.iteritems():
+            changes.append(
+                {
+                    row_id_name: data[row.name][row_id_name],
+                    "column_name": change[0],
+                    "current_value": change[1],
+                    "previous_value": df_previous.at[row_id, change[0]],
+                }
+            )
+    return changes
 
 
 @dash_app.callback(Output('trips_map', 'figure'),
@@ -48,12 +72,31 @@ def display_value(value):
     for trip in trips:
         if mini <= trip.start_at <= maxi:
             filtered_trips.append(trip)
-    filtered_chargings = MyPSACC.get_chargings(mini, maxi)
+    filtered_chargings = Charging.get_chargings(mini, maxi)
     figures.get_figures(filtered_trips, filtered_chargings)
     consumption = "Average consumption: {:.1f} kWh/100km".format(float(figures.consumption_df["consumption_km"].mean()))
     return figures.trips_map, figures.consumption_fig, figures.consumption_fig_by_speed, \
            figures.consumption_graph_by_temp, consumption, figures.table_fig, figures.battery_info, \
            figures.battery_table, max_millis, step, marks
+
+
+@dash_app.callback(
+    Output(EMPTY_DIV, "children"),
+    [Input("battery-table", "data_timestamp")],
+    [
+        State("battery-table", "data"),
+        State("battery-table", "data_previous"),
+    ],
+)
+def capture_diffs(ts, data, data_previous):
+    if ts is None:
+        raise PreventUpdate
+    diff_data = diff_dashtable(data, data_previous, "start_at")
+    for el in diff_data:
+        if el['column_name'] == 'price':
+            if not set_chargings_price(get_db(), el['start_at'], el['current_value']):
+                logger.error("Can't find line to update in the database")
+    return ""
 
 
 @dash_app.callback(Output({'role': ABRP_SWITCH + RESPONSE, 'vin': MATCH}, 'children'),
@@ -176,7 +219,7 @@ def update_trips():
         trips_by_vin = Trips.get_trips(myp.vehicles_list)
         trips = next(iter(trips_by_vin.values()))  # todo handle multiple car
         assert len(trips) > 0
-        chargings = MyPSACC.get_chargings()
+        chargings = Charging.get_chargings()
     except (StopIteration, AssertionError):
         logger.debug("No trips yet")
         return
@@ -258,7 +301,8 @@ def serve_layout():
 
 
 try:
-    web.db.callback_fct = update_trips
+    set_db_callback(update_trips)
+    Charging.set_default_price()
     update_trips()
 except (IndexError, TypeError):
     logger.debug("Failed to get trips, there is probably not enough data yet %s", traceback.format_exc())

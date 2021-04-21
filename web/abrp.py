@@ -4,8 +4,8 @@ from datetime import datetime
 
 import requests
 
-from Car import Car
-from MyLogger import logger
+from libs.car import Car
+from mylogger import logger
 
 
 class Abrp:

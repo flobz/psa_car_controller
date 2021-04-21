@@ -1,6 +1,6 @@
 from collections.abc import Callable
-from Car import Car
-from MyLogger import logger
+from libs.car import Car
+from mylogger import logger
 
 LEVEL = "level"
 
@@ -49,6 +49,7 @@ class TripParser:
             return True
         return False
 
+    # pylint: disable=unused-argument
     def __is_refuel(self, start, end, distance):
         fuel_consumption = self.get_level_consumption(start, end)[1]
         if fuel_consumption < 0:

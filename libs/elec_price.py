@@ -32,7 +32,8 @@ class ElecPrice:
             for hours in value:
                 self.nights_hour.append(list(map(int, hours)))
 
-    def compare_hour(self, date: datetime, hour, minute):
+    @staticmethod
+    def compare_hour(date: datetime, hour, minute):
         if date.hour < hour:
             return False
         if date.hour == hour and date.minute < minute:

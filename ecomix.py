@@ -1,12 +1,13 @@
 from datetime import datetime, timedelta
 from statistics import mean, StatisticsError
 import xml.etree.cElementTree as ElT
+import numbers
+import traceback
+
 import requests
 import reverse_geocode
-import traceback
-import numbers
 
-from MyLogger import logger
+from mylogger import logger
 
 CO2_SIGNAL_REQ_INTERVAL = 600
 
@@ -19,7 +20,8 @@ class Ecomix:
         start_str = start.strftime("%d/%m/%Y")
         end_str = end.strftime("%d/%m/%Y")
         res = requests.get(
-            f"https://eco2mix.rte-france.com/curves/eco2mixWeb?type=co2&&dateDeb={start_str}&dateFin={end_str}&mode=NORM",
+            f"https://eco2mix.rte-france.com/curves/eco2mixWeb?type=co2&&dateDeb={start_str}"
+            f"&dateFin={end_str}&mode=NORM",
             headers={
                 "Origin": "https://www.rte-france.com",
                 "Referer": "https://www.rte-france.com/eco2mix/les-emissions-de-co2-par-kwh-produit-en-france",
@@ -72,16 +74,16 @@ class Ecomix:
     @staticmethod
     def clean_cache():
         max_date = datetime.now() - timedelta(days=1)
-        for country in Ecomix._cache.keys():
+        for country in Ecomix._cache:
             Ecomix._cache[country][:] = [x for x in Ecomix._cache[country] if max_date < x[0]]
 
     @staticmethod
     def get_co2_from_signal_cache(start: datetime, end: datetime, country_code):
         Ecomix.clean_cache()
         co2_per_kw = []
-        for el in Ecomix._cache.get(country_code, []):
-            if start < el[0] < end:
-                co2_per_kw.append(el[1])
+        for row in Ecomix._cache.get(country_code, []):
+            if start < row[0] < end:
+                co2_per_kw.append(row[1])
         if len(co2_per_kw) == 0:
             return None
         return mean(co2_per_kw)

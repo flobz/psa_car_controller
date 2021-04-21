@@ -1,13 +1,14 @@
 import sqlite3
 from datetime import datetime
 
-import pytz
 from typing import Callable
+import pytz
 
-from MyLogger import logger
+from mylogger import logger
 
 callback_fct: Callable[[], None] = lambda: None
-default_db_file = 'info.db'
+DEFAULT_DB_FILE = 'info.db'
+# pylint: disable=invalid-name
 db_initialized = False
 
 
@@ -37,7 +38,8 @@ def backup(conn):
 def init_db(conn):
     global db_initialized
     conn.execute("CREATE TABLE IF NOT EXISTS position (Timestamp DATETIME PRIMARY KEY, VIN TEXT, longitude REAL, "
-                 "latitude REAL, mileage REAL, level INTEGER, level_fuel INTEGER, moving BOOLEAN, temperature INTEGER);")
+                 "latitude REAL, mileage REAL, level INTEGER, level_fuel INTEGER, moving BOOLEAN,"
+                 " temperature INTEGER);")
     make_backup = False
     try:
         conn.execute("ALTER TABLE position ADD level_fuel INTEGER;")
@@ -61,7 +63,7 @@ def init_db(conn):
     db_initialized = True
 
 
-def get_db(db_file=default_db_file):
+def get_db(db_file=DEFAULT_DB_FILE):
     sqlite3.register_converter("DATETIME", convert_datetime_from_bytes)
     conn = sqlite3.connect(db_file, detect_types=sqlite3.PARSE_DECLTYPES | sqlite3.PARSE_COLNAMES)
     conn.row_factory = sqlite3.Row

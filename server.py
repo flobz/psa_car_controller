@@ -3,21 +3,21 @@ import atexit
 import sys
 from os import environ
 from threading import Thread
+from getpass import getpass
+import argparse
 
 from oauth2_client.credentials_manager import OAuthError
 
-from getpass import getpass
 
 import web.app
-from ChargeControl import ChargeControls
-from MyLogger import my_logger
-import argparse
-from MyLogger import logger
-from MyPSACC import MyPSACC
+from charge_control import ChargeControls
+from mylogger import my_logger
+from mylogger import logger
+from my_psacc import MyPSACC
 from utils import is_port_in_use
 from web.app import start_app, save_config
 
-parser = argparse.ArgumentParser()
+CONFIG_NAME = "config.json"
 
 
 def parse_args():
@@ -27,7 +27,7 @@ def parse_args():
     parser.add_argument("-c", "--charge-control", help="enable charge control, default charge_config.json",
                         const="charge_config.json", nargs='?', metavar='charge config file')
     parser.add_argument("-d", "--debug", help="enable debug", const=10, default=20, nargs='?',
-                        metavar='Debug level number')
+                        metavar='Debug level number', type=int)
     parser.add_argument("-l", "--listen", help="change server listen address", default="127.0.0.1", metavar="IP")
     parser.add_argument("-p", "--port", help="change server listen port", default="5000")
     parser.add_argument("-r", "--record", help="save vehicle data to db", action='store_true')
@@ -37,32 +37,24 @@ def parse_args():
     parser.add_argument("--remote-disable", help="disable remote control", action='store_true')
     parser.add_argument("--offline", help="offline limited mode", action='store_true')
     parser.add_argument("-b", "--base-path", help="base path for web app", default="/")
-    parser.parse_args()
-    return parser
+    return parser.parse_args()
 
 
+# flake8: noqa: C901
 if __name__ == "__main__":
     if sys.version_info < (3, 6):
         raise RuntimeError("This application requires Python 3.6+")
-    parser = parse_args()
-    args = parser.parse_args()
-    try:
-        args.debug = int(args.debug)
-    except ValueError:
-        pass
+    args = parse_args()
     my_logger(handler_level=args.debug)
     if is_port_in_use(args.listen, int(args.port)):
         logger.error(" Address already in use")
-        exit(1)
+        sys.exit(1)
     logger.info("server start")
     if args.config:
-        config_name = args.config.name
-    else:
-        config_name = "config.json"
-    web.app.myp = MyPSACC.load_config(name=config_name)
+        CONFIG_NAME = args.config.name
+    web.app.myp = MyPSACC.load_config(name=CONFIG_NAME)
     atexit.register(web.app.myp.save_config)
-    if args.record:
-        web.app.myp.set_record(True)
+    web.app.myp.set_record(args.record)
     if args.offline:
         logger.info("offline mode")
     else:
@@ -91,7 +83,7 @@ if __name__ == "__main__":
             t2.setDaemon(True)
             t2.start()
 
-    save_config(web.app.myp, config_name)
+    save_config(web.app.myp, CONFIG_NAME)
     t1 = Thread(target=start_app, args=["My car info", args.base_path, logger.level < 20, args.listen, int(args.port)])
     t1.setDaemon(True)
     t1.start()

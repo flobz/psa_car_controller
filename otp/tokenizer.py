@@ -1,3 +1,4 @@
+# pylint: disable=invalid-name
 class Tokenizer:
     def __init__(self, tokens, delimiter="&&"):
         self.s: str = tokens
@@ -10,7 +11,7 @@ class Tokenizer:
         index_of = self.currentIndex + self.s[self.currentIndex:].index(self.delimiter)
         if index_of == -1:
             substring = self.s[self.currentIndex:]
-            self.currentIndex = self.s.length()
+            self.currentIndex = len(self.s)
             return substring
 
         substring2 = self.s[self.currentIndex:index_of]

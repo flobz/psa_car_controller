@@ -25,15 +25,16 @@ class Charging:
         if elec_price.is_enable():
             conn = get_db()
             charge_list = list(map(dict, conn.execute("SELECT * FROM battery WHERE price IS NULL").fetchall()))
-            for el in charge_list:
-                el["price"] = elec_price.get_price(el["start_at"], el["stop_at"], el["kw"])
-                set_chargings_price(conn, el["start_at"], el["price"])
+            for charge in charge_list:
+                charge["price"] = elec_price.get_price(charge["start_at"], charge["stop_at"], charge["kw"])
+                set_chargings_price(conn, charge["start_at"], charge["price"])
             conn.close()
 
+    # pylint: disable=too-many-arguments
     @staticmethod
-    def update_chargings(conn, start_at, stop_at, level, co2_per_kw, kw, vin):
-        price = elec_price.get_price(start_at, stop_at, kw)
+    def update_chargings(conn, start_at, stop_at, level, co2_per_kw, consumption_kw, vin):
+        price = elec_price.get_price(start_at, stop_at, consumption_kw)
         conn.execute(
             "UPDATE battery set stop_at=?, end_level=?, co2=?, kw=?, price=? WHERE start_at=? and VIN=?",
-            (stop_at, level, co2_per_kw, kw, price, start_at, vin))
+            (stop_at, level, co2_per_kw, consumption_kw, price, start_at, vin))
         clean_battery(conn)

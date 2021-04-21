@@ -1,11 +1,11 @@
 import traceback
 from functools import wraps
 from threading import Semaphore, Timer
-
-import requests
 import socket
 
-from MyLogger import logger
+import requests
+
+from mylogger import logger
 
 
 def get_temp(latitude: str, longitude: str, api_key: str) -> float:
@@ -27,14 +27,14 @@ def get_temp(latitude: str, longitude: str, api_key: str) -> float:
 
 
 def rate_limit(limit, every):
-    def limit_decorator(fn):
+    def limit_decorator(func):
         semaphore = Semaphore(limit)
 
-        @wraps(fn)
+        @wraps(func)
         def wrapper(*args, **kwargs):
             semaphore.acquire()
             try:
-                return fn(*args, **kwargs)
+                return func(*args, **kwargs)
             finally:  # don't catch but ensure semaphore release
                 timer = Timer(every, semaphore.release)
                 timer.setDaemon(True)  # allows the timer to be canceled on exit

@@ -6,13 +6,14 @@ from typing import List, Dict
 from dateutil import tz
 from geojson import Feature, FeatureCollection, MultiLineString
 
-from Car import Cars, Car
-from MyLogger import logger
+from libs.car import Cars, Car
+from mylogger import logger
 from trip_parser import TripParser
 from web.db import get_db
 
 
-class Points():
+class Points:
+    # pylint: disable= too-few-public-methods
     def __init__(self, latitude, longitude):
         self.latitude = latitude
         self.longitude = longitude
@@ -22,6 +23,7 @@ class Points():
 
 
 class Trip:
+    # pylint: disable= too-many-instance-attributes
     def __init__(self):
         self.start_at = None
         self.end_at = None
@@ -105,21 +107,24 @@ class Trips(list):
 
     def get_long_trips(self):
         res = []
-        for tr in self:
-            if tr.consumption > 1.8:
-                res.append({"speed": tr.speed_average, "consumption_km": tr.consumption_km, "date": tr.start_at,
-                            "consumption": tr.consumption, "consumption_by_temp": tr.get_temperature()})
+        for trip in self:
+            if trip.consumption > 1.8:
+                res.append({"speed": trip.speed_average, "consumption_km": trip.consumption_km, "date": trip.start_at,
+                            "consumption": trip.consumption, "consumption_by_temp": trip.get_temperature()})
         return res
 
-    def check_and_append(self, tr: Trip):
-        if tr.consumption_km <= tr.car.max_elec_consumption and tr.consumption_fuel_km <= tr.car.max_fuel_consumption:
-            self.append(tr)
+    def check_and_append(self, trip: Trip):
+        if trip.consumption_km <= trip.car.max_elec_consumption and \
+                trip.consumption_fuel_km <= trip.car.max_fuel_consumption:
+            self.append(trip)
             return True
         logger.debugv("trip discarded")
         return False
 
+    # flake8: noqa: C901
     @staticmethod
     def get_trips(vehicles_list: Cars) -> Dict[str, Trips]:
+        # pylint: disable=too-many-locals,too-many-statements,too-many-nested-blocks
         conn = get_db()
         vehicles = conn.execute(
             "SELECT DISTINCT vin FROM position;").fetchall()
@@ -134,7 +139,7 @@ class Trips(list):
                 trip_parser = TripParser(car)
                 start = res[0]
                 end = res[1]
-                tr = Trip()
+                trip = Trip()
                 # for debugging use this line res = list(map(dict,res))
                 for x in range(0, len(res) - 2):
                     logger.debugv("%s mileage:%.1f level:%s level_fuel:%s",
@@ -154,7 +159,7 @@ class Trips(list):
                         logger.debugv("low speed detected")
                     if restart_trip:
                         start = end
-                        tr = Trip()
+                        trip = Trip()
                         logger.debugv("restart trip at %s mileage:%.1f level:%s level_fuel:%s",
                                       start['Timestamp'], start['mileage'], start['level'], start['level_fuel'])
                     else:
@@ -183,33 +188,33 @@ class Trips(list):
                         if end_trip:
                             logger.debugv("stop trip at %s mileage:%.1f level:%s level_fuel:%s",
                                           end['Timestamp'], end['mileage'], end['level'], end['level_fuel'])
-                            tr.distance = end["mileage"] - start["mileage"]  # km
-                            if tr.distance > 0:
-                                tr.start_at = start["Timestamp"]
-                                tr.end_at = end["Timestamp"]
-                                tr.add_points(end["longitude"], end["latitude"])
+                            trip.distance = end["mileage"] - start["mileage"]  # km
+                            if trip.distance > 0:
+                                trip.start_at = start["Timestamp"]
+                                trip.end_at = end["Timestamp"]
+                                trip.add_points(end["longitude"], end["latitude"])
                                 if end["temperature"] is not None and start["temperature"] is not None:
-                                    tr.add_temperature(end["temperature"])
-                                tr.duration = (end["Timestamp"] - start["Timestamp"]).total_seconds() / 3600
-                                tr.speed_average = tr.distance / tr.duration
+                                    trip.add_temperature(end["temperature"])
+                                trip.duration = (end["Timestamp"] - start["Timestamp"]).total_seconds() / 3600
+                                trip.speed_average = trip.distance / trip.duration
                                 diff_level, diff_level_fuel = trip_parser.get_level_consumption(start, end)
-                                tr.car = car
+                                trip.car = car
                                 if diff_level != 0:
-                                    tr.set_consumption(diff_level)  # kw
+                                    trip.set_consumption(diff_level)  # kw
                                 if diff_level_fuel != 0:
-                                    tr.set_fuel_consumption(diff_level_fuel)
-                                tr.mileage = end["mileage"]
+                                    trip.set_fuel_consumption(diff_level_fuel)
+                                trip.mileage = end["mileage"]
                                 logger.debugv("Trip: %s -> %s %.1fkm %.2fh %.0fkm/h %.2fkWh %.2fkWh/100km %.2fL "
                                               "%.2fL/100km %.1fkm",
-                                              tr.start_at, tr.end_at, tr.distance, tr.duration,
-                                              tr.speed_average, tr.consumption, tr.consumption_km,
-                                              tr.consumption_fuel, tr.consumption_fuel_km, tr.mileage)
+                                              trip.start_at, trip.end_at, trip.distance, trip.duration,
+                                              trip.speed_average, trip.consumption, trip.consumption_km,
+                                              trip.consumption_fuel, trip.consumption_fuel_km, trip.mileage)
                                 # filter bad value
-                                trips.check_and_append(tr)
+                                trips.check_and_append(trip)
                             start = next_el
-                            tr = Trip()
+                            trip = Trip()
                         else:
-                            tr.add_points(end["longitude"], end["latitude"])
+                            trip.add_points(end["longitude"], end["latitude"])
                     end = next_el
                 trips_by_vin[vin] = trips
         return trips_by_vin

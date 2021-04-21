@@ -3,22 +3,24 @@ import traceback
 from datetime import datetime, timezone
 import dash_bootstrap_components as dbc
 from dash.dependencies import Output, Input, MATCH, State
+from dash.exceptions import PreventUpdate
 import dash_core_components as dcc
 import dash_html_components as html
 import dash_daq as daq
 import pandas as pd
-from dash.exceptions import PreventUpdate
-
-from MyLogger import logger
 from flask import jsonify, request, Response as FlaskResponse
 
-from Trip import Trips
+from mylogger import logger
+
+from trip import Trips
 
 from libs.charging import Charging
 from web import figures
 
 from web.app import app, dash_app, myp, chc
 from web.db import set_chargings_price, get_db, set_db_callback
+
+# pylint: disable=invalid-name
 
 RESPONSE = "-response"
 EMPTY_DIV = "empty-div"
@@ -38,7 +40,7 @@ def diff_dashtable(data, data_previous, row_id_name="row_id"):
     mask = df.ne(df_previous)
     df_diff = df[mask].dropna(how="all", axis="columns").dropna(how="all", axis="rows")
     changes = []
-    for idx, row in df_diff.iterrows():
+    for row in df_diff.items():
         row_id = row.name
         row.dropna(inplace=True)
         for change in row.iteritems():
@@ -88,13 +90,13 @@ def display_value(value):
         State("battery-table", "data_previous"),
     ],
 )
-def capture_diffs(ts, data, data_previous):
-    if ts is None:
+def capture_diffs(timestamp, data, data_previous):
+    if timestamp is None:
         raise PreventUpdate
     diff_data = diff_dashtable(data, data_previous, "start_at")
-    for el in diff_data:
-        if el['column_name'] == 'price':
-            if not set_chargings_price(get_db(), el['start_at'], el['current_value']):
+    for changed_line in diff_data:
+        if changed_line['column_name'] == 'price':
+            if not set_chargings_price(get_db(), changed_line['start_at'], changed_line['current_value']):
                 logger.error("Can't find line to update in the database")
     return ""
 
@@ -171,7 +173,7 @@ def get_position(vin):
 
 # Set a battery threshold and schedule an hour to stop the charge
 @app.route('/charge_control')
-def charge_control():
+def get_charge_control():
     logger.info(request)
     vin = request.args['vin']
     charge_control = chc.get(vin)
@@ -245,6 +247,7 @@ def __get_control_tabs():
             label = car.vin
         else:
             label = car.label
+        # pylint: disable=not-callable
         tabs.append(dbc.Tab(label=label, id="tab-" + car.vin, children=[
             daq.ToggleSwitch(
                 id={'role': ABRP_SWITCH, 'vin': car.vin},
@@ -262,23 +265,25 @@ def serve_layout():
         logger.debug("Create new layout")
         try:
             figures.get_figures(trips, chargings)
-            data_div = html.Div([dcc.RangeSlider(
-                id='date-slider',
-                min=min_millis,
-                max=max_millis,
-                step=step,
-                marks=marks,
-                value=[min_millis, max_millis],
-            ),
+            data_div = html.Div([
+                dcc.RangeSlider(
+                    id='date-slider',
+                    min=min_millis,
+                    max=max_millis,
+                    step=step,
+                    marks=marks,
+                    value=[min_millis, max_millis],
+                ),
                 html.Div([
                     dbc.Tabs([
-                        dbc.Tab(label="Summary", tab_id="summary", children=[
-                            html.H2(id="consumption",
-                                    children=figures.info),
-                            dcc.Graph(figure=figures.consumption_fig, id="consumption_fig"),
-                            dcc.Graph(figure=figures.consumption_fig_by_speed, id="consumption_fig_by_speed"),
-                            figures.consumption_graph_by_temp
-                        ]),
+                        dbc.Tab(label="Summary", tab_id="summary",
+                                children=[
+                                    html.H2(id="consumption",
+                                            children=figures.info),
+                                    dcc.Graph(figure=figures.consumption_fig, id="consumption_fig"),
+                                    dcc.Graph(figure=figures.consumption_fig_by_speed, id="consumption_fig_by_speed"),
+                                    figures.consumption_graph_by_temp
+                                ]),
                         dbc.Tab(label="Trips", tab_id="trips", id="tab_trips", children=[figures.table_fig]),
                         dbc.Tab(label="Battery", tab_id="battery", id="tab_battery", children=[figures.battery_info]),
                         dbc.Tab(label="Charge", tab_id="charge", id="tab_charge", children=[figures.battery_table]),
@@ -287,9 +292,8 @@ def serve_layout():
                         dbc.Tab(label="Control", tab_id="control", children=dbc.Tabs(id="control-tabs",
                                                                                      children=__get_control_tabs()))
                     ],
-                        id="tabs",
-                        active_tab="summary",
-                    ),
+                             id="tabs",
+                             active_tab="summary"),
                     html.Div(id=EMPTY_DIV),
                 ])])
         except (IndexError, TypeError, NameError):

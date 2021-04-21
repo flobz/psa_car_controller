@@ -1,9 +1,9 @@
 import threading
+import locale
 
 import dash
 import dash_bootstrap_components as dbc
 from flask import Flask
-import locale
 
 from werkzeug import run_simple
 
@@ -12,23 +12,26 @@ try:
 except ImportError:
     from werkzeug import DispatcherMiddleware
 
-from ChargeControl import ChargeControls
-from MyLogger import logger
-from MyPSACC import MyPSACC
+from charge_control import ChargeControls
+from mylogger import logger
+from my_psacc import MyPSACC
+
+# pylint: disable=invalid-name
 
 app = None
 dash_app = None
 dispatcher = None
 # noinspection PyTypeChecker
-myp:MyPSACC = None
+myp: MyPSACC = None
 # noinspection PyTypeChecker
 chc: ChargeControls = None
+
 
 def start_app(title, base_path, debug: bool, host, port):
     global app, dash_app, dispatcher
     try:
         lang = locale.getlocale()[0].split("_")[0]
-        locale.setlocale(locale.LC_TIME, ".".join(locale.getlocale())) #make sure LC_TIME is set
+        locale.setlocale(locale.LC_TIME, ".".join(locale.getlocale()))  # make sure LC_TIME is set
         locale_url = [f"https://cdn.plot.ly/plotly-locale-{lang}-latest.js"]
     except (IndexError, locale.Error):
         locale_url = None
@@ -44,8 +47,9 @@ def start_app(title, base_path, debug: bool, host, port):
     dash_app = dash.Dash(external_stylesheets=[dbc.themes.BOOTSTRAP], external_scripts=locale_url, title=title,
                          server=app, requests_pathname_prefix=requests_pathname_prefix)
     # keep this line
-    import web.views
+    import web.views  # pylint: disable=unused-import,import-outside-toplevel
     return run_simple(host, port, application, use_reloader=False, use_debugger=debug)
+
 
 def save_config(my_peugeot: MyPSACC, name):
     my_peugeot.save_config(name)

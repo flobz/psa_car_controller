@@ -1,7 +1,15 @@
 doc-warnings: false
-pylint:
-  disable:
-    - C0114
-    - C0111
 ignore-paths:
   - psa_connectedcar
+pep8:
+  disable:
+    - E722
+pyflakes:
+  disable:
+   - F401
+pylint:
+  disable:
+    - fixme
+    - C0114
+    - C0115
+    - C0116

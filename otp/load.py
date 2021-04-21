@@ -4,25 +4,25 @@ from time import time
 
 from Cryptodome.Cipher import AES
 
-from otp.Tokenizer import Tokenizer
+from .tokenizer import Tokenizer
 
-default_token = "0.2.11&&&&&&0&&0&&0&&9f13ba238fbabba08e85d93638e98ef5e48682a9d3e5bc325c3dd6fac8199a6ce09e9b4f373aa6a" \
+DEFAULT_TOKEN = "0.2.11&&&&&&0&&0&&0&&9f13ba238fbabba08e85d93638e98ef5e48682a9d3e5bc325c3dd6fac8199a6ce09e9b4f373aa6a" \
                 "75a905c3d690f6e3335d1e8e5b748ecec3020a794149033f6ada6896db6d73b8d43b8365bbe15b9ac66f49d4e684a3628f1e" \
                 "9f3deda0c4e24aba771946e6085b92c5ad312477152acf8db01e6aea4b409d5ac1a05c2fd4e95&&0&&&&&&&&&&&&0&&0&&0&" \
                 "&0&&0&&0&&0&&&&&&&&0&&0&&0&&0&&0&&2.0.0&&http://m.inwebo.com/&&"
-default_version = "529"
+DEFAULT_VERSION = "529"
 
 
-def filterLoad(string: str):
+def filter_load(string: str):
     return string.replace("&amp;", "&")
 
-
+# pylint: disable=invalid-name,too-many-instance-attributes,too-many-branches,too-many-statements
 class IWData:
     def __init__(self, IW):
         self.IW = IW
-        self.tokenizer = Tokenizer(default_token)
+        self.tokenizer = Tokenizer(DEFAULT_TOKEN)
         self.tokenizer.nextToken()
-        self.load1xx(int(default_version), self.tokenizer)
+        self.load1xx(int(DEFAULT_VERSION), self.tokenizer)
 
     def load1xx(self, j, tokenizer):
         self.iwid = tokenizer.nextToken()
@@ -64,8 +64,8 @@ class IWData:
         i = 0
         while i < self.iwsrvn:
             self.iwsrvid[i] = tokenizer.nextToken()
-            self.iwsrvname[i] = filterLoad(tokenizer.nextToken())
-            self.iwsrvlogo[i] = filterLoad(tokenizer.nextToken())
+            self.iwsrvname[i] = filter_load(tokenizer.nextToken())
+            self.iwsrvlogo[i] = filter_load(tokenizer.nextToken())
             if self.IW.isMac:
                 self.iwsrvconnected[i] = tokenizer.nextTokenI()
             if j > 515:
@@ -77,7 +77,7 @@ class IWData:
             if i2 < 0 or self.IW.isMac:
                 self.iwsrvurl[i] = ""
             else:
-                self.iwsrvurl[i] = filterLoad(tokenizer.nextToken())
+                self.iwsrvurl[i] = filter_load(tokenizer.nextToken())
             if j < 520 or self.IW.isMac:
                 self.iwsrvonlineotp[i] = 0
             else:
@@ -106,16 +106,17 @@ class IWData:
         i4 = 0
         while i4 < self.iwmsgn:
             self.iwmsgid += tokenizer.nextToken()
-            self.iwmsgtitle += filterLoad(tokenizer.nextToken())
-            self.iwmsgcontent += filterLoad(tokenizer.nextToken())
+            self.iwmsgtitle += filter_load(tokenizer.nextToken())
+            self.iwmsgcontent += filter_load(tokenizer.nextToken())
             self.iwmsgack += tokenizer.nextTokenI()
             i4 += 1
         self.iwmajorversion = tokenizer.nextTokenI()
-        self.iwnewversion = filterLoad(tokenizer.nextToken())
-        self.iwnewversionurl = filterLoad(tokenizer.nextToken())
+        self.iwnewversion = filter_load(tokenizer.nextToken())
+        self.iwnewversionurl = filter_load(tokenizer.nextToken())
         self.mustupgrade = False
         self.datatouch = 0
 
+    # pylint: disable=attribute-defined-outside-init
     def synchro(self, ixml: dict, key):
         aes_cipher = AES.new(bytes.fromhex(key), AES.MODE_ECB)
         value = ixml.get("id")

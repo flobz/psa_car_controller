@@ -6,18 +6,18 @@ import numpy as np
 from dash_core_components import Graph
 from dash_table.Format import Format, Scheme, Symbol
 from dateutil.relativedelta import relativedelta
-from pandas import DataFrame
 import plotly.express as px
 import plotly.graph_objects as go
-from Trip import Trips
+from pandas import DataFrame
 from pandas import options as pandas_options
 import dash_html_components as html
 
+from trip import Trips
 from libs.elec_price import ElecPrice
 
 
-def unix_time_millis(dt):
-    return int(dt.timestamp())
+def unix_time_millis(date):
+    return int(date.timestamp())
 
 
 def get_marks_from_start_end(start, end):
@@ -44,6 +44,7 @@ def get_marks_from_start_end(start, end):
     return None
 
 
+# pylint: disable=invalid-name
 consumption_fig = None
 consumption_df = None
 trips_map = None
@@ -56,6 +57,7 @@ battery_info = dbc.Alert("No data to show", color="danger")
 battery_table = None
 
 
+# pylint: disable=too-many-locals
 def get_figures(trips: Trips, charging: list[dict]):
     global consumption_fig, consumption_df, trips_map, consumption_fig_by_speed, table_fig, info, battery_info, \
         battery_table, consumption_graph_by_temp
@@ -73,7 +75,7 @@ def get_figures(trips: Trips, charging: list[dict]):
     trips_map = px.line_mapbox(lat=lats, lon=lons, hover_name=names,
                                mapbox_style="stamen-terrain", zoom=12)
     # table
-    nb_format = Format(precision=2, scheme=Scheme.fixed, symbol=Symbol.yes)
+    nb_format = Format(precision=2, scheme=Scheme.fixed, symbol=Symbol.yes)  # pylint: disable=no-member
     table_fig = dash_table.DataTable(
         id='trips-table',
         sort_action='native',
@@ -132,12 +134,13 @@ def get_figures(trips: Trips, charging: list[dict]):
         data=[{"name": "Average emission:", "value": "{:.1f} g/km".format(co2_per_km)},
               {"name": " ", "value:": "{:.1f} g/kWh".format(co2_per_kw)},
               {"name": "Average charge speed:", "value": "{:.3f} kW".format(charge_speed)}])
-    battery_info = html.Div(children=[html.Tr(
-        [
-            html.Td('Average emission:', rowSpan=2),
-            html.Td("{:.1f} g/km".format(co2_per_km)),
-        ]
-    ),
+    battery_info = html.Div(children=[
+        html.Tr(
+            [
+                html.Td('Average emission:', rowSpan=2),
+                html.Td("{:.1f} g/km".format(co2_per_km)),
+            ]
+        ),
         html.Tr(
             [
                 "{:.1f} g/kWh".format(co2_per_kw),
@@ -152,7 +155,7 @@ def get_figures(trips: Trips, charging: list[dict]):
         html.Tr(
             [
                 html.Td('Average Price:', rowSpan=2),
-                html.Td("{:.2f} {}/100km".format(price_kw*kw_per_km, ElecPrice.currency)),
+                html.Td("{:.2f} {}/100km".format(price_kw * kw_per_km, ElecPrice.currency)),
             ]
         ),
         html.Tr(
@@ -175,7 +178,7 @@ def get_figures(trips: Trips, charging: list[dict]):
                  {'id': 'kw', 'name': 'consumption', 'type': 'numeric',
                   'format': deepcopy(nb_format).symbol_suffix(" kWh").precision(2)},
                  {'id': 'price', 'name': 'price', 'type': 'numeric',
-                 'format': deepcopy(nb_format).symbol_suffix(" "+ElecPrice.currency).precision(2)}],
+                  'format': deepcopy(nb_format).symbol_suffix(" " + ElecPrice.currency).precision(2)}],
         data=charging,
         editable=True
     )

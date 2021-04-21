@@ -4,29 +4,27 @@ import threading
 import traceback
 import uuid
 from datetime import datetime
-from http import HTTPStatus
 from json import JSONEncoder
 from hashlib import md5
 from time import sleep
 
-from oauth2_client.credentials_manager import CredentialManager, ServiceInformation
+from oauth2_client.credentials_manager import ServiceInformation
 import paho.mqtt.client as mqtt
-from requests import Response
+from geojson import Feature, Point, FeatureCollection
+from geojson import dumps as geo_dumps
 
 import psa_connectedcar as psac
-from Car import Cars, Car
-from ecomix import Ecomix
+from libs.car import Cars, Car
 from libs.charging import Charging
-from otp.Otp import load_otp, new_otp_session, save_otp, ConfigException, Otp
-from psa_connectedcar import ApiClient
+from libs.oauth import OpenIdCredentialManager, Oauth2PSACCApiConfig, OauthAPIClient
+from ecomix import Ecomix
+from otp.otp import load_otp, new_otp_session, save_otp, ConfigException, Otp
 from psa_connectedcar.rest import ApiException
-from MyLogger import logger
+from mylogger import logger
 
 from utils import get_temp, rate_limit
 from web.abrp import Abrp
 from web.db import get_db, clean_position, get_last_temp
-from geojson import Feature, Point, FeatureCollection
-from geojson import dumps as geo_dumps
 
 PSA_CORRELATION_DATE_FORMAT = "%Y%m%d%H%M%S%f"
 PSA_DATE_FORMAT = "%Y-%m-%dT%H:%M:%SZ"
@@ -40,9 +38,9 @@ realm_info = {
                            "app_name": "MyVauxhall"}
 }
 
-authorize_service = "https://api.mpsa.com/api/connectedcar/v2/oauth/authorize"
-remote_url = "https://api.groupe-psa.com/connectedcar/v4/virtualkey/remoteaccess/token?client_id="
-scopes = ['openid profile']
+AUTHORIZE_SERVICE = "https://api.mpsa.com/api/connectedcar/v2/oauth/authorize"
+REMOTE_URL = "https://api.groupe-psa.com/connectedcar/v4/virtualkey/remoteaccess/token?client_id="
+SCOPE = ['openid profile']
 MQTT_SERVER = "mwa.mpsa.com"
 MQTT_REQ_TOPIC = "psa/RemoteServices/from/cid/"
 MQTT_RESP_TOPIC = "psa/RemoteServices/to/cid/"
@@ -52,65 +50,6 @@ CARS_FILE = "cars.json"
 DEFAULT_CONFIG_FILENAME = "config.json"
 
 
-class OpenIdCredentialManager(CredentialManager):
-    def _grant_password_request(self, login: str, password: str, realm: str) -> dict:
-        return dict(grant_type='password',
-                    username=login,
-                    scope=' '.join(self.service_information.scopes),
-                    password=password, realm=realm)
-
-    def init_with_user_credentials(self, login: str, password: str, realm: str):
-        self._token_request(self._grant_password_request(login, password, realm), True)
-
-    @staticmethod
-    def _is_token_expired(response: Response) -> bool:
-        if response.status_code == HTTPStatus.UNAUTHORIZED.value:
-            logger.info("token expired, renew")
-            try:
-                json_data = response.json()
-                return json_data.get('moreInformation') == 'Token is invalid'
-            except ValueError:
-                return False
-        else:
-            return False
-
-
-class Oauth2PSACCApiConfig(psac.Configuration):
-    def set_refresh_callback(self, callback):
-        self.refresh_callback = callback
-
-
-class OauthAPIClient(ApiClient):
-    def call_api(self, resource_path, method,
-                 path_params=None, query_params=None, header_params=None,
-                 body=None, post_params=None, files=None,
-                 response_type=None, auth_settings=None, async_req=None,
-                 _return_http_data_only=None, collection_formats=None,
-                 _preload_content=True, _request_timeout=None):
-        for _ in range(0, 2):
-            try:
-                if not async_req:
-                    return self._ApiClient__call_api(resource_path, method,
-                                                     path_params, query_params, header_params,
-                                                     body, post_params, files,
-                                                     response_type, auth_settings,
-                                                     _return_http_data_only, collection_formats,
-                                                     _preload_content, _request_timeout)
-                return self.pool.apply_async(self.__call_api, (resource_path,
-                                                               method, path_params, query_params,
-                                                               header_params, body,
-                                                               post_params, files,
-                                                               response_type, auth_settings,
-                                                               _return_http_data_only,
-                                                               collection_formats,
-                                                               _preload_content, _request_timeout))
-            except ApiException as e:
-                if e.reason == 'Unauthorized':
-                    self.configuration.refresh_callback()
-                else:
-                    raise e
-
-
 def gen_correlation_id(date):
     date_str = date.strftime(PSA_CORRELATION_DATE_FORMAT)[:-3]
     uuid_str = str(uuid.uuid4()).replace("-", "")
@@ -118,22 +57,24 @@ def gen_correlation_id(date):
     return correlation_id
 
 
+# pylint: disable=too-many-instance-attributes,too-many-public-methods
 class MyPSACC:
     def connect(self, user, password):
-        self.manager.init_with_user_credentials(user, password, self.realm)
+        self.manager.init_with_user_credentials_realm(user, password, self.realm)
 
+    # pylint: disable=too-many-arguments
     def __init__(self, refresh_token, client_id, client_secret, remote_refresh_token, customer_id, realm, country_code,
                  proxies=None, weather_api=None, abrp=None, co2_signal_api=None):
         self.realm = realm
-        self.service_information = ServiceInformation(authorize_service,
+        self.service_information = ServiceInformation(AUTHORIZE_SERVICE,
                                                       realm_info[self.realm]['oauth_url'],
                                                       client_id,
                                                       client_secret,
-                                                      scopes, False)
+                                                      SCOPE, False)
         self.client_id = client_id
         self.manager = OpenIdCredentialManager(self.service_information)
         self.api_config = Oauth2PSACCApiConfig()
-        self.api_config.set_refresh_callback(self.manager._refresh_token)
+        self.api_config.set_refresh_callback(self.refresh_token)
         self.manager.refresh_token = refresh_token
         self.remote_refresh_token = remote_refresh_token
         self.remote_access_token = None
@@ -169,11 +110,12 @@ class MyPSACC:
         return realm_info[self.realm]['app_name']
 
     def refresh_token(self):
+        # pylint: disable=protected-access
         self.manager._refresh_token()
         self.save_config()
 
     def api(self) -> psac.VehiclesApi:
-        self.api_config.access_token = self.manager._access_token
+        self.api_config.access_token = self.manager.access_token
         api_instance = psac.VehiclesApi(OauthAPIClient(self.api_config))
         return api_instance
 
@@ -261,7 +203,7 @@ class MyPSACC:
         return otp_code
 
     def get_remote_access_token(self, password):
-        res = self.manager.post(remote_url + self.client_id,
+        res = self.manager.post(REMOTE_URL + self.client_id,
                                 json={"grant_type": "password", "password": password},
                                 headers=self.headers)
         data = res.json()
@@ -278,7 +220,7 @@ class MyPSACC:
         if self.remote_refresh_token is None:
             logger.error("remote_refresh_token isn't defined")
             self.load_otp(force_new=True)
-        res = self.manager.post(remote_url + self.client_id,
+        res = self.manager.post(REMOTE_URL + self.client_id,
                                 json={"grant_type": "refresh_token", "refresh_token": self.remote_refresh_token},
                                 headers=self.headers)
         data = res.json()
@@ -296,8 +238,9 @@ class MyPSACC:
         self.save_config()
         return res
 
-    def on_mqtt_connect(self, client, userdata, rc, a):
-        logger.info("Connected with result code %s", rc)
+    # pylint: disable=unused-argument
+    def __on_mqtt_connect(self, client, userdata, result_code, _):
+        logger.info("Connected with result code %s", result_code)
         topics = [MQTT_RESP_TOPIC + self.customer_id + "/#"]
         for car in self.vehicles_list:
             topics.append(MQTT_EVENT_TOPIC + car.vin)
@@ -305,14 +248,16 @@ class MyPSACC:
             client.subscribe(topic)
             logger.info("subscribe to %s", topic)
 
-    def on_mqtt_disconnect(self, client, userdata, rc):
-        logger.warning("Disconnected with result code %d", rc)
-        if rc == 1:
+    # pylint: disable=unused-argument
+    def _on_mqtt_disconnect(self, client, userdata, result_code):
+        logger.warning("Disconnected with result code %d", result_code)
+        if result_code == 1:
             self.refresh_remote_token(force=True)
         else:
-            logger.warning(mqtt.error_string(rc))
+            logger.warning(mqtt.error_string(result_code))
 
-    def on_mqtt_message(self, client, userdata, msg):
+    # pylint: disable=unused-argument
+    def __on_mqtt_message(self, client, userdata, msg):
         try:
             logger.info("mqtt msg %s %s", msg.topic, msg.payload)
             data = json.loads(msg.payload)
@@ -345,9 +290,9 @@ class MyPSACC:
         self.mqtt_client = mqtt.Client(clean_session=True, protocol=mqtt.MQTTv311)
         self.refresh_remote_token()
         self.mqtt_client.tls_set_context()
-        self.mqtt_client.on_connect = self.on_mqtt_connect
-        self.mqtt_client.on_message = self.on_mqtt_message
-        self.mqtt_client.on_disconnect = self.on_mqtt_disconnect
+        self.mqtt_client.on_connect = self.__on_mqtt_connect
+        self.mqtt_client.on_message = self.__on_mqtt_message
+        self.mqtt_client.on_disconnect = self._on_mqtt_disconnect
         self.mqtt_client.connect(MQTT_SERVER, 8885, 60)
         self.mqtt_client.loop_start()
         self.__keep_mqtt()
@@ -371,18 +316,18 @@ class MyPSACC:
 
         return json.dumps(data)
 
-    def get_charge_hour(self, vin):
+    def __get_charge_hour(self, vin):
         reg = r"PT([0-9]{1,2})H([0-9]{1,2})?"
         data = self.get_vehicle_info(vin)
         hour_str = data.get_energy('Electric').charging.next_delayed_time
         try:
-            hour = re.findall(reg, hour_str)[0]
-            h = int(hour[0])
-            if hour[1] == '':
-                m = 0
+            hour_minute = re.findall(reg, hour_str)[0]
+            hour = int(hour_minute[0])
+            if hour_minute[1] == '':
+                minute = 0
             else:
-                m = hour[1]
-            return h, m
+                minute = hour_minute[1]
+            return hour, minute
         except IndexError:
             logger.error(traceback.format_exc())
             logger.error("Can't get charge hour: %s", hour_str)
@@ -392,15 +337,13 @@ class MyPSACC:
         status = data.get_energy('Electric').charging.status
         return status
 
-    def veh_charge_request(self, vin, hour, miinute, charge_type):
-        # todo consider actual state before change the hour
+    def __veh_charge_request(self, vin, hour, miinute, charge_type):
         msg = self.mqtt_request(vin, {"program": {"hour": hour, "minute": miinute}, "type": charge_type})
         logger.info(msg)
         self.mqtt_client.publish(MQTT_REQ_TOPIC + self.customer_id + "/VehCharge", msg)
 
     def change_charge_hour(self, vin, hour, miinute):
-        # todo consider actual state before change the hour
-        self.veh_charge_request(vin, hour, miinute, "delayed")
+        self.__veh_charge_request(vin, hour, miinute, "delayed")
         return True
 
     def charge_now(self, vin, now):
@@ -408,8 +351,8 @@ class MyPSACC:
             charge_type = "immediate"
         else:
             charge_type = "delayed"
-        hour, minute = self.get_charge_hour(vin)
-        self.veh_charge_request(vin, hour, minute, charge_type)
+        hour, minute = self.__get_charge_hour(vin)
+        self.__veh_charge_request(vin, hour, minute, charge_type)
         return True
 
     def horn(self, vin, count):
@@ -513,16 +456,16 @@ class MyPSACC:
         logger.debug("vin:%s longitude:%s latitude:%s date:%s mileage:%s level:%s charge_date:%s level_fuel:"
                      "%s moving:%s", car.vin, longitude, latitude, date, mileage, level, charge_date, level_fuel,
                      moving)
-        self.record_position(car.vin, mileage, latitude, longitude, date, level, level_fuel, moving)
+        self.__record_position(car.vin, mileage, latitude, longitude, date, level, level_fuel, moving)
         self.abrp.call(car, get_last_temp(car.vin))
         try:
             charging_status = car.status.get_energy('Electric').charging.status
-            self.record_charging(car.vin, charging_status, charge_date, level, latitude, longitude)
+            self.__record_charging(car.vin, charging_status, charge_date, level, latitude, longitude)
             logger.debug("charging_status:%s ", charging_status)
         except AttributeError:
             logger.error("charging status not available from api")
 
-    def record_position(self, vin, mileage, latitude, longitude, date, level, level_fuel, moving):
+    def __record_position(self, vin, mileage, latitude, longitude, date, level, level_fuel, moving):
         conn = get_db()
         if mileage == 0:  # fix a bug of the api
             logger.error("The api return a wrong mileage for %s : %f", vin, mileage)
@@ -551,7 +494,7 @@ class MyPSACC:
             logger.debug("position already saved")
         return False
 
-    def record_charging(self, vin, charging_status, charge_date, level, latitude, longitude):
+    def __record_charging(self, vin, charging_status, charge_date, level, latitude, longitude):
         conn = get_db()
         if charging_status == "InProgress":
             try:
@@ -572,9 +515,9 @@ class MyPSACC:
                 if in_progress:
                     co2_per_kw = Ecomix.get_co2_per_kw(start_at, charge_date, latitude, longitude,
                                                        from_cache=self.co2_signal_api is not None)
-                    kw = (level - start_level) / 100 * self.vehicles_list.get_car_by_vin(vin).battery_power
+                    consumption_kw = (level - start_level) / 100 * self.vehicles_list.get_car_by_vin(vin).battery_power
 
-                    Charging.update_chargings(conn, start_at, charge_date, level, co2_per_kw, kw, vin)
+                    Charging.update_chargings(conn, start_at, charge_date, level, co2_per_kw, consumption_kw, vin)
                     conn.commit()
             except TypeError:
                 logger.debug("battery table is empty")
@@ -602,12 +545,14 @@ class MyPSACC:
             yield key, value
 
 
+# pylint: disable=arguments-differ
 class MyPeugeotEncoder(JSONEncoder):
+
     def default(self, mp: MyPSACC):
         data = dict(mp)
         mpd = {"proxies": data["_proxies"], "refresh_token": mp.manager.refresh_token,
                "client_secret": mp.service_information.client_secret, "abrp": dict(mp.abrp)}
-        for el in ["client_id", "realm", "remote_refresh_token", "customer_id", "weather_api", "country_code",
-                   "co2_signal_api"]:
-            mpd[el] = data[el]
+        for param in ["client_id", "realm", "remote_refresh_token", "customer_id", "weather_api", "country_code",
+                      "co2_signal_api"]:
+            mpd[param] = data[param]
         return mpd

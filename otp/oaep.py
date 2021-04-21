@@ -7,6 +7,7 @@ from Cryptodome.Util.strxor import strxor
 
 
 class MyOAEP(PKCS1OAEP_Cipher):
+    # pylint: disable=too-many-locals,invalid-name
     def decrypt(self, ciphertext):
         """Decrypt a message with PKCS#1 OAEP.
 

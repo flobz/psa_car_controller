@@ -8,7 +8,7 @@ CONFIG_FILENAME = "config.ini"
 def set_number(value):
     try:
         return float(value)
-    except ValueError:
+    except (ValueError, TypeError):
         return None
 
 

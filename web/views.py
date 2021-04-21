@@ -292,17 +292,16 @@ def serve_layout():
             range_slider,
             html.Div([
                 dbc.Tabs([
-                    dbc.Tab(label="Summary", tab_id="summary", children=summary_tab),
-                    dbc.Tab(label="Trips", tab_id="trips", id="tab_trips", children=[figures.table_fig]),
-                    dbc.Tab(label="Battery", tab_id="battery", id="tab_battery", children=[figures.battery_info]),
-                    dbc.Tab(label="Charge", tab_id="charge", id="tab_charge", children=[figures.battery_table]),
-                    dbc.Tab(label="Map", tab_id="map", children=[maps]),
-                    dbc.Tab(label="Control", tab_id="control", children=dbc.Tabs(id="control-tabs",
-                                                                                 children=__get_control_tabs()))
-                ],
-                    id="tabs",
-                    active_tab="summary",
-                    persistence=True),
+                         dbc.Tab(label="Summary", tab_id="summary", children=summary_tab),
+                         dbc.Tab(label="Trips", tab_id="trips", id="tab_trips", children=[figures.table_fig]),
+                         dbc.Tab(label="Battery", tab_id="battery", id="tab_battery", children=[figures.battery_info]),
+                         dbc.Tab(label="Charge", tab_id="charge", id="tab_charge", children=[figures.battery_table]),
+                         dbc.Tab(label="Map", tab_id="map", children=[maps]),
+                         dbc.Tab(label="Control", tab_id="control", children=dbc.Tabs(id="control-tabs",
+                            children=__get_control_tabs()))],
+                         id="tabs",
+                         active_tab="summary",
+                         persistence=True),
                 html.Div(id=EMPTY_DIV),
             ])])
         cached_layout = dbc.Container(fluid=True, children=[html.H1('My car info'), data_div])

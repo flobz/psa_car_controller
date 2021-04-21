@@ -1,0 +1,14 @@
+# add user with this command: adduser --system --no-create-home psa
+[Unit]
+Description=PSA Controller
+After=network-online.target
+git
+[Service]
+ExecStart=/opt/psa_car_controller/server.py -c -r -d -b "/dash"
+Restart=on-failure
+RestartSec=1m
+Environment=PYTHONUNBUFFERED=true
+User=psa
+
+[Install]
+WantedBy=multi-user.target

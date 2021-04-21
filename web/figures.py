@@ -1,4 +1,5 @@
 from copy import deepcopy
+from typing import List
 
 import dash_bootstrap_components as dbc
 import dash_table
@@ -58,7 +59,7 @@ battery_table = None
 
 
 # pylint: disable=too-many-locals
-def get_figures(trips: Trips, charging: list[dict]):
+def get_figures(trips: Trips, charging: List[dict]):
     global consumption_fig, consumption_df, trips_map, consumption_fig_by_speed, table_fig, info, battery_info, \
         battery_table, consumption_graph_by_temp
     lats = []

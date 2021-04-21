@@ -1,6 +1,8 @@
 import json
 import traceback
 from datetime import datetime, timezone
+from typing import List
+
 import dash_bootstrap_components as dbc
 from dash.dependencies import Output, Input, MATCH, State
 from dash.exceptions import PreventUpdate
@@ -28,7 +30,7 @@ ABRP_SWITCH = 'abrp-switch'
 
 ERROR_DIV = dbc.Alert("No data to show, there is probably no trips recorded yet", color="danger")
 trips: Trips
-chargings: list[dict]
+chargings: List[dict]
 min_date = max_date = min_millis = max_millis = step = marks = cached_layout = None
 
 

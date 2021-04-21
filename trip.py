@@ -113,6 +113,9 @@ class Trips(list):
                             "consumption": trip.consumption, "consumption_by_temp": trip.get_temperature()})
         return res
 
+    def get_distance(self):
+        return self[-1].mileage - self[0].mileage
+
     def check_and_append(self, trip: Trip):
         if trip.consumption_km <= trip.car.max_elec_consumption and \
                 trip.consumption_fuel_km <= trip.car.max_fuel_consumption:

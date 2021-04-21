@@ -121,20 +121,11 @@ def get_figures(trips: Trips, charging: List[dict]):
         charge_speed = 3600 * charging_data["kw"].mean() / \
                        (charging_data["stop_at"] - charging_data["start_at"]).mean().total_seconds()
         price_kw = (charging_data["price"] / charging_data["kw"]).mean()
-    except (TypeError, KeyError):  # when there is no data yet:
+        total_elec = kw_per_km * trips.get_distance() / 100
+    except (TypeError, KeyError, ZeroDivisionError):  # when there is no data yet:
         charge_speed = 0
         price_kw = 0
-
-    battery_info = dash_table.DataTable(
-        id='battery_info',
-        sort_action='native',
-        columns=[{'id': 'name', 'name': ''},
-                 {'id': 'value', 'name': ''}],
-        style_header={'display': 'none'},
-        style_data={'border': '0px'},
-        data=[{"name": "Average emission:", "value": "{:.1f} g/km".format(co2_per_km)},
-              {"name": " ", "value:": "{:.1f} g/kWh".format(co2_per_kw)},
-              {"name": "Average charge speed:", "value": "{:.3f} kW".format(charge_speed)}])
+        total_elec = 0
     battery_info = html.Div(children=[
         html.Tr(
             [
@@ -161,7 +152,18 @@ def get_figures(trips: Trips, charging: List[dict]):
         ),
         html.Tr(
             [
-                "{:.2f} {}/kW".format(price_kw, ElecPrice.currency),
+                "{:.2f} {}/kWh".format(price_kw, ElecPrice.currency),
+            ]
+        ),
+        html.Tr(
+            [
+                html.Td('Electricity consumption:', rowSpan=2),
+                html.Td("{:.0f} kWh".format(total_elec)),
+            ]
+        ),
+        html.Tr(
+            [
+                "{:.0f} {}".format(total_elec*price_kw, ElecPrice.currency),
             ]
         ),
     ])

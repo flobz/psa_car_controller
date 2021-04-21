@@ -60,7 +60,6 @@ def diff_dashtable(data, data_previous, row_id_name="row_id"):
 def create_callback():
     global CALLBACK_CREATED
     if not CALLBACK_CREATED:
-        # pylint: disable=unused-variable
         @dash_app.callback(Output('trips_map', 'figure'),
                            Output('consumption_fig', 'figure'),
                            Output('consumption_fig_by_speed', 'figure'),
@@ -73,7 +72,7 @@ def create_callback():
                            Output('date-slider', 'step'),
                            Output('date-slider', 'marks'),
                            Input('date-slider', 'value'))
-        def display_value(value):
+        def display_value(value):  # pylint: disable=unused-variable
             mini = datetime.fromtimestamp(value[0], tz=timezone.utc)
             maxi = datetime.fromtimestamp(value[1], tz=timezone.utc)
             filtered_trips = Trips()
@@ -88,15 +87,11 @@ def create_callback():
                    figures.consumption_graph_by_temp, consumption, figures.table_fig, figures.battery_info, \
                    figures.battery_table, max_millis, step, marks
 
-        @dash_app.callback(
-            Output(EMPTY_DIV, "children"),
-            [Input("battery-table", "data_timestamp")],
-            [
-                State("battery-table", "data"),
-                State("battery-table", "data_previous"),
-            ],
-        )
-        def capture_diffs(timestamp, data, data_previous):
+        @dash_app.callback(Output(EMPTY_DIV, "children"),
+                           [Input("battery-table", "data_timestamp")],
+                           [State("battery-table", "data"),
+                            State("battery-table", "data_previous")])
+        def capture_diffs(timestamp, data, data_previous):  # pylint: disable=unused-variable
             if timestamp is None:
                 raise PreventUpdate
             diff_data = diff_dashtable(data, data_previous, "start_at")

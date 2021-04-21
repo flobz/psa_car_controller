@@ -42,16 +42,15 @@ def diff_dashtable(data, data_previous, row_id_name="row_id"):
     mask = df.ne(df_previous)
     df_diff = df[mask].dropna(how="all", axis="columns").dropna(how="all", axis="rows")
     changes = []
-    for row in df_diff.items():
-        row_id = row.name
+    for idx, row in df_diff.iterrows():
         row.dropna(inplace=True)
         for change in row.iteritems():
             changes.append(
                 {
-                    row_id_name: data[row.name][row_id_name],
+                    row_id_name: data[idx][row_id_name],
                     "column_name": change[0],
                     "current_value": change[1],
-                    "previous_value": df_previous.at[row_id, change[0]],
+                    "previous_value": df_previous.at[idx, change[0]],
                 }
             )
     return changes

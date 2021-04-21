@@ -1,3 +1,5 @@
+from typing import List
+
 from libs.elec_price import ElecPrice
 from web.db import get_db, set_chargings_price, clean_battery
 
@@ -6,7 +8,7 @@ elec_price = ElecPrice.read_config()
 
 class Charging:
     @staticmethod
-    def get_chargings(mini=None, maxi=None) -> list[dict]:
+    def get_chargings(mini=None, maxi=None) -> List[dict]:
         conn = get_db()
         if mini is not None:
             if maxi is not None:

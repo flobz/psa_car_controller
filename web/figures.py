@@ -46,15 +46,17 @@ def get_marks_from_start_end(start, end):
 
 
 # pylint: disable=invalid-name
-consumption_fig = None
-consumption_df = None
-trips_map = None
-consumption_fig_by_speed = None
-consumption_graph_by_temp = None
-table_fig = None
+ERROR_DIV = dbc.Alert("No data to show, there is probably no trips recorded yet", color="danger")
+PADDING_TOP = {"padding-top": "1em"}
+consumption_fig = ERROR_DIV
+consumption_df = ERROR_DIV
+trips_map = ERROR_DIV
+consumption_fig_by_speed = ERROR_DIV
+consumption_graph_by_temp = ERROR_DIV
+table_fig = ERROR_DIV
 pandas_options.display.float_format = '${:.2f}'.format
 info = ""
-battery_info = dbc.Alert("No data to show", color="danger")
+battery_info = ERROR_DIV
 battery_table = None
 
 
@@ -130,42 +132,32 @@ def get_figures(trips: Trips, charging: List[dict]):
         html.Tr(
             [
                 html.Td('Average emission:', rowSpan=2),
-                html.Td("{:.1f} g/km".format(co2_per_km)),
-            ]
-        ),
+                html.Td("{:.1f} g/km".format(co2_per_km))]),
         html.Tr(
             [
                 "{:.1f} g/kWh".format(co2_per_kw),
             ]
         ),
-        html.Tr(
-            [
-                html.Td("Average charge speed:"),
-                html.Td("{:.3f} kW".format(charge_speed))
-            ]
-        ),
-        html.Tr(
-            [
-                html.Td('Average Price:', rowSpan=2),
-                html.Td("{:.2f} {}/100km".format(price_kw * kw_per_km, ElecPrice.currency)),
-            ]
-        ),
-        html.Tr(
-            [
-                "{:.2f} {}/kWh".format(price_kw, ElecPrice.currency),
-            ]
-        ),
-        html.Tr(
-            [
-                html.Td('Electricity consumption:', rowSpan=2),
-                html.Td("{:.0f} kWh".format(total_elec)),
-            ]
-        ),
-        html.Tr(
-            [
-                "{:.0f} {}".format(total_elec*price_kw, ElecPrice.currency),
-            ]
-        ),
+        html.Tr([
+            html.Td("Average charge speed:", style=PADDING_TOP),
+            html.Td("{:.3f} kW".format(charge_speed))
+        ]),
+        html.Tr(html.Td(" ", colSpan=2)),
+        html.Tr([
+            html.Td('Average Price:', rowSpan=2, style=PADDING_TOP),
+            html.Td("{:.2f} {}/100km".format(price_kw * kw_per_km, ElecPrice.currency)),
+        ]),
+        html.Tr([
+            "{:.2f} {}/kWh".format(price_kw, ElecPrice.currency),
+        ]),
+        html.Tr(html.Td(" ", colSpan=2)),
+        html.Tr([
+            html.Td('Electricity consumption:', rowSpan=2, style=PADDING_TOP),
+            html.Td("{:.0f} kWh".format(total_elec)),
+        ]),
+        html.Tr([
+            "{:.0f} {}".format(total_elec * price_kw, ElecPrice.currency),
+        ]),
     ])
 
     battery_table = dash_table.DataTable(
@@ -181,9 +173,9 @@ def get_figures(trips: Trips, charging: List[dict]):
                  {'id': 'kw', 'name': 'consumption', 'type': 'numeric',
                   'format': deepcopy(nb_format).symbol_suffix(" kWh").precision(2)},
                  {'id': 'price', 'name': 'price', 'type': 'numeric',
-                  'format': deepcopy(nb_format).symbol_suffix(" " + ElecPrice.currency).precision(2)}],
-        data=charging,
-        editable=True
+                  'format': deepcopy(nb_format).symbol_suffix(" " + ElecPrice.currency).precision(2), 'editable': True}
+                 ],
+        data=charging
     )
     consumption_by_temp_df = consumption_df[consumption_df["consumption_by_temp"].notnull()]
     if len(consumption_by_temp_df) > 0:

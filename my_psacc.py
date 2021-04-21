@@ -331,6 +331,7 @@ class MyPSACC:
         except IndexError:
             logger.error(traceback.format_exc())
             logger.error("Can't get charge hour: %s", hour_str)
+            return None
 
     def get_charge_status(self, vin):
         data = self.get_vehicle_info(vin)

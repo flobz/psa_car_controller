@@ -75,3 +75,4 @@ class OauthAPIClient(ApiClient):
                     self.configuration.refresh_callback()
                 else:
                     raise e
+        return None

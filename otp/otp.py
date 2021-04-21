@@ -16,6 +16,7 @@ from mylogger import logger
 from . import oaep
 from .load import IWData
 
+
 # pylint: disable=too-many-instance-attributes,invalid-name
 
 def etree_to_dict(t):
@@ -169,7 +170,7 @@ class Otp:
             return etree_to_dict(ElT.XML(raw_xml))["ActionFinalize"]
         except KeyError:
             logger.debug(raw_xml)
-            raise ValueError("Bad response from server")
+            raise ValueError("Bad response from server") from KeyError
 
     def activation_start(self):
         param = {"action": "ActionSetup", "mode": self.mode, "id": self.data.iwid, "lastsync": self.data.iwTsync,
@@ -214,7 +215,7 @@ class Otp:
             try:
                 self.defi = str(xml["defi"])
             except KeyError:
-                raise ConfigException
+                raise ConfigException from KeyError
             if "J" in xml:
                 logger.debug("Need another otp request")
                 return Otp.OTP_TWICE
@@ -301,10 +302,24 @@ def save_otp(obj, filename="otp.bin"):
         pickle.dump(obj, output)
 
 
+class RenameUnpickler(pickle.Unpickler):
+    def find_class(self, module, name):
+        renamed_module = module
+        if module == 'otp.Otp':
+            renamed_module = "otp.otp"
+        elif module == 'otp.Tokenizer':
+            renamed_module = "otp.tokenizer"
+
+        return super().find_class(renamed_module, name)
+
+
 def load_otp(filename="otp.bin"):
     try:
         with open(filename, 'rb') as input_file:
-            return pickle.load(input_file)
+            try:
+                return pickle.load(input_file)
+            except ModuleNotFoundError:
+                return RenameUnpickler(input_file).load()
     except FileNotFoundError:
         logger.debug(traceback.format_exc())
     return None

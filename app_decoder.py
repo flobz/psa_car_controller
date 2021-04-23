@@ -72,7 +72,7 @@ def save_key_to_pem(pfx_data, pfx_password):
 current_dir = os.getcwd()
 script_dir = dir_path = os.path.dirname(os.path.realpath(__file__))
 if sys.version_info < (3, 6):
-    raise RuntimeError("This application requres Python 3.6+")
+    raise RuntimeError("This application requires Python 3.6+")
 
 if not argv[1].endswith(".apk"):
     print("No apk given")

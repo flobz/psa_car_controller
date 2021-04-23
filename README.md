@@ -28,9 +28,11 @@ We will retrieve these informations:
 
 1.2 Install requirements :
 
+- You need python >= 3.6
+
 - On debian based distribution you can install some requirement from repos: 
  
- ```sudo apt-get install python3-typing-extensions python3-pandas python3-plotly python3-paho-mqtt  python3-six python3-dateutil python3-brotli  libblas-dev  liblapack-dev gfortran python3-pycryptodome python3-numpy libatlas3-base```
+ ```sudo apt-get install python3-typing-extensions python3-pandas python3-plotly python3-paho-mqtt  python3-six python3-dateutil python3-brotli  libblas-dev  liblapack-dev gfortran python3-pycryptodome python3-numpy libatlas3-base python3-cryptography```
     
 - For everyone :
       ```pip3 install -r requirements.txt```

@@ -1,7 +1,7 @@
 # Remote Control of PSA car
 [![Codacy Badge](https://api.codacy.com/project/badge/Grade/4b4b98fe6dc04956a1c9a07b97c46c06)](https://app.codacy.com/gh/flobz/psa_car_controller?utm_source=github.com&utm_medium=referral&utm_content=flobz/psa_car_controller&utm_campaign=Badge_Grade_Settings)
 ### This is a python program to control a psa car with connected_car v4 api. Using android app to retrieve credentials.
-I test it with a Peugeot e-208 but it works with others PSA vehicles (Citroen, Opel, Vauxhall, DS).
+I test it with a Peugeot e-208, but it works with others PSA vehicles (Citroen, Opel, Vauxhall, DS).
 
 With this app  you will be able to :
  - get the status of the car (battery level for electric vehicle, position ... )
@@ -47,7 +47,7 @@ We will retrieve these informations:
 
     Your vehicles: {'VINNUBMER': {'id': 'vehicule id'}}
 
-1.4 If it works you will have VIN of your vehicles and there ids in the last line. The script generate a test.json file with all credentials needed.
+1.4 If it works you will have VIN of your vehicles and there ids in the last line. The script generates a test.json file with all credentials needed.
 
  ## II. Use the app
   
@@ -58,7 +58,7 @@ We will retrieve these informations:
 
      ``python3 server.py -f test.json -c charge_config1.json``
      
-     At the first launch you will receive a SMS and you will be asked to give it and also give your pin code (the four-digit code that your use on the android app).
+     At the first launch you will receive an SMS, and you will be asked to give it and also give your pin code (the four-digit code that your use on the android app).
      If it failed you can remove the file otp.bin and retry.
      
      You can see all options available with :
@@ -70,7 +70,7 @@ We will retrieve these informations:
     2.1 Get the car state :
     http://localhost:5000/get_vehicleinfo/YOURVIN
     
-    2.2 Stop charge (only for solution 1)
+    2.2 Stop charge
     http://localhost:5000/charge_now/YOURVIN/0
     
     2.3 Set hour to stop the charge to 6am
@@ -139,6 +139,6 @@ mitmproxy --set client_certs=MWPMYMA1.pem
 ```
 
 ## Donation
-If you want you want to thank me for my work :smile:
+If you want to thank me for my work :smile:
 
 [![donate](https://www.paypalobjects.com/en_US/i/btn/btn_donate_LG.gif)](https://www.paypal.com/donate?hosted_button_id=SM652WPXFNCXS)

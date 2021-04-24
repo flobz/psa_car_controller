@@ -53,5 +53,6 @@ carmodels = [
     ElecModel("e-Spacetourer", 46, "peugeot:etraveler:21:50:citroen", r"VF7VZZKX.*"),
     ElecModel("corsa-e", 46, "opel:corsae:20:50", r"VXKUHZKX.*"),
     CarModel("SUV 3008", 10.8, 43),
+    CarModel("SUV 5008 II", 0, 56, reg=r"VF3MRHNS.*"), #vf3mrhnsum
     CarModel("C5 Aircross", 10.8, 43)
 ]

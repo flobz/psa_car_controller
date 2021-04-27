@@ -20,10 +20,9 @@ from libs.charging import Charging
 from web import figures
 
 from web.app import app, dash_app, myp, chc
-from web.db import set_chargings_price, get_db, set_db_callback
+from web.db import Database
 
 # pylint: disable=invalid-name
-
 RESPONSE = "-response"
 EMPTY_DIV = "empty-div"
 ABRP_SWITCH = 'abrp-switch'
@@ -65,7 +64,7 @@ def create_callback():
                            Output('consumption_graph_by_temp', 'children'),
                            Output('consumption', 'children'),
                            Output('tab_trips', 'children'),
-                           Output('tab_battery', 'children'),
+                           Output('tab_battery_fig', 'children'),
                            Output('tab_charge', 'children'),
                            Output('date-slider', 'max'),
                            Output('date-slider', 'step'),
@@ -90,17 +89,35 @@ def create_callback():
                            [Input("battery-table", "data_timestamp")],
                            [State("battery-table", "data"),
                             State("battery-table", "data_previous")])
-        def capture_diffs(timestamp, data, data_previous):  # pylint: disable=unused-variable
+        def capture_diffs_in_battery_table(timestamp, data, data_previous):  # pylint: disable=unused-variable
             if timestamp is None:
                 raise PreventUpdate
             diff_data = diff_dashtable(data, data_previous, "start_at")
             for changed_line in diff_data:
                 if changed_line['column_name'] == 'price':
-                    if not set_chargings_price(get_db(), changed_line['start_at'], changed_line['current_value']):
+                    if not Database.set_chargings_price(Database.get_db(),
+                                                        figures.dash_date_to_datetime(changed_line['start_at']),
+                                                        changed_line['current_value']):
                         logger.error("Can't find line to update in the database")
             return ""
 
         CALLBACK_CREATED = True
+
+
+@dash_app.callback([Output("tab_battery_popup_graph", "children"), Output("tab_battery_popup", "is_open"), ],
+                   [Input("battery-table", "active_cell"),
+                    Input("tab_battery_popup-close", "n_clicks")],
+                   [State('battery-table', 'data'),
+                    State("tab_battery_popup", "is_open")]
+                   )
+def get_battery_curve(active_cell, close, data, is_open):  # pylint: disable=unused-argument
+    if is_open is None:
+        is_open = False
+    if active_cell is not None and active_cell["column_id"] in ["start_level", "end_level"] and not is_open:
+        row = data[active_cell["row"]]
+        print("ok")
+        return figures.get_battery_curve_fig(row, myp.vehicles_list[0]), True
+    return "", False
 
 
 @dash_app.callback(Output({'role': ABRP_SWITCH + RESPONSE, 'vin': MATCH}, 'children'),
@@ -294,22 +311,35 @@ def serve_layout():
                 dbc.Tabs([
                     dbc.Tab(label="Summary", tab_id="summary", children=summary_tab),
                     dbc.Tab(label="Trips", tab_id="trips", id="tab_trips", children=[figures.table_fig]),
-                    dbc.Tab(label="Battery", tab_id="battery", id="tab_battery", children=[figures.battery_info]),
+                    dbc.Tab(label="Battery", tab_id="battery", id="tab_battery",
+                            children=[html.Div(id="tab_battery_fig", children=[figures.battery_info]),
+                                      dbc.Modal(
+                                          [
+                                              dbc.ModalHeader("Charging speed"),
+                                              dbc.ModalBody(html.Div(id="tab_battery_popup_graph")),
+                                              dbc.ModalFooter(
+                                                  dbc.Button("Close", id="tab_battery_popup-close", className="ml-auto")
+                                              ),
+                                          ],
+                                          id="tab_battery_popup",
+                                          size="xl",
+                                      )]),
                     dbc.Tab(label="Charge", tab_id="charge", id="tab_charge", children=[figures.battery_table]),
                     dbc.Tab(label="Map", tab_id="map", children=[maps]),
                     dbc.Tab(label="Control", tab_id="control", children=dbc.Tabs(id="control-tabs",
                                                                                  children=__get_control_tabs()))],
-                         id="tabs",
-                         active_tab="summary",
-                         persistence=True),
+                    id="tabs",
+                    active_tab="summary",
+                    persistence=True),
                 html.Div(id=EMPTY_DIV),
+                html.Div(id=EMPTY_DIV + "1")
             ])])
         cached_layout = dbc.Container(fluid=True, children=[html.H1('My car info'), data_div])
     return cached_layout
 
 
 try:
-    set_db_callback(update_trips)
+    Database.set_db_callback(update_trips)
     Charging.set_default_price()
     update_trips()
 except (IndexError, TypeError):

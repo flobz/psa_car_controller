@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 from statistics import mean
 from typing import List, Dict
 
@@ -8,8 +6,9 @@ from geojson import Feature, FeatureCollection, MultiLineString
 
 from libs.car import Cars, Car
 from mylogger import logger
+from psa_connectedcar import Trips
 from trip_parser import TripParser
-from web.db import get_db
+from web.db import Database
 
 
 class Points:
@@ -128,7 +127,7 @@ class Trips(list):
     @staticmethod
     def get_trips(vehicles_list: Cars) -> Dict[str, Trips]:
         # pylint: disable=too-many-locals,too-many-statements,too-many-nested-blocks
-        conn = get_db()
+        conn = Database.get_db()
         vehicles = conn.execute(
             "SELECT DISTINCT vin FROM position;").fetchall()
         trips_by_vin = {}

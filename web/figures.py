@@ -1,4 +1,6 @@
 from copy import deepcopy
+from datetime import datetime
+
 from typing import List
 
 import dash_bootstrap_components as dbc
@@ -12,9 +14,12 @@ import plotly.graph_objects as go
 from pandas import DataFrame
 from pandas import options as pandas_options
 import dash_html_components as html
+import pytz
 
-from trip import Trips
+from libs.car import Car
 from libs.elec_price import ElecPrice
+from trip import Trips
+from web.db import Database
 
 
 def unix_time_millis(date):
@@ -128,6 +133,7 @@ def get_figures(trips: Trips, charging: List[dict]):
         charge_speed = 0
         price_kw = 0
         total_elec = 0
+
     battery_info = html.Div(children=[
         html.Tr(
             [
@@ -175,7 +181,18 @@ def get_figures(trips: Trips, charging: List[dict]):
                  {'id': 'price', 'name': 'price', 'type': 'numeric',
                   'format': deepcopy(nb_format).symbol_suffix(" " + ElecPrice.currency).precision(2), 'editable': True}
                  ],
-        data=charging
+        data=charging,
+        style_data_conditional=[
+            {
+                'if': {'column_id': ['start_level', "end_level"]},
+                'color': 'dodgerblue',
+                "text-decoration": "underline"
+            },
+            {
+                'if': {'column_id': 'price'},
+                'backgroundColor': 'rgb(230, 246, 254)'
+            }
+        ],
     )
     consumption_by_temp_df = consumption_df[consumption_df["consumption_by_temp"].notnull()]
     if len(consumption_by_temp_df) > 0:
@@ -203,3 +220,26 @@ def __calculate_co2_per_kw(charging_data):
     except KeyError:
         return 0
     return 0
+
+
+def dash_date_to_datetime(dash_date):
+    return datetime.strptime(dash_date, "%Y-%m-%dT%H:%M:%S+00:00").replace(tzinfo=pytz.UTC)
+
+
+def get_battery_curve_fig(row: dict, car: Car):
+    start_date = dash_date_to_datetime(row["start_at"])
+    stop_at = dash_date_to_datetime(row["stop_at"])
+    res = Database.get_battery_curve(Database.get_db(), start_date, car.vin)
+    res.insert(0, {"level": row["start_level"], "date": start_date})
+    res.append({"level": row["end_level"], "date": stop_at})
+    battery_curves = []
+    speed = 0
+    for x in range(1, len(res)):
+        start_level = res[x - 1]["level"]
+        end_level = res[x]["level"]
+        speed = car.get_charge_speed(start_level, end_level, (res[x]["date"] - res[x - 1]["date"]).total_seconds())
+        battery_curves.append({"level": start_level, "speed": speed})
+    battery_curves.append({"level": row["end_level"], "speed": speed})
+    fig = px.line(battery_curves, x="level", y="speed")
+    fig.update_layout(xaxis_title="Battery %", yaxis_title="Charging speed in kW")
+    return html.Div(Graph(figure=fig))

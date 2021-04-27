@@ -24,7 +24,7 @@ from mylogger import logger
 
 from utils import get_temp, rate_limit
 from web.abrp import Abrp
-from web.db import get_db, clean_position, get_last_temp
+from web.db import Database
 
 PSA_CORRELATION_DATE_FORMAT = "%Y%m%d%H%M%S%f"
 PSA_DATE_FORMAT = "%Y-%m-%dT%H:%M:%SZ"
@@ -104,7 +104,7 @@ class MyPSACC:
             self.abrp: Abrp = Abrp(**abrp)
         self.set_proxies(proxies)
         self.config_file = DEFAULT_CONFIG_FILENAME
-        self.co2_signal_api = co2_signal_api
+        Ecomix.co2_signal_key = co2_signal_api
 
     def get_app_name(self):
         return realm_info[self.realm]['app_name']
@@ -338,8 +338,8 @@ class MyPSACC:
         status = data.get_energy('Electric').charging.status
         return status
 
-    def __veh_charge_request(self, vin, hour, miinute, charge_type):
-        msg = self.mqtt_request(vin, {"program": {"hour": hour, "minute": miinute}, "type": charge_type})
+    def __veh_charge_request(self, vin, hour, minute, charge_type):
+        msg = self.mqtt_request(vin, {"program": {"hour": hour, "minute": minute}, "type": charge_type})
         logger.info(msg)
         self.mqtt_client.publish(MQTT_REQ_TOPIC + self.customer_id + "/VehCharge", msg)
 
@@ -458,16 +458,17 @@ class MyPSACC:
                      "%s moving:%s", car.vin, longitude, latitude, date, mileage, level, charge_date, level_fuel,
                      moving)
         self.__record_position(car.vin, mileage, latitude, longitude, date, level, level_fuel, moving)
-        self.abrp.call(car, get_last_temp(car.vin))
+        self.abrp.call(car, Database.get_last_temp(car.vin))
         try:
             charging_status = car.status.get_energy('Electric').charging.status
-            self.__record_charging(car.vin, charging_status, charge_date, level, latitude, longitude)
+            charging_mode = car.status.get_energy('Electric').charging.charging_mode
+            Charging.record_charging(car, charging_status, charge_date, level, latitude, longitude, charging_mode)
             logger.debug("charging_status:%s ", charging_status)
         except AttributeError:
             logger.error("charging status not available from api")
 
     def __record_position(self, vin, mileage, latitude, longitude, date, level, level_fuel, moving):
-        conn = get_db()
+        conn = Database.get_db()
         if mileage == 0:  # fix a bug of the api
             logger.error("The api return a wrong mileage for %s : %f", vin, mileage)
         else:
@@ -490,43 +491,14 @@ class MyPSACC:
 
                 conn.commit()
                 logger.info("new position recorded for %s", vin)
-                clean_position(conn)
+                Database.clean_position(conn)
                 return True
             logger.debug("position already saved")
         return False
 
-    def __record_charging(self, vin, charging_status, charge_date, level, latitude, longitude):
-        conn = get_db()
-        if charging_status == "InProgress":
-            try:
-                in_progress = conn.execute("SELECT stop_at FROM battery WHERE VIN=? ORDER BY start_at DESC limit 1",
-                                           (vin,)).fetchone()[0] is None
-            except TypeError:
-                in_progress = False
-            if not in_progress:
-                conn.execute("INSERT INTO battery(start_at,start_level,VIN) VALUES(?,?,?)", (charge_date, level, vin))
-                conn.commit()
-            Ecomix.get_data_from_co2_signal(latitude, longitude, self.co2_signal_api)
-        else:
-            try:
-                start_at, stop_at, start_level = conn.execute(
-                    "SELECT start_at, stop_at, start_level from battery WHERE VIN=? ORDER BY start_at "
-                    "DESC limit 1", (vin,)).fetchone()
-                in_progress = stop_at is None
-                if in_progress:
-                    co2_per_kw = Ecomix.get_co2_per_kw(start_at, charge_date, latitude, longitude,
-                                                       from_cache=self.co2_signal_api is not None)
-                    consumption_kw = (level - start_level) / 100 * self.vehicles_list.get_car_by_vin(vin).battery_power
-
-                    Charging.update_chargings(conn, start_at, charge_date, level, co2_per_kw, consumption_kw, vin)
-                    conn.commit()
-            except TypeError:
-                logger.debug("battery table is empty")
-        conn.close()
-
     @staticmethod
     def get_recorded_position():
-        conn = get_db()
+        conn = Database.get_db()
         res = conn.execute('SELECT * FROM position ORDER BY Timestamp')
         features_list = []
         for row in res:
@@ -553,7 +525,7 @@ class MyPeugeotEncoder(JSONEncoder):
         data = dict(mp)
         mpd = {"proxies": data["_proxies"], "refresh_token": mp.manager.refresh_token,
                "client_secret": mp.service_information.client_secret, "abrp": dict(mp.abrp)}
-        for param in ["client_id", "realm", "remote_refresh_token", "customer_id", "weather_api", "country_code",
-                      "co2_signal_api"]:
+        for param in ["client_id", "realm", "remote_refresh_token", "customer_id", "weather_api", "country_code"]:
             mpd[param] = data[param]
+        mpd["co2_signal_api"] = Ecomix.co2_signal_key
         return mpd

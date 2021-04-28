@@ -1,7 +1,8 @@
-from MyLogger import logger
+from mylogger import logger
 from psa_connectedcar import Position, Geometry, PositionProperties, Kinetic, Energy, EnergyCharging, Status
 
 
+# pylint: disable=too-many-arguments
 class CarStatus(Status):
     def __init__(self, embedded=None, links=None, battery=None, doors_state=None, energy=None, environment=None,
                  ignition=None, kinetic=None, last_position=None, preconditionning=None, privacy=None, safety=None,

@@ -140,6 +140,7 @@ cython_debug/
 .idea/
 backup.ab
 *.apk
+*.ini
 info.db
 otp.bin
 charge_config1.json

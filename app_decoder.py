@@ -2,6 +2,10 @@
 import json
 import os
 import traceback
+from sys import argv
+import sys
+import re
+from getpass import getpass
 
 from androguard.core.bytecodes.apk import APK
 
@@ -10,13 +14,8 @@ from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.serialization import pkcs12
 from cryptography.hazmat.backends import default_backend
 
-from getpass import getpass
-
-from ChargeControl import ChargeControl, ChargeControls
-from MyPSACC import MyPSACC
-from sys import argv
-import sys
-import re
+from charge_control import ChargeControl, ChargeControls
+from my_psacc import MyPSACC
 
 BRAND = {"com.psa.mym.myopel": {"realm": "clientsB2COpel", "brand_code": "OP", "app_name": "MyOpel"},
          "com.psa.mym.mypeugeot": {"realm": "clientsB2CPeugeot", "brand_code": "AP", "app_name": "MyPeugeot"},
@@ -85,7 +84,7 @@ client_id = resources.get_string(package_name, "PSA_API_CLIENT_ID_PROD")[1]
 client_secret = resources.get_string(package_name, "PSA_API_CLIENT_SECRET_PROD")[1]
 HOST_BRANDID_PROD = resources.get_string(package_name, "HOST_BRANDID_PROD")[1]
 pfx_cert = a.get_file("assets/MWPMYMA1.pfx")
-remote_refresh_token = None
+REMOTE_REFRESH_TOKEN = None
 print("APK loaded !")
 
 client_email = input(f"{BRAND[package_name]['app_name']} email: ")
@@ -105,12 +104,13 @@ try:
                         params={"jsonRequest": json.dumps(
                             {"siteCode": site_code, "culture": "fr-FR", "action": "authenticate",
                              "fields": {"USR_EMAIL": {"value": client_email},
-                                        "USR_PASSWORD": {"value": client_password}}})
-                        }
+                                        "USR_PASSWORD": {"value": client_password}}
+                             }
+                        )}
                         )
 
     token = res.json()["accessToken"]
-except:
+except: # pylint: disable=bare-except
     traceback.print_exc()
     print(f"HOST_BRANDID : {HOST_BRANDID_PROD} sitecode: {site_code}")
     print(res.text)
@@ -120,7 +120,8 @@ save_key_to_pem(pfx_cert, "")
 
 try:
     res2 = requests.post(
-        f"https://mw-{BRAND[package_name]['brand_code'].lower()}-m2c.mym.awsmpsa.com/api/v1/user?culture=fr_FR&width=1080&v=1.27.0",
+        f"https://mw-{BRAND[package_name]['brand_code'].lower()}-m2c.mym.awsmpsa.com/api/v1/"
+        f"user?culture=fr_FR&width=1080&v=1.27.0",
         data=json.dumps({"site_code": site_code, "ticket": token}),
         headers={
             "Connection": "Keep-Alive",
@@ -136,14 +137,14 @@ try:
     res_dict = res2.json()["success"]
     customer_id = BRAND[package_name]["brand_code"] + "-" + res_dict["id"]
 
-except:
+except:  # pylint: disable=bare-except
     traceback.print_exc()
     print(res2.text)
     sys.exit(1)
 
 # Psacc
 
-psacc = MyPSACC(None, client_id, client_secret, remote_refresh_token, customer_id, BRAND[package_name]["realm"],
+psacc = MyPSACC(None, client_id, client_secret, REMOTE_REFRESH_TOKEN, customer_id, BRAND[package_name]["realm"],
                 country_code)
 psacc.connect(client_email, client_password)
 

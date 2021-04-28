@@ -1,59 +1,106 @@
 import json
 import traceback
 from datetime import datetime, timezone
+from typing import List
+
 import dash_bootstrap_components as dbc
-from dash.dependencies import Output, Input, MATCH
+from dash.dependencies import Output, Input, MATCH, State
+from dash.exceptions import PreventUpdate
 import dash_core_components as dcc
 import dash_html_components as html
 import dash_daq as daq
-
-from MyLogger import logger
+import pandas as pd
 from flask import jsonify, request, Response as FlaskResponse
 
-from MyPSACC import MyPSACC
-from Trip import Trips
+from mylogger import logger
+
+from trip import Trips
+
+from libs.charging import Charging
 from web import figures
 
 from web.app import app, dash_app, myp, chc
-import web.db
+from web.db import set_chargings_price, get_db, set_db_callback
+
+# pylint: disable=invalid-name
 
 RESPONSE = "-response"
-
 EMPTY_DIV = "empty-div"
-
 ABRP_SWITCH = 'abrp-switch'
+CALLBACK_CREATED = False
 
-ERROR_DIV = dbc.Alert("No data to show, there is probably no trips recorded yet", color="danger")
 trips: Trips
-chargings: dict
+chargings: List[dict]
 min_date = max_date = min_millis = max_millis = step = marks = cached_layout = None
 
 
-@dash_app.callback(Output('trips_map', 'figure'),
-                   Output('consumption_fig', 'figure'),
-                   Output('consumption_fig_by_speed', 'figure'),
-                   Output('consumption_graph_by_temp', 'children'),
-                   Output('consumption', 'children'),
-                   Output('tab_trips', 'children'),
-                   Output('tab_battery', 'children'),
-                   Output('tab_charge', 'children'),
-                   Output('date-slider', 'max'),
-                   Output('date-slider', 'step'),
-                   Output('date-slider', 'marks'),
-                   Input('date-slider', 'value'))
-def display_value(value):
-    mini = datetime.fromtimestamp(value[0], tz=timezone.utc)
-    maxi = datetime.fromtimestamp(value[1], tz=timezone.utc)
-    filtered_trips = Trips()
-    for trip in trips:
-        if mini <= trip.start_at <= maxi:
-            filtered_trips.append(trip)
-    filtered_chargings = MyPSACC.get_chargings(mini, maxi)
-    figures.get_figures(filtered_trips, filtered_chargings)
-    consumption = "Average consumption: {:.1f} kWh/100km".format(float(figures.consumption_df["consumption_km"].mean()))
-    return figures.trips_map, figures.consumption_fig, figures.consumption_fig_by_speed, \
-           figures.consumption_graph_by_temp, consumption, figures.table_fig, figures.battery_info, \
-           figures.battery_table, max_millis, step, marks
+def diff_dashtable(data, data_previous, row_id_name="row_id"):
+    df, df_previous = pd.DataFrame(data=data), pd.DataFrame(data_previous)
+    for _df in [df, df_previous]:
+        assert row_id_name in _df.columns
+        _df = _df.set_index(row_id_name)
+    mask = df.ne(df_previous)
+    df_diff = df[mask].dropna(how="all", axis="columns").dropna(how="all", axis="rows")
+    changes = []
+    for idx, row in df_diff.iterrows():
+        row.dropna(inplace=True)
+        for change in row.iteritems():
+            changes.append(
+                {
+                    row_id_name: data[idx][row_id_name],
+                    "column_name": change[0],
+                    "current_value": change[1],
+                    "previous_value": df_previous.at[idx, change[0]],
+                }
+            )
+    return changes
+
+
+def create_callback():
+    global CALLBACK_CREATED
+    if not CALLBACK_CREATED:
+        @dash_app.callback(Output('trips_map', 'figure'),
+                           Output('consumption_fig', 'figure'),
+                           Output('consumption_fig_by_speed', 'figure'),
+                           Output('consumption_graph_by_temp', 'children'),
+                           Output('consumption', 'children'),
+                           Output('tab_trips', 'children'),
+                           Output('tab_battery', 'children'),
+                           Output('tab_charge', 'children'),
+                           Output('date-slider', 'max'),
+                           Output('date-slider', 'step'),
+                           Output('date-slider', 'marks'),
+                           Input('date-slider', 'value'))
+        def display_value(value):  # pylint: disable=unused-variable
+            mini = datetime.fromtimestamp(value[0], tz=timezone.utc)
+            maxi = datetime.fromtimestamp(value[1], tz=timezone.utc)
+            filtered_trips = Trips()
+            for trip in trips:
+                if mini <= trip.start_at <= maxi:
+                    filtered_trips.append(trip)
+            filtered_chargings = Charging.get_chargings(mini, maxi)
+            figures.get_figures(filtered_trips, filtered_chargings)
+            consumption = "Average consumption: {:.1f} kWh/100km".format(
+                float(figures.consumption_df["consumption_km"].mean()))
+            return figures.trips_map, figures.consumption_fig, figures.consumption_fig_by_speed, \
+                   figures.consumption_graph_by_temp, consumption, figures.table_fig, figures.battery_info, \
+                   figures.battery_table, max_millis, step, marks
+
+        @dash_app.callback(Output(EMPTY_DIV, "children"),
+                           [Input("battery-table", "data_timestamp")],
+                           [State("battery-table", "data"),
+                            State("battery-table", "data_previous")])
+        def capture_diffs(timestamp, data, data_previous):  # pylint: disable=unused-variable
+            if timestamp is None:
+                raise PreventUpdate
+            diff_data = diff_dashtable(data, data_previous, "start_at")
+            for changed_line in diff_data:
+                if changed_line['column_name'] == 'price':
+                    if not set_chargings_price(get_db(), changed_line['start_at'], changed_line['current_value']):
+                        logger.error("Can't find line to update in the database")
+            return ""
+
+        CALLBACK_CREATED = True
 
 
 @dash_app.callback(Output({'role': ABRP_SWITCH + RESPONSE, 'vin': MATCH}, 'children'),
@@ -128,7 +175,7 @@ def get_position(vin):
 
 # Set a battery threshold and schedule an hour to stop the charge
 @app.route('/charge_control')
-def charge_control():
+def get_charge_control():
     logger.info(request)
     vin = request.args['vin']
     charge_control = chc.get(vin)
@@ -176,7 +223,7 @@ def update_trips():
         trips_by_vin = Trips.get_trips(myp.vehicles_list)
         trips = next(iter(trips_by_vin.values()))  # todo handle multiple car
         assert len(trips) > 0
-        chargings = MyPSACC.get_chargings()
+        chargings = Charging.get_chargings()
     except (StopIteration, AssertionError):
         logger.debug("No trips yet")
         return
@@ -202,6 +249,7 @@ def __get_control_tabs():
             label = car.vin
         else:
             label = car.label
+        # pylint: disable=not-callable
         tabs.append(dbc.Tab(label=label, id="tab-" + car.vin, children=[
             daq.ToggleSwitch(
                 id={'role': ABRP_SWITCH, 'vin': car.vin},
@@ -219,46 +267,50 @@ def serve_layout():
         logger.debug("Create new layout")
         try:
             figures.get_figures(trips, chargings)
-            data_div = html.Div([dcc.RangeSlider(
+            summary_tab = [html.H2(id="consumption",
+                                   children=figures.info),
+                           dcc.Graph(figure=figures.consumption_fig, id="consumption_fig"),
+                           dcc.Graph(figure=figures.consumption_fig_by_speed, id="consumption_fig_by_speed"),
+                           figures.consumption_graph_by_temp]
+            maps = dcc.Graph(figure=figures.trips_map, id="trips_map", style={"height": '90vh'})
+            create_callback()
+            range_slider = dcc.RangeSlider(
                 id='date-slider',
                 min=min_millis,
                 max=max_millis,
                 step=step,
                 marks=marks,
                 value=[min_millis, max_millis],
-            ),
-                html.Div([
-                    dbc.Tabs([
-                        dbc.Tab(label="Summary", tab_id="summary", children=[
-                            html.H2(id="consumption",
-                                    children=figures.info),
-                            dcc.Graph(figure=figures.consumption_fig, id="consumption_fig"),
-                            dcc.Graph(figure=figures.consumption_fig_by_speed, id="consumption_fig_by_speed"),
-                            figures.consumption_graph_by_temp
-                        ]),
-                        dbc.Tab(label="Trips", tab_id="trips", id="tab_trips", children=[figures.table_fig]),
-                        dbc.Tab(label="Battery", tab_id="battery", id="tab_battery", children=[figures.battery_info]),
-                        dbc.Tab(label="Charge", tab_id="charge", id="tab_charge", children=[figures.battery_table]),
-                        dbc.Tab(label="Map", tab_id="map", children=[
-                            dcc.Graph(figure=figures.trips_map, id="trips_map", style={"height": '90vh'})]),
-                        dbc.Tab(label="Control", tab_id="control", children=dbc.Tabs(id="control-tabs",
-                                                                                     children=__get_control_tabs()))
-                    ],
-                        id="tabs",
-                        active_tab="summary",
-                    ),
-                    html.Div(id=EMPTY_DIV),
-                ])])
+            )
         except (IndexError, TypeError, NameError):
+            summary_tab = figures.ERROR_DIV
+            maps = figures.ERROR_DIV
             logger.warning("Failed to generate figure, there is probably not enough data yet")
             logger.debug(traceback.format_exc())
-            data_div = ERROR_DIV
+            range_slider = html.Div()
+        data_div = html.Div([
+            range_slider,
+            html.Div([
+                dbc.Tabs([
+                    dbc.Tab(label="Summary", tab_id="summary", children=summary_tab),
+                    dbc.Tab(label="Trips", tab_id="trips", id="tab_trips", children=[figures.table_fig]),
+                    dbc.Tab(label="Battery", tab_id="battery", id="tab_battery", children=[figures.battery_info]),
+                    dbc.Tab(label="Charge", tab_id="charge", id="tab_charge", children=[figures.battery_table]),
+                    dbc.Tab(label="Map", tab_id="map", children=[maps]),
+                    dbc.Tab(label="Control", tab_id="control", children=dbc.Tabs(id="control-tabs",
+                                                                                 children=__get_control_tabs()))],
+                         id="tabs",
+                         active_tab="summary",
+                         persistence=True),
+                html.Div(id=EMPTY_DIV),
+            ])])
         cached_layout = dbc.Container(fluid=True, children=[html.H1('My car info'), data_div])
     return cached_layout
 
 
 try:
-    web.db.callback_fct = update_trips
+    set_db_callback(update_trips)
+    Charging.set_default_price()
     update_trips()
 except (IndexError, TypeError):
     logger.debug("Failed to get trips, there is probably not enough data yet %s", traceback.format_exc())

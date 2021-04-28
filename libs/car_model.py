@@ -1,6 +1,6 @@
 import re
 
-from MyLogger import logger
+from mylogger import logger
 
 DEFAULT_BATTERY_POWER = 46
 DEFAULT_FUEL_CAPACITY = 0
@@ -9,6 +9,7 @@ DEFAULT_MAX_FUEL_CONSUMPTION = 30
 
 
 class CarModel:
+    # pylint: disable=too-many-arguments
     def __init__(self, name, battery_power, fuel_capacity, abrp_name=None, reg=None,
                  max_elec_consumption=DEFAULT_MAX_ELEC_CONSUMPTION, max_fuel_consumption=DEFAULT_MAX_FUEL_CONSUMPTION):
         self.name = name
@@ -42,6 +43,7 @@ class CarModel:
 
 
 class ElecModel(CarModel):
+    # pylint: disable=too-many-arguments
     def __init__(self, name, battery_power, abrp_name=None, reg=None,
                  max_elec_consumption=DEFAULT_MAX_ELEC_CONSUMPTION):
         super().__init__(name, battery_power, 0, abrp_name, reg, max_elec_consumption, 0)

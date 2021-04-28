@@ -1,11 +1,11 @@
 import json
 from copy import copy
 
-from MyLogger import logger
+from mylogger import logger
 from libs.car_model import CarModel
 from libs.car_status import CarStatus
 
-
+# pylint: disable=too-many-instance-attributes,too-many-arguments
 class Car:
     def __init__(self, vin, vehicle_id, brand, label=None, battery_power=None, fuel_capacity=None,
                  max_elec_consumption=None, max_fuel_consumption=None, abrp_name=None):
@@ -76,7 +76,7 @@ class Car:
 class Cars(list):
     def __init__(self, *args):
         list.__init__(self, *args)
-        self.config_filename = "cars.json"
+        self.config_filename = "../cars.json"
 
     def get_car_by_vin(self, vin) -> Car:
         for car in self:
@@ -106,20 +106,20 @@ class Cars(list):
         if name is None:
             name = self.config_filename
         config_str = json.dumps(self, default=lambda car: car.to_dict(), sort_keys=True, indent=4)
-        with open(name, "w") as f:
-            f.write(config_str)
+        with open(name, "w") as file:
+            file.write(config_str)
 
     @staticmethod
     def load_cars(name=None):
         if name is None:
             name = Cars().config_filename
         try:
-            with open(name, "r") as f:
-                json_str = f.read()
+            with open(name, "r") as file:
+                json_str = file.read()
                 cars = Cars.from_json(json.loads(json_str))
                 cars.config_filename = name
                 cars.save_cars()
                 return cars
-        except (FileNotFoundError, TypeError) as e:
-            logger.debug(e)
+        except (FileNotFoundError, TypeError) as ex:
+            logger.debug(ex)
             return Cars()

@@ -1,21 +1,23 @@
 import hashlib
 import traceback
+import pickle
 from secrets import token_hex, token_bytes
+from math import ceil
+from collections import defaultdict
+from xml.etree import cElementTree as ElT
 
 import requests
 from Cryptodome.Cipher import AES
 from Cryptodome.PublicKey import RSA
 from Cryptodome import Hash
-from math import ceil
 
-from collections import defaultdict
-from xml.etree import cElementTree as ElT
+from mylogger import logger
 
-from otp import oaep
-from otp.load import IWData
-import pickle
-from MyLogger import logger
+from . import oaep
+from .load import IWData
 
+
+# pylint: disable=too-many-instance-attributes,invalid-name
 
 def etree_to_dict(t):
     d = {t.tag: {} if t.attrib else None}
@@ -168,7 +170,7 @@ class Otp:
             return etree_to_dict(ElT.XML(raw_xml))["ActionFinalize"]
         except KeyError:
             logger.debug(raw_xml)
-            raise ValueError("Bad response from server")
+            raise ValueError("Bad response from server") from KeyError
 
     def activation_start(self):
         param = {"action": "ActionSetup", "mode": self.mode, "id": self.data.iwid, "lastsync": self.data.iwTsync,
@@ -213,7 +215,7 @@ class Otp:
             try:
                 self.defi = str(xml["defi"])
             except KeyError:
-                raise ConfigException
+                raise ConfigException from KeyError
             if "J" in xml:
                 logger.debug("Need another otp request")
                 return Otp.OTP_TWICE
@@ -254,7 +256,7 @@ class Otp:
         password = self.data.iwK1 + ":" + str(self.defi) + ":" + self.data.iwsecval
         res = bytes(hashlib.sha256(password.encode("utf-8")).digest())
         nb = ((int.from_bytes(res[:4], byteorder="big") & 0xfffffff) * 1024) + (
-                int.from_bytes(res[4:8], byteorder="big") & 1023)
+            int.from_bytes(res[4:8], byteorder="big") & 1023)
         otp = number_to_base36(nb)
         return otp
 
@@ -300,10 +302,24 @@ def save_otp(obj, filename="otp.bin"):
         pickle.dump(obj, output)
 
 
+class RenameUnpickler(pickle.Unpickler):
+    def find_class(self, module, name):
+        renamed_module = module
+        if module == 'otp.Otp':
+            renamed_module = "otp.otp"
+        elif module == 'otp.Tokenizer':
+            renamed_module = "otp.tokenizer"
+
+        return super().find_class(renamed_module, name)
+
+
 def load_otp(filename="otp.bin"):
     try:
         with open(filename, 'rb') as input_file:
-            return pickle.load(input_file)
+            try:
+                return pickle.load(input_file)
+            except ModuleNotFoundError:
+                return RenameUnpickler(input_file).load()
     except FileNotFoundError:
         logger.debug(traceback.format_exc())
     return None

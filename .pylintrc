@@ -1,0 +1,18 @@
+[MASTER]
+disable=
+    C0114,C0115,C0116,W0603,I0011,W0511
+[FORMAT]
+max-line-length=120
+
+[BASIC]
+good-names=i,
+           j,
+           k,
+           ex,
+           Run,
+	   e,
+           f,
+	   t,
+           x,
+           ip,
+	   s

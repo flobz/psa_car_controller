@@ -62,7 +62,7 @@ We will retrieve these informations:
      
      At the first launch you will receive a SMS and you will be asked to give it and also give your pin code (the four-digit code that your use on the android app).
      If it failed you can remove the file otp.bin and retry.
-   
+     
      You can see all options available with :
     ``python3 server.py -h``
 
@@ -91,18 +91,30 @@ We will retrieve these informations:
     http://localhost:5000/preconditioning/YOURVIN/1 or 0
 
 
-  3. Dashboard and stats (Beta)
+  ## III. Use the dashboard
      
-     You can add the -r argument to record the position of the vehicle and retrieve this information in a dashboard.
+You can add the -r argument to record the position of the vehicle and retrieve this information in a dashboard.
 
-     ``python3 server.py -f test.json -c charge_config1.json -r``
+``python3 server.py -f test.json -c charge_config1.json -r``
     
-     You will be able to visualize your trips, your consumption and some statistics:
+You will be able to visualize your trips, your consumption and some statistics:
     
      
 ![Screenshot_20210128_104519](https://user-images.githubusercontent.com/48728684/106119895-01c98d80-6156-11eb-8969-9e8bc24f3677.png)
-    You have to add an api key from https://home.openweathermap.org/ in your config file, to be able to see your consumption vs exterior temperature.  
-## Connect your home automation system:
+- You have to add an api key from https://home.openweathermap.org/ in your config file, to be able to see your consumption vs exterior temperature.
+- You have to add an api key from https://co2signal.com/ to have your C02 emission by KM (in France the key isn't needed). 
+### Charge price calculation
+The dashboard can give you the price by kilometer and price by kw that you pay.
+You just have to set the price in the config file.
+
+After a successful launch of the app, a config.ini file will be created.
+In this file you can set the price you pay for electricity in the following format "0.15".
+
+If you have a special price during the night you can set "night price", "night hour start" and "night hour end". 
+Hours need to be in the following format "23h12"?
+
+You can modify a price manually in the dashboard. It can be useful if you use public charge point.
+## IV. Connect your home automation system:
 - [Domoticz](docs/domoticz/Domoticz.md)
 - [HomeAssistant](https://github.com/Flodu31/HomeAssistant-PeugeotIntegration)
 - Jeedom (Anyone can share the procedure ?)

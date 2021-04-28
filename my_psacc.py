@@ -464,7 +464,7 @@ class MyPSACC:
 
         longitude = car.status.last_position.geometry.coordinates[0]
         latitude = car.status.last_position.geometry.coordinates[1]
-        altitude = car.status.last_position.geometry.coordinates[3]
+        altitude = car.status.last_position.geometry.coordinates[2]
         date = car.status.last_position.properties.updated_at
         if date is None:
             date = charge_date

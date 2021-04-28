@@ -10,6 +10,7 @@ from time import sleep
 
 from oauth2_client.credentials_manager import ServiceInformation
 import paho.mqtt.client as mqtt
+from requests.exceptions import RequestException
 
 import psa_connectedcar as psac
 from libs.car import Cars, Car
@@ -108,9 +109,13 @@ class MyPSACC:
         return realm_info[self.realm]['app_name']
 
     def refresh_token(self):
-        # pylint: disable=protected-access
-        self.manager._refresh_token()
-        self.save_config()
+        try:
+            # pylint: disable=protected-access
+            self.manager._refresh_token()
+            self.save_config()
+        except RequestException as e:
+            logger.error("Can't refresh token %s", e)
+            sleep(60)
 
     def api(self) -> psac.VehiclesApi:
         self.api_config.access_token = self.manager.access_token
@@ -201,13 +206,18 @@ class MyPSACC:
         return otp_code
 
     def get_remote_access_token(self, password):
-        res = self.manager.post(REMOTE_URL + self.client_id,
-                                json={"grant_type": "password", "password": password},
-                                headers=self.headers)
-        data = res.json()
-        self.remote_access_token = data["access_token"]
-        self.remote_refresh_token = data["refresh_token"]
-        return res
+        try:
+            res = self.manager.post(REMOTE_URL + self.client_id,
+                                    json={"grant_type": "password", "password": password},
+                                    headers=self.headers)
+            data = res.json()
+            self.remote_access_token = data["access_token"]
+            self.remote_refresh_token = data["refresh_token"]
+            return res
+        except RequestException as e:
+            logger.error("Can't refresh remote token %s", e)
+            sleep(60)
+        return None
 
     def refresh_remote_token(self, force=False):
         if not force and self.remote_token_last_update is not None:
@@ -215,26 +225,31 @@ class MyPSACC:
             if (datetime.now() - last_update).total_seconds() < MQTT_TOKEN_TTL:
                 return None
         self.refresh_token()
-        if self.remote_refresh_token is None:
-            logger.error("remote_refresh_token isn't defined")
-            self.load_otp(force_new=True)
-        res = self.manager.post(REMOTE_URL + self.client_id,
-                                json={"grant_type": "refresh_token", "refresh_token": self.remote_refresh_token},
-                                headers=self.headers)
-        data = res.json()
-        logger.debug("refresh_remote_token: %s", data)
-        if "access_token" in data:
-            self.remote_access_token = data["access_token"]
-            self.remote_refresh_token = data["refresh_token"]
-            self.remote_token_last_update = datetime.now()
-        else:
-            logger.error("can't refresh_remote_token: %s\n Create a new one", data)
-            self.remote_token_last_update = datetime.now()
-            otp_code = self.get_otp_code()
-            res = self.get_remote_access_token(otp_code)
-        self.mqtt_client.username_pw_set("IMA_OAUTH_ACCESS_TOKEN", self.remote_access_token)
-        self.save_config()
-        return res
+        try:
+            if self.remote_refresh_token is None:
+                logger.error("remote_refresh_token isn't defined")
+                self.load_otp(force_new=True)
+            res = self.manager.post(REMOTE_URL + self.client_id,
+                                    json={"grant_type": "refresh_token", "refresh_token": self.remote_refresh_token},
+                                    headers=self.headers)
+            data = res.json()
+            logger.debug("refresh_remote_token: %s", data)
+            if "access_token" in data:
+                self.remote_access_token = data["access_token"]
+                self.remote_refresh_token = data["refresh_token"]
+                self.remote_token_last_update = datetime.now()
+            else:
+                logger.error("can't refresh_remote_token: %s\n Create a new one", data)
+                self.remote_token_last_update = datetime.now()
+                otp_code = self.get_otp_code()
+                res = self.get_remote_access_token(otp_code)
+            self.mqtt_client.username_pw_set("IMA_OAUTH_ACCESS_TOKEN", self.remote_access_token)
+            self.save_config()
+            return res
+        except RequestException as e:
+            logger.error("Can't refresh remote token %s", e)
+            sleep(60)
+            return None
 
     # pylint: disable=unused-argument
     def __on_mqtt_connect(self, client, userdata, result_code, _):

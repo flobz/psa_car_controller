@@ -153,14 +153,15 @@ class Database:
         nb_null = conn.execute(
             "SELECT COUNT(1) FROM position WHERE altitude IS NULL;").fetchone()[0]
         if nb_null > max_pos_by_req:
-            logger.warning("There is %s to fetch from API, it can take some time")
+            logger.warning("There is %s to fetch from API, it can take some time", nb_null)
         try:
             while True:
                 res = conn.execute(f"SELECT DISTINCT latitude,longitude "
                                    f"FROM position WHERE altitude IS NULL LIMIT {max_pos_by_req};").fetchall()
                 nb_res = len(res)
                 if nb_res > 0:
-                    logger.info("add altitude for %s", len(res))
+                    logger.debug("add altitude for %s positions point", len(nb_null))
+                    nb_null -= nb_res
                     locations_str = ""
                     for line in res:
                         locations_str += str(line[0]) + "," + str(line[1]) + "|"

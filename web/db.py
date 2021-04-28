@@ -177,7 +177,7 @@ class Database:
                         sleep(1)  # API is limited to 1 call by sec
                 else:
                     break
-        except (ValueError, KeyError):
+        except (ValueError, KeyError, requests.exceptions.RequestException):
             logger.error("Can't get altitude from API")
             logger.debug(traceback.format_exc())
 

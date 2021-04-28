@@ -27,7 +27,7 @@ myp: MyPSACC = None
 chc: ChargeControls = None
 
 
-def start_app(title, base_path, debug: bool, host, port, reloader=False): # pylint: disable=too-many-arguments
+def start_app(title, base_path, debug: bool, host, port, reloader=False):  # pylint: disable=too-many-arguments
     global app, dash_app, dispatcher
     try:
         lang = locale.getlocale()[0].split("_")[0]
@@ -47,7 +47,6 @@ def start_app(title, base_path, debug: bool, host, port, reloader=False): # pyli
     dash_app = dash.Dash(external_stylesheets=[dbc.themes.BOOTSTRAP], external_scripts=locale_url, title=title,
                          server=app, requests_pathname_prefix=requests_pathname_prefix)
     # keep this line
-
     import web.views  # pylint: disable=unused-import,import-outside-toplevel
     return run_simple(host, port, application, use_reloader=reloader, use_debugger=debug)
 

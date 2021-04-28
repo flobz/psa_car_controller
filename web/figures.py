@@ -3,6 +3,7 @@ from datetime import datetime
 
 from typing import List
 
+import pytz
 import dash_bootstrap_components as dbc
 import dash_table
 import numpy as np
@@ -14,7 +15,6 @@ import plotly.graph_objects as go
 from pandas import DataFrame
 from pandas import options as pandas_options
 import dash_html_components as html
-import pytz
 
 from libs.car import Car
 from libs.elec_price import ElecPrice
@@ -256,7 +256,7 @@ def get_battery_curve_fig(row: dict, car: Car):
     return html.Div(Graph(figure=fig))
 
 
-def get_altitude_fig(trip:Trip):
+def get_altitude_fig(trip: Trip):
     conn = Database.get_db()
     res = list(map(list, conn.execute("SELECT mileage, altitude FROM position WHERE Timestamp>=? and Timestamp<=?;",
                                       (trip.start_at, trip.end_at)).fetchall()))

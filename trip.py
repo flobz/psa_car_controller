@@ -1,4 +1,3 @@
-import traceback
 from statistics import mean
 from typing import List, Dict
 
@@ -233,8 +232,8 @@ class Trips(list):
 
     def get_info(self):
         res = []
-        id = 1
+        row_id = 1
         for trip in self:
-            res.append(trip.get_info(id))
-            id += 1
+            res.append(trip.get_info(row_id))
+            row_id += 1
         return res

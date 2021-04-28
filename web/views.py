@@ -127,7 +127,7 @@ def get_altitude(active_cell, close, is_open):  # pylint: disable=unused-argumen
     if is_open is None:
         is_open = False
     if active_cell is not None and active_cell["column_id"] in ["altitude_diff"] and not is_open:
-        return figures.get_altitude_fig(trips[active_cell["row_id"]-1]), True
+        return figures.get_altitude_fig(trips[active_cell["row_id"] - 1]), True
     return "", False
 
 
@@ -356,9 +356,9 @@ def serve_layout():
                     dbc.Tab(label="Map", tab_id="map", children=[maps]),
                     dbc.Tab(label="Control", tab_id="control", children=dbc.Tabs(id="control-tabs",
                                                                                  children=__get_control_tabs()))],
-                    id="tabs",
-                    active_tab="summary",
-                    persistence=True),
+                         id="tabs",
+                         active_tab="summary",
+                         persistence=True),
                 html.Div(id=EMPTY_DIV),
                 html.Div(id=EMPTY_DIV + "1")
             ])])

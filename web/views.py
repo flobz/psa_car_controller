@@ -63,7 +63,7 @@ def create_callback():
                            Output('consumption_fig_by_speed', 'figure'),
                            Output('consumption_graph_by_temp', 'children'),
                            Output('consumption', 'children'),
-                           Output('tab_trips', 'children'),
+                           Output('tab_trips_fig', 'children'),
                            Output('tab_battery_fig', 'children'),
                            Output('tab_charge', 'children'),
                            Output('date-slider', 'max'),
@@ -108,15 +108,26 @@ def create_callback():
                    [Input("battery-table", "active_cell"),
                     Input("tab_battery_popup-close", "n_clicks")],
                    [State('battery-table', 'data'),
-                    State("tab_battery_popup", "is_open")]
-                   )
+                    State("tab_battery_popup", "is_open")])
 def get_battery_curve(active_cell, close, data, is_open):  # pylint: disable=unused-argument
     if is_open is None:
         is_open = False
     if active_cell is not None and active_cell["column_id"] in ["start_level", "end_level"] and not is_open:
         row = data[active_cell["row"]]
-        print("ok")
         return figures.get_battery_curve_fig(row, myp.vehicles_list[0]), True
+    return "", False
+
+
+@dash_app.callback([Output("tab_trips_popup_graph", "children"), Output("tab_trips_popup", "is_open"), ],
+                   [Input("trips-table", "active_cell"),
+                    Input("tab_trips_popup-close", "n_clicks")],
+                   State("tab_trips_popup", "is_open"))
+def get_altitude(active_cell, close, is_open):  # pylint: disable=unused-argument
+    print("altitude")
+    if is_open is None:
+        is_open = False
+    if active_cell is not None and active_cell["column_id"] in ["altitude_diff"] and not is_open:
+        return figures.get_altitude_fig(trips[active_cell["row_id"]-1]), True
     return "", False
 
 
@@ -208,7 +219,7 @@ def get_charge_control():
 
 @app.route('/positions')
 def get_recorded_position():
-    return FlaskResponse(myp.get_recorded_position(), mimetype='application/json')
+    return FlaskResponse(Database.get_recorded_position(), mimetype='application/json')
 
 
 @app.route('/abrp')
@@ -236,6 +247,7 @@ def after_request(response):
 def update_trips():
     global trips, chargings, cached_layout
     logger.info("update_data")
+    Database.add_altitude_to_db(Database.get_db(update_callback=False))
     try:
         trips_by_vin = Trips.get_trips(myp.vehicles_list)
         trips = next(iter(trips_by_vin.values()))  # todo handle multiple car
@@ -310,7 +322,23 @@ def serve_layout():
             html.Div([
                 dbc.Tabs([
                     dbc.Tab(label="Summary", tab_id="summary", children=summary_tab),
-                    dbc.Tab(label="Trips", tab_id="trips", id="tab_trips", children=[figures.table_fig]),
+                    dbc.Tab(label="Trips", tab_id="trips", id="tab_trips",
+                            children=[html.Div(id="tab_trips_fig", children=figures.table_fig),
+                                      dbc.Modal(
+                                          [
+                                              dbc.ModalHeader("Altitude"),
+                                              dbc.ModalBody(html.Div(
+                                                  id="tab_trips_popup_graph")),
+                                              dbc.ModalFooter(
+                                                  dbc.Button("Close",
+                                                             id="tab_trips_popup-close",
+                                                             className="ml-auto")
+                                              ),
+                                          ],
+                                          id="tab_trips_popup",
+                                          size="xl",
+                                      )
+                                      ]),
                     dbc.Tab(label="Battery", tab_id="battery", id="tab_battery",
                             children=[html.Div(id="tab_battery_fig", children=[figures.battery_info]),
                                       dbc.Modal(

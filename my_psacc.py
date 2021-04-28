@@ -10,8 +10,6 @@ from time import sleep
 
 from oauth2_client.credentials_manager import ServiceInformation
 import paho.mqtt.client as mqtt
-from geojson import Feature, Point, FeatureCollection
-from geojson import dumps as geo_dumps
 
 import psa_connectedcar as psac
 from libs.car import Cars, Car
@@ -22,7 +20,7 @@ from otp.otp import load_otp, new_otp_session, save_otp, ConfigException, Otp
 from psa_connectedcar.rest import ApiException
 from mylogger import logger
 
-from utils import get_temp, rate_limit
+from utils import rate_limit
 from web.abrp import Abrp
 from web.db import Database
 
@@ -451,13 +449,15 @@ class MyPSACC:
 
         longitude = car.status.last_position.geometry.coordinates[0]
         latitude = car.status.last_position.geometry.coordinates[1]
+        altitude = car.status.last_position.geometry.coordinates[3]
         date = car.status.last_position.properties.updated_at
         if date is None:
             date = charge_date
         logger.debug("vin:%s longitude:%s latitude:%s date:%s mileage:%s level:%s charge_date:%s level_fuel:"
                      "%s moving:%s", car.vin, longitude, latitude, date, mileage, level, charge_date, level_fuel,
                      moving)
-        self.__record_position(car.vin, mileage, latitude, longitude, date, level, level_fuel, moving)
+        Database.record_position(self.weather_api, car.vin, mileage, latitude, longitude, altitude, date, level,
+                                 level_fuel, moving)
         self.abrp.call(car, Database.get_last_temp(car.vin))
         try:
             charging_status = car.status.get_energy('Electric').charging.status
@@ -466,52 +466,6 @@ class MyPSACC:
             logger.debug("charging_status:%s ", charging_status)
         except AttributeError:
             logger.error("charging status not available from api")
-
-    def __record_position(self, vin, mileage, latitude, longitude, date, level, level_fuel, moving):
-        conn = Database.get_db()
-        if mileage == 0:  # fix a bug of the api
-            logger.error("The api return a wrong mileage for %s : %f", vin, mileage)
-        else:
-            if conn.execute("SELECT Timestamp from position where Timestamp=?", (date,)).fetchone() is None:
-                temp = get_temp(latitude, longitude, self.weather_api)
-                if level_fuel == 0:  # fix fuel level not provided when car is off
-                    try:
-                        level_fuel = conn.execute(
-                            "SELECT level_fuel FROM position WHERE level_fuel>0 AND VIN=? ORDER BY Timestamp DESC "
-                            "LIMIT 1",
-                            (vin,)).fetchone()[0]
-                        logger.info("level_fuel fixed with last real value %f for %s", level_fuel, vin)
-                    except TypeError:
-                        level_fuel = None
-                        logger.info("level_fuel unfixed for %s", vin)
-
-                conn.execute("INSERT INTO position(Timestamp,VIN,longitude,latitude,mileage,level,level_fuel,moving,"
-                             "temperature) VALUES(?,?,?,?,?,?,?,?,?)",
-                             (date, vin, longitude, latitude, mileage, level, level_fuel, moving, temp))
-
-                conn.commit()
-                logger.info("new position recorded for %s", vin)
-                Database.clean_position(conn)
-                return True
-            logger.debug("position already saved")
-        return False
-
-    @staticmethod
-    def get_recorded_position():
-        conn = Database.get_db()
-        res = conn.execute('SELECT * FROM position ORDER BY Timestamp')
-        features_list = []
-        for row in res:
-            if row["longitude"] is None or row["latitude"] is None:
-                continue
-            feature = Feature(geometry=Point((row["longitude"], row["latitude"])),
-                              properties={"vin": row["vin"], "date": row["Timestamp"].strftime("%x %X"),
-                                          "mileage": row["mileage"],
-                                          "level": row["level"], "level_fuel": row["level_fuel"]})
-            features_list.append(feature)
-        feature_collection = FeatureCollection(features_list)
-        conn.close()
-        return geo_dumps(feature_collection, sort_keys=True)
 
     def __iter__(self):
         for key, value in self.__dict__.items():

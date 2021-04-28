@@ -1,13 +1,21 @@
 import sys
 import sqlite3
+import traceback
 from datetime import datetime
+from time import sleep
 
 from typing import Callable
 import pytz
+import requests
+
+from geojson import Feature, Point, FeatureCollection
+from geojson import dumps as geo_dumps
 
 from mylogger import logger
+from utils import get_temp
 
 NEW_BATTERY_COLUMNS = [["battery", "INTEGER"], ["charging_mode", "TEXT"]]
+NEW_POSITION_COLUMNS = [["level_fuel", "INTEGER"], ["altitude", "INTEGER"]]
 
 DATE_FORMAT = "%Y-%m-%d %H:%M:%S+00:00"
 
@@ -25,7 +33,6 @@ class Database:
     @staticmethod
     def convert_datetime_from_bytes(bytes_string):
         return datetime.strptime(bytes_string.decode("utf-8"), DATE_FORMAT).replace(tzinfo=pytz.UTC)
-
 
     @staticmethod
     def convert_datetime_from_string(st):
@@ -54,42 +61,46 @@ class Database:
 
     @staticmethod
     def init_db(conn):
-        conn.execute("CREATE TABLE IF NOT EXISTS position (Timestamp DATETIME PRIMARY KEY, VIN TEXT, longitude REAL, "
-                     "latitude REAL, mileage REAL, level INTEGER, level_fuel INTEGER, moving BOOLEAN,"
-                     " temperature INTEGER);")
+        conn.execute("""CREATE TABLE IF NOT EXISTS position (Timestamp DATETIME PRIMARY KEY,
+                                                             VIN TEXT, longitude REAL,
+                                                             latitude REAL,
+                                                             mileage REAL,
+                                                             level INTEGER,
+                                                             level_fuel INTEGER,
+                                                             moving BOOLEAN,
+                                                             temperature INTEGER,
+                                                             altitude INTEGER);""")
         make_backup = False
-        try:
-            conn.execute("ALTER TABLE position ADD level_fuel INTEGER;")
-            make_backup = True
-        except sqlite3.OperationalError:
-            pass
         conn.execute("CREATE TABLE IF NOT EXISTS battery (start_at DATETIME PRIMARY KEY,stop_at DATETIME,VIN TEXT, "
                      "start_level INTEGER, end_level INTEGER, co2 INTEGER, kw INTEGER);")
-        conn.create_function("update_trips", 0, Database.update_callback)
         conn.execute("CREATE TEMP TRIGGER IF NOT EXISTS update_trigger AFTER INSERT ON position BEGIN "
                      "SELECT update_trips(); END;")
         conn.execute("""CREATE TABLE IF NOT EXISTS battery_curve (start_at DATETIME, VIN TEXT, date DATETIME,
                         level INTEGER, UNIQUE(start_at, VIN, level));""")
-        for column, column_type in NEW_BATTERY_COLUMNS:
-            try:
-                conn.execute(f"ALTER TABLE battery ADD {column} {column_type};")
-                make_backup = True
-            except sqlite3.OperationalError:
-                pass
+        for table, columns in [["position", NEW_POSITION_COLUMNS], ["battery", NEW_BATTERY_COLUMNS]]:
+            for column, column_type in columns:
+                try:
+                    conn.execute(f"ALTER TABLE {table} ADD {column} {column_type};")
+                    make_backup = True
+                except sqlite3.OperationalError:
+                    pass
         if make_backup:
             Database.backup(conn)
         Database.clean_battery(conn)
+        Database.add_altitude_to_db(conn)
         conn.commit()
         Database.db_initialized = True
 
     @staticmethod
-    def get_db(db_file=None):
+    def get_db(db_file=None, update_callback=True):
         if db_file is None:
             db_file = Database.DEFAULT_DB_FILE
         sqlite3.register_converter("DATETIME", Database.convert_datetime_from_bytes)
         sqlite3.register_adapter(datetime, Database.convert_datetime_to_string)
         conn = sqlite3.connect(db_file, detect_types=sqlite3.PARSE_DECLTYPES | sqlite3.PARSE_COLNAMES)
         conn.row_factory = sqlite3.Row
+        if update_callback:
+            conn.create_function("update_trips", 0, Database.update_callback)
         if not Database.db_initialized:
             Database.init_db(conn)
         return conn
@@ -135,3 +146,84 @@ class Database:
     def get_battery_curve(conn, start_at, vin):
         return convert_sql_res(conn.execute("""SELECT date, level FROM battery_curve
                                                 WHERE start_at=? and VIN=?;""", (start_at, vin)).fetchall())
+
+    @staticmethod
+    def add_altitude_to_db(conn):
+        max_pos_by_req = 100
+        nb_null = conn.execute(
+            "SELECT COUNT(1) FROM position WHERE altitude IS NULL;").fetchone()[0]
+        if nb_null > max_pos_by_req:
+            logger.warning("There is %s to fetch from API, it can take some time")
+        try:
+            while True:
+                res = conn.execute(f"SELECT DISTINCT latitude,longitude "
+                                   f"FROM position WHERE altitude IS NULL LIMIT {max_pos_by_req};").fetchall()
+                nb_res = len(res)
+                if nb_res > 0:
+                    logger.info("add altitude for %s", len(res))
+                    locations_str = ""
+                    for line in res:
+                        locations_str += str(line[0]) + "," + str(line[1]) + "|"
+                    locations_str = locations_str[:-1]
+                    res = requests.get("https://api.opentopodata.org/v1/srtm30m",
+                                       params={"locations": locations_str})
+                    data = res.json()["results"]
+                    for line in data:
+                        conn.execute("UPDATE position SET altitude=? WHERE latitude=? and longitude=?",
+                                     (line["elevation"], line["location"]["lat"], line["location"]["lng"]))
+                    conn.commit()
+                    if nb_res == 100:
+                        sleep(1)  # API is limited to 1 call by sec
+                else:
+                    break
+        except (ValueError, KeyError):
+            logger.error("Can't get altitude from API")
+            logger.debug(traceback.format_exc())
+
+    @staticmethod
+    def get_recorded_position():
+        conn = Database.get_db()
+        res = conn.execute('SELECT * FROM position ORDER BY Timestamp')
+        features_list = []
+        for row in res:
+            if row["longitude"] is None or row["latitude"] is None:
+                continue
+            feature = Feature(geometry=Point((row["longitude"], row["latitude"])),
+                              properties={"vin": row["vin"], "date": row["Timestamp"].strftime("%x %X"),
+                                          "mileage": row["mileage"],
+                                          "level": row["level"], "level_fuel": row["level_fuel"]})
+            features_list.append(feature)
+        feature_collection = FeatureCollection(features_list)
+        conn.close()
+        return geo_dumps(feature_collection, sort_keys=True)
+
+    # pylint: disable=too-many-arguments
+    @staticmethod
+    def record_position(weather_api, vin, mileage, latitude, longitude, altitude, date, level, level_fuel, moving):
+        conn = Database.get_db()
+        if mileage == 0:  # fix a bug of the api
+            logger.error("The api return a wrong mileage for %s : %f", vin, mileage)
+        else:
+            if conn.execute("SELECT Timestamp from position where Timestamp=?", (date,)).fetchone() is None:
+                temp = get_temp(latitude, longitude, weather_api)
+                if level_fuel == 0:  # fix fuel level not provided when car is off
+                    try:
+                        level_fuel = conn.execute(
+                            "SELECT level_fuel FROM position WHERE level_fuel>0 AND VIN=? ORDER BY Timestamp DESC "
+                            "LIMIT 1",
+                            (vin,)).fetchone()[0]
+                        logger.info("level_fuel fixed with last real value %f for %s", level_fuel, vin)
+                    except TypeError:
+                        level_fuel = None
+                        logger.info("level_fuel unfixed for %s", vin)
+
+                conn.execute("INSERT INTO position(Timestamp,VIN,longitude,latitude,altitude,mileage,level,level_fuel,"
+                             "moving,temperature) VALUES(?,?,?,?,?,?,?,?,?,?)",
+                             (date, vin, longitude, latitude, altitude, mileage, level, level_fuel, moving, temp))
+
+                conn.commit()
+                logger.info("new position recorded for %s", vin)
+                Database.clean_position(conn)
+                return True
+            logger.debug("position already saved")
+        return False

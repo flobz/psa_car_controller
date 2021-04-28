@@ -1,3 +1,4 @@
+import traceback
 from statistics import mean
 from typing import List, Dict
 
@@ -6,7 +7,6 @@ from geojson import Feature, FeatureCollection, MultiLineString
 
 from libs.car import Cars, Car
 from mylogger import logger
-from psa_connectedcar import Trips
 from trip_parser import TripParser
 from web.db import Database
 
@@ -36,6 +36,7 @@ class Trip:
         self.duration = None
         self.mileage = None
         self.car: Car = None
+        self.altitude_diff = None
         self.temperatures = []
 
     def add_points(self, latitude, longitude):
@@ -87,13 +88,21 @@ class Trip:
                                                                "average consumption": self.consumption_km,
                                                                "average consumption fuel": self.consumption_fuel_km})
 
-    def get_info(self):
+    def get_info(self, row_id=None):
         res = {"start_at": self.start_at.astimezone(tz.tzlocal()).replace(tzinfo=None).strftime("%x %X"),
                # convert to naive tz,
                "duration": self.duration * 60, "speed_average": self.speed_average,
                "consumption_km": self.consumption_km, "consumption_fuel_km": self.consumption_fuel_km,
-               "distance": self.distance, "mileage": self.mileage}
+               "distance": self.distance, "mileage": self.mileage, "altitude_diff": self.altitude_diff}
+        if row_id is not None:
+            res["id"] = row_id
         return res
+
+    def set_altitude_diff(self, start, end):
+        try:
+            self.altitude_diff = end - start
+        except (NameError, TypeError):
+            pass
 
 
 class Trips(list):
@@ -125,7 +134,7 @@ class Trips(list):
 
     # flake8: noqa: C901
     @staticmethod
-    def get_trips(vehicles_list: Cars) -> Dict[str, Trips]:
+    def get_trips(vehicles_list: Cars) -> Dict[str, "Trips"]:
         # pylint: disable=too-many-locals,too-many-statements,too-many-nested-blocks
         conn = Database.get_db()
         vehicles = conn.execute(
@@ -200,6 +209,7 @@ class Trips(list):
                                 trip.duration = (end["Timestamp"] - start["Timestamp"]).total_seconds() / 3600
                                 trip.speed_average = trip.distance / trip.duration
                                 diff_level, diff_level_fuel = trip_parser.get_level_consumption(start, end)
+                                trip.set_altitude_diff(start["altitude"], end["altitude"])
                                 trip.car = car
                                 if diff_level != 0:
                                     trip.set_consumption(diff_level)  # kw
@@ -220,3 +230,11 @@ class Trips(list):
                     end = next_el
                 trips_by_vin[vin] = trips
         return trips_by_vin
+
+    def get_info(self):
+        res = []
+        id = 1
+        for trip in self:
+            res.append(trip.get_info(id))
+            id += 1
+        return res

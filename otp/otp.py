@@ -278,7 +278,8 @@ class Otp:
 
     def __getstate__(self):
         odict = self.__dict__.copy()
-        del odict['cipher']  # don't pickle this
+        if 'cipher' in odict:
+            del odict['cipher']  # don't pickle this
         return odict
 
     def __setstate__(self, dict_param):

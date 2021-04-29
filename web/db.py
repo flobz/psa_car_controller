@@ -14,7 +14,7 @@ from geojson import dumps as geo_dumps
 from mylogger import logger
 from utils import get_temp
 
-NEW_BATTERY_COLUMNS = [["battery", "INTEGER"], ["charging_mode", "TEXT"]]
+NEW_BATTERY_COLUMNS = [["price", "INTEGER"], ["charging_mode", "TEXT"]]
 NEW_POSITION_COLUMNS = [["level_fuel", "INTEGER"], ["altitude", "INTEGER"]]
 
 DATE_FORMAT = "%Y-%m-%d %H:%M:%S+00:00"
@@ -157,7 +157,7 @@ class Database:
         try:
             while True:
                 res = conn.execute("SELECT DISTINCT latitude,longitude "
-                                   "FROM position WHERE altitude IS NULL LIMIT ?;", max_pos_by_req).fetchall()
+                                   "FROM position WHERE altitude IS NULL LIMIT ?;", (max_pos_by_req,)).fetchall()
                 nb_res = len(res)
                 if nb_res > 0:
                     logger.debug("add altitude for %s positions point", len(nb_null))

@@ -220,7 +220,7 @@ def get_figures(trips: Trips, charging: List[dict]):
 
     else:
         consumption_graph_by_temp = html.Div(Graph(style={'display': 'none'}), id="consumption_graph_by_temp")
-
+    return True
 
 def __calculate_co2_per_kw(charging_data):
     try:

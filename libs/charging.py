@@ -1,3 +1,4 @@
+import traceback
 from datetime import datetime
 from sqlite3 import IntegrityError
 
@@ -8,10 +9,10 @@ from libs.elec_price import ElecPrice
 from mylogger import logger
 from web.db import Database
 
-elec_price = ElecPrice.read_config()
-
 
 class Charging:
+    elec_price: ElecPrice = None
+
     @staticmethod
     def get_chargings(mini=None, maxi=None) -> List[dict]:
         conn = Database.get_db()
@@ -29,18 +30,18 @@ class Charging:
 
     @staticmethod
     def set_default_price():
-        if elec_price.is_enable():
+        if Charging.elec_price.is_enable():
             conn = Database.get_db()
             charge_list = list(map(dict, conn.execute("SELECT * FROM battery WHERE price IS NULL").fetchall()))
             for charge in charge_list:
-                charge["price"] = elec_price.get_price(charge["start_at"], charge["stop_at"], charge["kw"])
+                charge["price"] = Charging.elec_price.get_price(charge["start_at"], charge["stop_at"], charge["kw"])
                 Database.set_chargings_price(conn, charge["start_at"], charge["price"])
             conn.close()
 
     # pylint: disable=too-many-arguments
     @staticmethod
     def update_chargings(conn, start_at, stop_at, level, co2_per_kw, consumption_kw, vin):
-        price = elec_price.get_price(start_at, stop_at, consumption_kw)
+        price = Charging.elec_price.get_price(start_at, stop_at, consumption_kw)
         conn.execute(
             "UPDATE battery set stop_at=?, end_level=?, co2=?, kw=?, price=? WHERE start_at=? and VIN=?",
             (stop_at, level, co2_per_kw, consumption_kw, price, start_at, vin))
@@ -77,6 +78,6 @@ class Charging:
 
                     Charging.update_chargings(conn, start_at, charge_date, level, co2_per_kw, consumption_kw, car.vin)
             except TypeError:
-                logger.debug("battery table is empty")
+                logger.debug("battery table is probably empty : %s", traceback.format_exc())
         conn.commit()
         conn.close()

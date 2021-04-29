@@ -11,6 +11,8 @@ from oauth2_client.credentials_manager import OAuthError
 
 import web.app
 from charge_control import ChargeControls
+from libs.charging import Charging
+from libs.elec_price import ElecPrice
 from mylogger import my_logger
 from mylogger import logger
 from my_psacc import MyPSACC
@@ -55,6 +57,7 @@ if __name__ == "__main__":
     web.app.myp = MyPSACC.load_config(name=CONFIG_NAME)
     atexit.register(web.app.myp.save_config)
     web.app.myp.set_record(args.record)
+    Charging.elec_price = ElecPrice.read_config()
     if args.offline:
         logger.info("offline mode")
     else:

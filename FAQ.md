@@ -1,13 +1,7 @@
 # FAQ 
 ## Frequent error
-### 1. Can't get car model please check cars.json
-PSA API doesn't provide model for some vehicle. 
-You should edit car.json and change label property like this:
-```label: null > label: "e-208"```. 
-
-Also check if your model is set in the ENERGY_CAPACITY variable in this [file](Car.py). 
-If not please open an issue, or a pull request, so we can add your model to the list.
-
+### 1. Can't get car model
+Open an issue with [this template](https://github.com/flobz/psa_car_controller/issues/new?assignees=&labels=Car_model&template=can-t-get-car-model.md&title=%5BNew+Car+model%5D+my+model)
 ### 2. Error during activation {'newversion': '2.0.0', 'newversionurl': 'http://m.inwebo.com/', 'err': 'NOK:FORBIDDEN'}
 Your psa account is locked because you makes 20 sms activation. To unlock do this : 
 1. Install on a smartphone mypeugeot, myopel etc, depending on your car brand

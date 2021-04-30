@@ -1,7 +1,6 @@
 import json
 import re
 import threading
-import traceback
 import uuid
 from datetime import datetime
 from json import JSONEncoder
@@ -144,8 +143,9 @@ class MyPSACC:
                     if self._record_enabled:
                         self.record_info(car)
                     return res
-            except ApiException:
-                logger.error(traceback.format_exc())
+            except ApiException as ex:
+                logger.error("get_vehicle_info: ApiException: %s", ex)
+                logger.debug(exc_info=True)
         car.status = res
         return res
 
@@ -174,7 +174,7 @@ class MyPSACC:
                 self.vehicles_list.add(Car(vehicle.vin, vehicle.id, vehicle.brand, vehicle.label))
             self.vehicles_list.save_cars()
         except ApiException:
-            logger.error(traceback.format_exc())
+            logger.exception("get_vehicles:")
         return self.vehicles_list
 
     def load_otp(self, force_new=False):
@@ -296,7 +296,7 @@ class MyPSACC:
                 sleep(60)
                 self.wakeup(data["vin"])
         except KeyError:
-            logger.error(traceback.format_exc())
+            logger.exception("mqtt message:")
 
     def start_mqtt(self):
         self.load_otp()
@@ -342,8 +342,7 @@ class MyPSACC:
                 minute = hour_minute[1]
             return hour, minute
         except IndexError:
-            logger.error(traceback.format_exc())
-            logger.error("Can't get charge hour: %s", hour_str)
+            logger.exception("Can't get charge hour: %s", hour_str)
             return None
 
     def get_charge_status(self, vin):

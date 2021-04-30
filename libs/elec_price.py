@@ -54,14 +54,15 @@ class ElecPrice:
     def get_price(self, start, end, consumption):
         prices = []
         date = start
-        while date < end:
-            prices.append(self.get_instant_price(date))
-            date = date + timedelta(minutes=30)
-        try:
-            res = round(consumption * mean(prices), 2)
-        except TypeError:
-            logger.error("Can't get_price of charge, check config")
-            res = None
+        res = None
+        if not (start is None or end is None):
+            while date < end:
+                prices.append(self.get_instant_price(date))
+                date = date + timedelta(minutes=30)
+            try:
+                res = round(consumption * mean(prices), 2)
+            except TypeError:
+                logger.error("Can't get_price of charge, check config")
         return res
 
     def is_enable(self):

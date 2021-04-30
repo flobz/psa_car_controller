@@ -1,6 +1,5 @@
 import sys
 import sqlite3
-import traceback
 from datetime import datetime
 from time import sleep
 
@@ -17,30 +16,37 @@ from utils import get_temp
 NEW_BATTERY_COLUMNS = [["price", "INTEGER"], ["charging_mode", "TEXT"]]
 NEW_POSITION_COLUMNS = [["level_fuel", "INTEGER"], ["altitude", "INTEGER"]]
 
-DATE_FORMAT = "%Y-%m-%d %H:%M:%S+00:00"
-
 
 def convert_sql_res(rows):
     return list(map(dict, rows))
 
 
+DATE_FORMAT = "%Y-%m-%d %H:%M:%S+00:00"
+
+
+def new_convert_datetime_from_string(string):
+    return datetime.fromisoformat(string)
+
+
 class Database:
     callback_fct: Callable[[], None] = lambda: None
     DEFAULT_DB_FILE = 'info.db'
-    # pylint: disable=invalid-name
     db_initialized = False
 
     @staticmethod
-    def convert_datetime_from_bytes(bytes_string):
-        return datetime.strptime(bytes_string.decode("utf-8"), DATE_FORMAT).replace(tzinfo=pytz.UTC)
+    def convert_datetime_from_string(string):
+        try:
+            return datetime.strptime(string, DATE_FORMAT).replace(tzinfo=pytz.UTC)
+        except ValueError:
+            return datetime.strptime(string.replace("T", " "), DATE_FORMAT).replace(tzinfo=pytz.UTC)
 
     @staticmethod
-    def convert_datetime_from_string(st):
-        return datetime.strptime(st, DATE_FORMAT).replace(tzinfo=pytz.UTC)
+    def convert_datetime_from_bytes(bytes_string):
+        return Database.convert_datetime_from_string(bytes_string.decode("utf-8"))
 
     @staticmethod
     def convert_datetime_to_string(date: datetime):
-        return date.replace(tzinfo=pytz.UTC).strftime(DATE_FORMAT)
+        return date.replace(tzinfo=pytz.UTC).isoformat(timespec='seconds', sep=" ")
 
     @staticmethod
     def update_callback():
@@ -89,14 +95,16 @@ class Database:
         Database.clean_battery(conn)
         Database.add_altitude_to_db(conn)
         conn.commit()
+        if sys.version_info >= (3, 7):
+            Database.convert_datetime_from_string = new_convert_datetime_from_string
+        sqlite3.register_converter("DATETIME", Database.convert_datetime_from_bytes)
+        sqlite3.register_adapter(datetime, Database.convert_datetime_to_string)
         Database.db_initialized = True
 
     @staticmethod
     def get_db(db_file=None, update_callback=True):
         if db_file is None:
             db_file = Database.DEFAULT_DB_FILE
-        sqlite3.register_converter("DATETIME", Database.convert_datetime_from_bytes)
-        sqlite3.register_adapter(datetime, Database.convert_datetime_to_string)
         conn = sqlite3.connect(db_file, detect_types=sqlite3.PARSE_DECLTYPES | sqlite3.PARSE_COLNAMES)
         conn.row_factory = sqlite3.Row
         if update_callback:
@@ -179,7 +187,6 @@ class Database:
                     break
         except (ValueError, KeyError, requests.exceptions.RequestException):
             logger.error("Can't get altitude from API")
-            logger.debug(traceback.format_exc())
 
     @staticmethod
     def get_recorded_position():

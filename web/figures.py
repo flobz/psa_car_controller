@@ -1,9 +1,7 @@
 from copy import deepcopy
-from datetime import datetime
 
 from typing import List
 
-import pytz
 import dash_bootstrap_components as dbc
 import dash_table
 import numpy as np
@@ -233,13 +231,9 @@ def __calculate_co2_per_kw(charging_data):
     return 0
 
 
-def dash_date_to_datetime(dash_date):
-    return datetime.strptime(dash_date, "%Y-%m-%dT%H:%M:%S+00:00").replace(tzinfo=pytz.UTC)
-
-
 def get_battery_curve_fig(row: dict, car: Car):
-    start_date = dash_date_to_datetime(row["start_at"])
-    stop_at = dash_date_to_datetime(row["stop_at"])
+    start_date = Database.convert_datetime_from_string(row["start_at"])
+    stop_at = Database.convert_datetime_from_string(row["stop_at"])
     res = Database.get_battery_curve(Database.get_db(), start_date, car.vin)
     res.insert(0, {"level": row["start_level"], "date": start_date})
     res.append({"level": row["end_level"], "date": stop_at})

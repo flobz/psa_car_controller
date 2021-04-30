@@ -1,6 +1,5 @@
 import json
 import threading
-import traceback
 from copy import copy
 from datetime import datetime, timedelta
 from hashlib import md5
@@ -91,10 +90,10 @@ class ChargeControl:
                 if self._next_stop_hour is not None and self._next_stop_hour < now:
                     self._next_stop_hour += timedelta(days=1)
                 self.retry_count = 0
-        except AttributeError:
-            logger.error("Probably can't retrieve all information from API: %s", traceback.format_exc())
+        except (AttributeError, ValueError):
+            logger.exception("Probably can't retrieve all information from API:")
         except: # pylint: disable=bare-except
-            logger.error(traceback.format_exc())
+            logger.exception("Charge control:")
 
     def get_dict(self):
         chd = copy(self.__dict__)

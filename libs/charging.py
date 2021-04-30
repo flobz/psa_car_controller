@@ -1,4 +1,3 @@
-import traceback
 from datetime import datetime
 from sqlite3 import IntegrityError
 
@@ -11,7 +10,7 @@ from web.db import Database
 
 
 class Charging:
-    elec_price: ElecPrice = None
+    elec_price: ElecPrice = ElecPrice(None)
 
     @staticmethod
     def get_chargings(mini=None, maxi=None) -> List[dict]:
@@ -78,6 +77,6 @@ class Charging:
 
                     Charging.update_chargings(conn, start_at, charge_date, level, co2_per_kw, consumption_kw, car.vin)
             except TypeError:
-                logger.debug("battery table is probably empty : %s", traceback.format_exc())
+                logger.debug("battery table is probably empty :", exc_info=True)
         conn.commit()
         conn.close()

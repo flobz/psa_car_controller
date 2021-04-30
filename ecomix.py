@@ -2,7 +2,6 @@ from datetime import datetime, timedelta
 from statistics import mean, StatisticsError
 import xml.etree.cElementTree as ElT
 import numbers
-import traceback
 
 import requests
 import reverse_geocode
@@ -68,7 +67,7 @@ class Ecomix:
                 Ecomix._cache[country_code].append([datetime.now(), value])
                 return data["status"] == "ok"
             except (AssertionError, NameError, KeyError):
-                logger.debug(traceback.format_exc())
+                logger.debug("ecomix:", exc_info=True)
                 return False
         else:
             return False

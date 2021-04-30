@@ -1,5 +1,4 @@
 import json
-import traceback
 from datetime import datetime, timezone
 from typing import List
 
@@ -55,7 +54,7 @@ def diff_dashtable(data, data_previous, row_id_name="row_id"):
     return changes
 
 
-def create_callback():
+def create_callback():     # flake8: noqa: C901
     global CALLBACK_CREATED
     if not CALLBACK_CREATED:
         @dash_app.callback(Output('trips_map', 'figure'),
@@ -95,40 +94,36 @@ def create_callback():
             diff_data = diff_dashtable(data, data_previous, "start_at")
             for changed_line in diff_data:
                 if changed_line['column_name'] == 'price':
-                    if not Database.set_chargings_price(Database.get_db(),
-                                                        figures.dash_date_to_datetime(changed_line['start_at']),
+                    if not Database.set_chargings_price(Database.get_db(),changed_line['start_at'],
                                                         changed_line['current_value']):
                         logger.error("Can't find line to update in the database")
             return ""
 
+        @dash_app.callback([Output("tab_battery_popup_graph", "children"), Output("tab_battery_popup", "is_open"), ],
+                           [Input("battery-table", "active_cell"),
+                            Input("tab_battery_popup-close", "n_clicks")],
+                           [State('battery-table', 'data'),
+                            State("tab_battery_popup", "is_open")])
+        def get_battery_curve(active_cell, close, data, is_open):  # pylint: disable=unused-argument, unused-variable
+            if is_open is None:
+                is_open = False
+            if active_cell is not None and active_cell["column_id"] in ["start_level", "end_level"] and not is_open:
+                row = data[active_cell["row"]]
+                return figures.get_battery_curve_fig(row, myp.vehicles_list[0]), True
+            return "", False
+
+        @dash_app.callback([Output("tab_trips_popup_graph", "children"), Output("tab_trips_popup", "is_open"), ],
+                           [Input("trips-table", "active_cell"),
+                            Input("tab_trips_popup-close", "n_clicks")],
+                           State("tab_trips_popup", "is_open"))
+        def get_altitude(active_cell, close, is_open):  # pylint: disable=unused-argument, unused-variable
+            if is_open is None:
+                is_open = False
+            if active_cell is not None and active_cell["column_id"] in ["altitude_diff"] and not is_open:
+                return figures.get_altitude_fig(trips[active_cell["row_id"] - 1]), True
+            return "", False
+
         CALLBACK_CREATED = True
-
-
-@dash_app.callback([Output("tab_battery_popup_graph", "children"), Output("tab_battery_popup", "is_open"), ],
-                   [Input("battery-table", "active_cell"),
-                    Input("tab_battery_popup-close", "n_clicks")],
-                   [State('battery-table', 'data'),
-                    State("tab_battery_popup", "is_open")])
-def get_battery_curve(active_cell, close, data, is_open):  # pylint: disable=unused-argument
-    if is_open is None:
-        is_open = False
-    if active_cell is not None and active_cell["column_id"] in ["start_level", "end_level"] and not is_open:
-        row = data[active_cell["row"]]
-        return figures.get_battery_curve_fig(row, myp.vehicles_list[0]), True
-    return "", False
-
-
-@dash_app.callback([Output("tab_trips_popup_graph", "children"), Output("tab_trips_popup", "is_open"), ],
-                   [Input("trips-table", "active_cell"),
-                    Input("tab_trips_popup-close", "n_clicks")],
-                   State("tab_trips_popup", "is_open"))
-def get_altitude(active_cell, close, is_open):  # pylint: disable=unused-argument
-    print("altitude")
-    if is_open is None:
-        is_open = False
-    if active_cell is not None and active_cell["column_id"] in ["altitude_diff"] and not is_open:
-        return figures.get_altitude_fig(trips[active_cell["row_id"] - 1]), True
-    return "", False
 
 
 @dash_app.callback(Output({'role': ABRP_SWITCH + RESPONSE, 'vin': MATCH}, 'children'),
@@ -267,7 +262,7 @@ def update_trips():
         marks = figures.get_marks_from_start_end(min_date, max_date)
         cached_layout = None  # force regenerate layout
     except (ValueError, IndexError):
-        logger.error("update_trips (slider): %s", traceback.format_exc())
+        logger.error("update_trips (slider): %s", exc_info=True)
     return
 
 
@@ -315,7 +310,6 @@ def serve_layout():
             summary_tab = figures.ERROR_DIV
             maps = figures.ERROR_DIV
             logger.warning("Failed to generate figure, there is probably not enough data yet")
-            logger.debug(traceback.format_exc())
             range_slider = html.Div()
         data_div = html.Div([
             range_slider,
@@ -371,6 +365,6 @@ try:
     Charging.set_default_price()
     update_trips()
 except (IndexError, TypeError):
-    logger.debug("Failed to get trips, there is probably not enough data yet %s", traceback.format_exc())
+    logger.debug("Failed to get trips, there is probably not enough data yet:", exc_info=True)
 
 dash_app.layout = serve_layout

@@ -42,7 +42,7 @@ class Car:
         if self.status is not None:
             return self.status
         logger.error("status of %s is None", self.vin)
-        raise ValueError("status of %s is None")
+        raise ValueError("status of {} is None".format(self.vin))
 
     @classmethod
     def from_json(cls, data: dict):
@@ -82,7 +82,7 @@ class Car:
 class Cars(list):
     def __init__(self, *args):
         list.__init__(self, *args)
-        self.config_filename = "../cars.json"
+        self.config_filename = "cars.json"
 
     def get_car_by_vin(self, vin) -> Car:
         for car in self:

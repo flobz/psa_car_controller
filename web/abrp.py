@@ -1,5 +1,4 @@
 import json
-import traceback
 from datetime import datetime
 
 import requests
@@ -43,7 +42,7 @@ class Abrp:
                 logger.debug(response.text)
                 return response.json()["status"] == "ok"
         except (AttributeError, IndexError, ValueError):
-            logger.error(traceback.format_exc())
+            logger.exception("abrp:")
         return False
 
     def __iter__(self):

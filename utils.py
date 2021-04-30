@@ -1,4 +1,3 @@
-import traceback
 from functools import wraps
 from threading import Semaphore, Timer
 import socket
@@ -20,9 +19,9 @@ def get_temp(latitude: str, longitude: str, api_key: str) -> float:
             logger.debug("Temperature :%fc", temp)
             return temp
     except ConnectionError:
-        logger.error("Can't connect to openweathermap :%s", traceback.format_exc())
+        logger.error("Can't connect to openweathermap :", exc_info=True)
     except KeyError:
-        logger.error("Unable to get temperature from openweathermap :%s", traceback.format_exc())
+        logger.error("Unable to get temperature from openweathermap :", exc_info=True)
     return None
 
 

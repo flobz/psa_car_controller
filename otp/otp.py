@@ -1,5 +1,4 @@
 import hashlib
-import traceback
 import pickle
 from secrets import token_hex, token_bytes
 from math import ceil
@@ -322,7 +321,7 @@ def load_otp(filename="otp.bin"):
             except ModuleNotFoundError:
                 return RenameUnpickler(input_file).load()
     except FileNotFoundError:
-        logger.debug(traceback.format_exc())
+        logger.debug("",exc_info=True)
     return None
 
 

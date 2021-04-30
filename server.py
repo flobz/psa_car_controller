@@ -42,7 +42,7 @@ def parse_args():
     return parser.parse_args()
 
 
-# flake8: noqa: C901
+# noqa: MC0001
 if __name__ == "__main__":
     if sys.version_info < (3, 6):
         raise RuntimeError("This application requires Python 3.6+")

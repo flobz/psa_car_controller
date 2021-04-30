@@ -1,4 +1,6 @@
 doc-warnings: false
+use: flask
+max-line-length: 120
 ignore-paths:
   - psa_connectedcar
 pep8:
@@ -16,3 +18,4 @@ pylint:
     - W0603
     - I0011
     - W0511
+

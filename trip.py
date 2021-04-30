@@ -133,10 +133,9 @@ class Trips(list):
         logger.debugv("trip discarded")
         return False
 
-    # flake8: noqa: C901
-    @staticmethod
+    @staticmethod  # noqa: MC0001
     def get_trips(vehicles_list: Cars) -> Dict[str, "Trips"]:
-        # pylint: disable=too-many-locals,too-many-statements,too-many-nested-blocks
+        # pylint: disable=too-many-locals,too-many-statements,too-many-nested-blocks,too-many-branches
         conn = Database.get_db()
         vehicles = conn.execute(
             "SELECT DISTINCT vin FROM position;").fetchall()

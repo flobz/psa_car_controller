@@ -54,7 +54,7 @@ def diff_dashtable(data, data_previous, row_id_name="row_id"):
     return changes
 
 
-def create_callback():     # flake8: noqa: C901
+def create_callback():  # noqa: MC0001
     global CALLBACK_CREATED
     if not CALLBACK_CREATED:
         @dash_app.callback(Output('trips_map', 'figure'),
@@ -81,8 +81,8 @@ def create_callback():     # flake8: noqa: C901
             consumption = "Average consumption: {:.1f} kWh/100km".format(
                 float(figures.consumption_df["consumption_km"].mean()))
             return figures.trips_map, figures.consumption_fig, figures.consumption_fig_by_speed, \
-                   figures.consumption_graph_by_temp, consumption, figures.table_fig, figures.battery_info, \
-                   figures.battery_table, max_millis, step, marks
+                figures.consumption_graph_by_temp, consumption, figures.table_fig, figures.battery_info, \
+                figures.battery_table, max_millis, step, marks
 
         @dash_app.callback(Output(EMPTY_DIV, "children"),
                            [Input("battery-table", "data_timestamp")],
@@ -91,10 +91,10 @@ def create_callback():     # flake8: noqa: C901
         def capture_diffs_in_battery_table(timestamp, data, data_previous):  # pylint: disable=unused-variable
             if timestamp is None:
                 raise PreventUpdate
-            diff_data = diff_dashtable(data, data_previous,"start_at")
+            diff_data = diff_dashtable(data, data_previous, "start_at")
             for changed_line in diff_data:
                 if changed_line['column_name'] == 'price':
-                    if not Database.set_chargings_price(Database.get_db(),changed_line['start_at'],
+                    if not Database.set_chargings_price(Database.get_db(), changed_line['start_at'],
                                                         changed_line['current_value']):
                         logger.error("Can't find line to update in the database")
             return ""
@@ -350,9 +350,9 @@ def serve_layout():
                     dbc.Tab(label="Map", tab_id="map", children=[maps]),
                     dbc.Tab(label="Control", tab_id="control", children=dbc.Tabs(id="control-tabs",
                                                                                  children=__get_control_tabs()))],
-                         id="tabs",
-                         active_tab="summary",
-                         persistence=True),
+                    id="tabs",
+                    active_tab="summary",
+                    persistence=True),
                 html.Div(id=EMPTY_DIV),
                 html.Div(id=EMPTY_DIV + "1")
             ])])

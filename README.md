@@ -11,8 +11,13 @@ With this app  you will be able to :
  - control air conditioning
  - control lights and horn if your vehicle is compatible (mine isn't) 
  - get consumption statistic
- - visualize your trips on a map
- 
+ - visualize your trips on a map or in a table
+ - get the list of car charging  
+ - visualize battery charging curve
+ - visualize altitude trip curve
+ - get car charging co2 emission
+ - get car charging price
+
 The official api is documented [here](https://developer.groupe-psa.io/webapi/b2c/quickstart/connect/#article) but it is not totally up to date, and contains some errors. 
 
 A video in French was made by vlycop to explain how to use this application : https://youtu.be/XO7-N7G3biU 
@@ -20,7 +25,7 @@ A video in French was made by vlycop to explain how to use this application : ht
 
 ## I. Get credentials
 We need to get credentials from the android app.
-We will retrieve these informations:
+We will retrieve this information:
  - client-id and client-secret  for the api
  - some url to login
 

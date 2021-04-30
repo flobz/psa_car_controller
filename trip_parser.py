@@ -2,9 +2,9 @@ from collections.abc import Callable
 from libs.car import Car
 from mylogger import logger
 
-LEVEL = "level"
+LEVEL = 5
 
-LEVEL_FUEL = "level_fuel"
+LEVEL_FUEL = 8
 
 
 class TripParser:
@@ -67,3 +67,8 @@ class TripParser:
         # If distance is bigger than 0 but charge bigger than five there is probably missing point and we assume that
         # regeneration/temperature can't increase by 5 percent the battery level
         return decharge < -2 and (distance == 0 or decharge < -5)
+
+    @staticmethod
+    def is_low_speed(speed_average, duration):
+        logger.debugv("Low speed detected")
+        return speed_average < 0.2 and duration > 0.05

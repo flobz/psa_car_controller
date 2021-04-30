@@ -1,5 +1,4 @@
-from __future__ import annotations
-
+import logging
 from statistics import mean
 from typing import List, Dict
 
@@ -9,7 +8,7 @@ from geojson import Feature, FeatureCollection, MultiLineString
 from libs.car import Cars, Car
 from mylogger import logger
 from trip_parser import TripParser
-from web.db import get_db
+from web.db import Database
 
 
 class Points:
@@ -37,6 +36,7 @@ class Trip:
         self.duration = None
         self.mileage = None
         self.car: Car = None
+        self.altitude_diff = None
         self.temperatures = []
 
     def add_points(self, latitude, longitude):
@@ -51,13 +51,14 @@ class Trip:
         return None
 
     def set_consumption(self, diff_level: float) -> float:
-        if self.distance is None:
-            raise ValueError("Distance not set")
         if diff_level < 0:
             logger.debugv("trip has negative consumption")
             diff_level = 0
         self.consumption = diff_level * self.car.battery_power / 100
-        self.consumption_km = 100 * self.consumption / self.distance  # kw/100 km
+        try:
+            self.consumption_km = 100 * self.consumption / self.distance  # kw/100 km
+        except TypeError:
+            raise ValueError("Distance not set")
         return self.consumption_km
 
     def set_fuel_consumption(self, consumption) -> float:
@@ -88,13 +89,21 @@ class Trip:
                                                                "average consumption": self.consumption_km,
                                                                "average consumption fuel": self.consumption_fuel_km})
 
-    def get_info(self):
+    def get_info(self, row_id=None):
         res = {"start_at": self.start_at.astimezone(tz.tzlocal()).replace(tzinfo=None).strftime("%x %X"),
                # convert to naive tz,
                "duration": self.duration * 60, "speed_average": self.speed_average,
                "consumption_km": self.consumption_km, "consumption_fuel_km": self.consumption_fuel_km,
-               "distance": self.distance, "mileage": self.mileage}
+               "distance": self.distance, "mileage": self.mileage, "altitude_diff": self.altitude_diff}
+        if row_id is not None:
+            res["id"] = row_id
         return res
+
+    def set_altitude_diff(self, start, end):
+        try:
+            self.altitude_diff = end - start
+        except (NameError, TypeError):
+            pass
 
 
 class Trips(list):
@@ -124,18 +133,18 @@ class Trips(list):
         logger.debugv("trip discarded")
         return False
 
-    # flake8: noqa: C901
-    @staticmethod
-    def get_trips(vehicles_list: Cars) -> Dict[str, Trips]:
-        # pylint: disable=too-many-locals,too-many-statements,too-many-nested-blocks
-        conn = get_db()
+    @staticmethod  # noqa: MC0001
+    def get_trips(vehicles_list: Cars) -> Dict[str, "Trips"]:
+        # pylint: disable=too-many-locals,too-many-statements,too-many-nested-blocks,too-many-branches
+        conn = Database.get_db()
         vehicles = conn.execute(
             "SELECT DISTINCT vin FROM position;").fetchall()
         trips_by_vin = {}
         for vin in vehicles:
             trips = Trips()
             vin = vin[0]
-            res = conn.execute('SELECT * FROM position WHERE VIN=? ORDER BY Timestamp', (vin,)).fetchall()
+            res = conn.execute('SELECT Timestamp, VIN, longitude, latitude, mileage, level, moving, temperature,'
+                               ' level_fuel, altitude FROM position WHERE VIN=? ORDER BY Timestamp', (vin,)).fetchall()
             if len(res) > 1:
                 car = vehicles_list.get_car_by_vin(vin)
                 assert car is not None
@@ -145,8 +154,9 @@ class Trips(list):
                 trip = Trip()
                 # for debugging use this line res = list(map(dict,res))
                 for x in range(0, len(res) - 2):
-                    logger.debugv("%s mileage:%.1f level:%s level_fuel:%s",
-                                  res[x]['Timestamp'], res[x]['mileage'], res[x]['level'], res[x]['level_fuel'])
+                    if logger.isEnabledFor(logging.DEBUG):  # reduce execution time if debug disabled
+                        logger.debugv("%s mileage:%.1f level:%s level_fuel:%s",
+                                      res[x]['Timestamp'], res[x]['mileage'], res[x]['level'], res[x]['level_fuel'])
                     next_el = res[x + 2]
                     distance = end["mileage"] - start["mileage"]
                     duration = (end["Timestamp"] - start["Timestamp"]).total_seconds() / 3600
@@ -154,17 +164,11 @@ class Trips(list):
                         speed_average = distance / duration
                     except ZeroDivisionError:
                         speed_average = 0
-                    restart_trip = False
-                    if trip_parser.is_refuel(start, end, distance):
-                        restart_trip = True
-                    elif speed_average < 0.2 and duration > 0.05:
-                        restart_trip = True
-                        logger.debugv("low speed detected")
-                    if restart_trip:
+                    if TripParser.is_low_speed(speed_average, duration) or trip_parser.is_refuel(start, end, distance):
                         start = end
                         trip = Trip()
-                        logger.debugv("restart trip at %s mileage:%.1f level:%s level_fuel:%s",
-                                      start['Timestamp'], start['mileage'], start['level'], start['level_fuel'])
+                        logger.debugv("restart trip at {0[Timestamp]} mileage:{0[mileage]:.1f} level:{0[level]}"
+                                      " level_fuel:{0[level_fuel]}", start, style='{')
                     else:
                         distance = next_el["mileage"] - end["mileage"]  # km
                         duration = (next_el["Timestamp"] - end["Timestamp"]).total_seconds() / 3600
@@ -173,13 +177,9 @@ class Trips(list):
                         except ZeroDivisionError:
                             speed_average = 0
                         end_trip = False
-                        if trip_parser.is_refuel(end, next_el, distance):
+                        if trip_parser.is_refuel(end, next_el, distance) or \
+                                TripParser.is_low_speed(speed_average, duration):
                             end_trip = True
-                        elif speed_average < 0.2 and duration > 0.05:
-                            # (distance == 0 and duration > 0.08) or duration > 2 or
-                            # check the speed to handle missing point
-                            end_trip = True
-                            logger.debugv("low speed detected")
                         elif duration > 2:
                             end_trip = True
                             logger.debugv("too much time detected")
@@ -189,8 +189,8 @@ class Trips(list):
                             end_trip = True
                             logger.debugv("last position found")
                         if end_trip:
-                            logger.debugv("stop trip at %s mileage:%.1f level:%s level_fuel:%s",
-                                          end['Timestamp'], end['mileage'], end['level'], end['level_fuel'])
+                            logger.debugv("stop trip at {0[Timestamp]} mileage:{0[mileage]:.1f} level:{0[level]}"
+                                          " level_fuel:{0[level_fuel]}", end, style='{')
                             trip.distance = end["mileage"] - start["mileage"]  # km
                             if trip.distance > 0:
                                 trip.start_at = start["Timestamp"]
@@ -201,17 +201,17 @@ class Trips(list):
                                 trip.duration = (end["Timestamp"] - start["Timestamp"]).total_seconds() / 3600
                                 trip.speed_average = trip.distance / trip.duration
                                 diff_level, diff_level_fuel = trip_parser.get_level_consumption(start, end)
+                                trip.set_altitude_diff(start["altitude"], end["altitude"])
                                 trip.car = car
                                 if diff_level != 0:
                                     trip.set_consumption(diff_level)  # kw
                                 if diff_level_fuel != 0:
                                     trip.set_fuel_consumption(diff_level_fuel)
                                 trip.mileage = end["mileage"]
-                                logger.debugv("Trip: %s -> %s %.1fkm %.2fh %.0fkm/h %.2fkWh %.2fkWh/100km %.2fL "
-                                              "%.2fL/100km %.1fkm",
-                                              trip.start_at, trip.end_at, trip.distance, trip.duration,
-                                              trip.speed_average, trip.consumption, trip.consumption_km,
-                                              trip.consumption_fuel, trip.consumption_fuel_km, trip.mileage)
+                                logger.debugv("Trip: {0.start_at} -> {0.end_at} {0.distance:.1f}km {0.duration:.2f}h "
+                                              "{0.speed_average:.0f}km/h {0.consumption:.2f}kWh "
+                                              "{0.consumption_km:.2f}kWh/100km {0.consumption_fuel:.2f}L "
+                                              "{0.consumption_fuel_km:.2f}L/100km {0.mileage:.1f}km", trip, style="{")
                                 # filter bad value
                                 trips.check_and_append(trip)
                             start = next_el
@@ -221,3 +221,11 @@ class Trips(list):
                     end = next_el
                 trips_by_vin[vin] = trips
         return trips_by_vin
+
+    def get_info(self):
+        res = []
+        row_id = 1
+        for trip in self:
+            res.append(trip.get_info(row_id))
+            row_id += 1
+        return res

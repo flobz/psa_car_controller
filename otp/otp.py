@@ -1,5 +1,4 @@
 import hashlib
-import traceback
 import pickle
 from secrets import token_hex, token_bytes
 from math import ceil
@@ -278,7 +277,8 @@ class Otp:
 
     def __getstate__(self):
         odict = self.__dict__.copy()
-        del odict['cipher']  # don't pickle this
+        if 'cipher' in odict:
+            del odict['cipher']  # don't pickle this
         return odict
 
     def __setstate__(self, dict_param):
@@ -321,7 +321,7 @@ def load_otp(filename="otp.bin"):
             except ModuleNotFoundError:
                 return RenameUnpickler(input_file).load()
     except FileNotFoundError:
-        logger.debug(traceback.format_exc())
+        logger.debug("", exc_info=True)
     return None
 
 

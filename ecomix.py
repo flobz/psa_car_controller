@@ -2,7 +2,6 @@ from datetime import datetime, timedelta
 from statistics import mean, StatisticsError
 import xml.etree.cElementTree as ElT
 import numbers
-import traceback
 
 import requests
 import reverse_geocode
@@ -10,10 +9,12 @@ import reverse_geocode
 from mylogger import logger
 
 CO2_SIGNAL_REQ_INTERVAL = 600
+CO2_SIGNAL_URL = "https://api.co2signal.com"
 
 
 class Ecomix:
     _cache = {}
+    co2_signal_key = None
 
     @staticmethod
     def get_data_france(start, end):
@@ -47,18 +48,18 @@ class Ecomix:
             return None
 
     @staticmethod
-    def get_data_from_co2_signal(latitude, longitude, co2_signal_key):
-        if co2_signal_key is not None:
+    def get_data_from_co2_signal(latitude, longitude):
+        if Ecomix.co2_signal_key is not None:
             try:
                 country_code = Ecomix.get_country(latitude, longitude)
                 assert country_code is not None
                 if country_code not in Ecomix._cache:
                     Ecomix._cache[country_code] = []
                 elif len(Ecomix._cache[country_code]) > 0 and \
-                        (datetime.now()-Ecomix._cache[country_code][-1][0]).total_seconds() < CO2_SIGNAL_REQ_INTERVAL:
+                        (datetime.now() - Ecomix._cache[country_code][-1][0]).total_seconds() < CO2_SIGNAL_REQ_INTERVAL:
                     return False
-                res = requests.get("https://api.co2signal.com/v1/latest",
-                                   headers={"auth-token": co2_signal_key},
+                res = requests.get(CO2_SIGNAL_URL + "/v1/latest",
+                                   headers={"auth-token": Ecomix.co2_signal_key},
                                    params={"countryCode": country_code})
                 data = res.json()
                 value = data["data"]["carbonIntensity"]
@@ -66,7 +67,7 @@ class Ecomix:
                 Ecomix._cache[country_code].append([datetime.now(), value])
                 return data["status"] == "ok"
             except (AssertionError, NameError, KeyError):
-                logger.debug(traceback.format_exc())
+                logger.debug("ecomix:", exc_info=True)
                 return False
         else:
             return False
@@ -99,12 +100,12 @@ class Ecomix:
             return None
 
     @staticmethod
-    def get_co2_per_kw(start: datetime, end: datetime, latitude, longitude, from_cache=False):
+    def get_co2_per_kw(start: datetime, end: datetime, latitude, longitude):
         co2_per_kw = None
         country_code = Ecomix.get_country(latitude, longitude)
         if country_code is None:
             return None
-        if from_cache:
+        if Ecomix.co2_signal_key is not None:
             co2_per_kw = Ecomix.get_co2_from_signal_cache(start, end, country_code)
         elif country_code == 'FR':
             co2_per_kw = Ecomix.get_data_france(start, end)

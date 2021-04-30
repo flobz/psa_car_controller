@@ -1,7 +1,6 @@
 import json
 import re
 import threading
-import traceback
 import uuid
 from datetime import datetime
 from json import JSONEncoder
@@ -10,8 +9,7 @@ from time import sleep
 
 from oauth2_client.credentials_manager import ServiceInformation
 import paho.mqtt.client as mqtt
-from geojson import Feature, Point, FeatureCollection
-from geojson import dumps as geo_dumps
+from requests.exceptions import RequestException
 
 import psa_connectedcar as psac
 from libs.car import Cars, Car
@@ -22,9 +20,9 @@ from otp.otp import load_otp, new_otp_session, save_otp, ConfigException, Otp
 from psa_connectedcar.rest import ApiException
 from mylogger import logger
 
-from utils import get_temp, rate_limit
+from utils import rate_limit
 from web.abrp import Abrp
-from web.db import get_db, clean_position, get_last_temp
+from web.db import Database
 
 PSA_CORRELATION_DATE_FORMAT = "%Y%m%d%H%M%S%f"
 PSA_DATE_FORMAT = "%Y-%m-%dT%H:%M:%SZ"
@@ -104,15 +102,19 @@ class MyPSACC:
             self.abrp: Abrp = Abrp(**abrp)
         self.set_proxies(proxies)
         self.config_file = DEFAULT_CONFIG_FILENAME
-        self.co2_signal_api = co2_signal_api
+        Ecomix.co2_signal_key = co2_signal_api
 
     def get_app_name(self):
         return realm_info[self.realm]['app_name']
 
     def refresh_token(self):
-        # pylint: disable=protected-access
-        self.manager._refresh_token()
-        self.save_config()
+        try:
+            # pylint: disable=protected-access
+            self.manager._refresh_token()
+            self.save_config()
+        except RequestException as e:
+            logger.error("Can't refresh token %s", e)
+            sleep(60)
 
     def api(self) -> psac.VehiclesApi:
         self.api_config.access_token = self.manager.access_token
@@ -141,8 +143,9 @@ class MyPSACC:
                     if self._record_enabled:
                         self.record_info(car)
                     return res
-            except ApiException:
-                logger.error(traceback.format_exc())
+            except ApiException as ex:
+                logger.error("get_vehicle_info: ApiException: %s", ex)
+                logger.debug(exc_info=True)
         car.status = res
         return res
 
@@ -171,7 +174,7 @@ class MyPSACC:
                 self.vehicles_list.add(Car(vehicle.vin, vehicle.id, vehicle.brand, vehicle.label))
             self.vehicles_list.save_cars()
         except ApiException:
-            logger.error(traceback.format_exc())
+            logger.exception("get_vehicles:")
         return self.vehicles_list
 
     def load_otp(self, force_new=False):
@@ -203,13 +206,18 @@ class MyPSACC:
         return otp_code
 
     def get_remote_access_token(self, password):
-        res = self.manager.post(REMOTE_URL + self.client_id,
-                                json={"grant_type": "password", "password": password},
-                                headers=self.headers)
-        data = res.json()
-        self.remote_access_token = data["access_token"]
-        self.remote_refresh_token = data["refresh_token"]
-        return res
+        try:
+            res = self.manager.post(REMOTE_URL + self.client_id,
+                                    json={"grant_type": "password", "password": password},
+                                    headers=self.headers)
+            data = res.json()
+            self.remote_access_token = data["access_token"]
+            self.remote_refresh_token = data["refresh_token"]
+            return res
+        except RequestException as e:
+            logger.error("Can't refresh remote token %s", e)
+            sleep(60)
+        return None
 
     def refresh_remote_token(self, force=False):
         if not force and self.remote_token_last_update is not None:
@@ -217,26 +225,31 @@ class MyPSACC:
             if (datetime.now() - last_update).total_seconds() < MQTT_TOKEN_TTL:
                 return None
         self.refresh_token()
-        if self.remote_refresh_token is None:
-            logger.error("remote_refresh_token isn't defined")
-            self.load_otp(force_new=True)
-        res = self.manager.post(REMOTE_URL + self.client_id,
-                                json={"grant_type": "refresh_token", "refresh_token": self.remote_refresh_token},
-                                headers=self.headers)
-        data = res.json()
-        logger.debug("refresh_remote_token: %s", data)
-        if "access_token" in data:
-            self.remote_access_token = data["access_token"]
-            self.remote_refresh_token = data["refresh_token"]
-            self.remote_token_last_update = datetime.now()
-        else:
-            logger.error("can't refresh_remote_token: %s\n Create a new one", data)
-            self.remote_token_last_update = datetime.now()
-            otp_code = self.get_otp_code()
-            res = self.get_remote_access_token(otp_code)
-        self.mqtt_client.username_pw_set("IMA_OAUTH_ACCESS_TOKEN", self.remote_access_token)
-        self.save_config()
-        return res
+        try:
+            if self.remote_refresh_token is None:
+                logger.error("remote_refresh_token isn't defined")
+                self.load_otp(force_new=True)
+            res = self.manager.post(REMOTE_URL + self.client_id,
+                                    json={"grant_type": "refresh_token", "refresh_token": self.remote_refresh_token},
+                                    headers=self.headers)
+            data = res.json()
+            logger.debug("refresh_remote_token: %s", data)
+            if "access_token" in data:
+                self.remote_access_token = data["access_token"]
+                self.remote_refresh_token = data["refresh_token"]
+                self.remote_token_last_update = datetime.now()
+            else:
+                logger.error("can't refresh_remote_token: %s\n Create a new one", data)
+                self.remote_token_last_update = datetime.now()
+                otp_code = self.get_otp_code()
+                res = self.get_remote_access_token(otp_code)
+            self.mqtt_client.username_pw_set("IMA_OAUTH_ACCESS_TOKEN", self.remote_access_token)
+            self.save_config()
+            return res
+        except RequestException as e:
+            logger.error("Can't refresh remote token %s", e)
+            sleep(60)
+            return None
 
     # pylint: disable=unused-argument
     def __on_mqtt_connect(self, client, userdata, result_code, _):
@@ -283,7 +296,7 @@ class MyPSACC:
                 sleep(60)
                 self.wakeup(data["vin"])
         except KeyError:
-            logger.error(traceback.format_exc())
+            logger.exception("mqtt message:")
 
     def start_mqtt(self):
         self.load_otp()
@@ -329,8 +342,7 @@ class MyPSACC:
                 minute = hour_minute[1]
             return hour, minute
         except IndexError:
-            logger.error(traceback.format_exc())
-            logger.error("Can't get charge hour: %s", hour_str)
+            logger.exception("Can't get charge hour: %s", hour_str)
             return None
 
     def get_charge_status(self, vin):
@@ -338,8 +350,8 @@ class MyPSACC:
         status = data.get_energy('Electric').charging.status
         return status
 
-    def __veh_charge_request(self, vin, hour, miinute, charge_type):
-        msg = self.mqtt_request(vin, {"program": {"hour": hour, "minute": miinute}, "type": charge_type})
+    def __veh_charge_request(self, vin, hour, minute, charge_type):
+        msg = self.mqtt_request(vin, {"program": {"hour": hour, "minute": minute}, "type": charge_type})
         logger.info(msg)
         self.mqtt_client.publish(MQTT_REQ_TOPIC + self.customer_id + "/VehCharge", msg)
 
@@ -451,95 +463,23 @@ class MyPSACC:
 
         longitude = car.status.last_position.geometry.coordinates[0]
         latitude = car.status.last_position.geometry.coordinates[1]
+        altitude = car.status.last_position.geometry.coordinates[2]
         date = car.status.last_position.properties.updated_at
         if date is None:
             date = charge_date
         logger.debug("vin:%s longitude:%s latitude:%s date:%s mileage:%s level:%s charge_date:%s level_fuel:"
                      "%s moving:%s", car.vin, longitude, latitude, date, mileage, level, charge_date, level_fuel,
                      moving)
-        self.__record_position(car.vin, mileage, latitude, longitude, date, level, level_fuel, moving)
-        self.abrp.call(car, get_last_temp(car.vin))
+        Database.record_position(self.weather_api, car.vin, mileage, latitude, longitude, altitude, date, level,
+                                 level_fuel, moving)
+        self.abrp.call(car, Database.get_last_temp(car.vin))
         try:
             charging_status = car.status.get_energy('Electric').charging.status
-            self.__record_charging(car.vin, charging_status, charge_date, level, latitude, longitude)
+            charging_mode = car.status.get_energy('Electric').charging.charging_mode
+            Charging.record_charging(car, charging_status, charge_date, level, latitude, longitude, charging_mode)
             logger.debug("charging_status:%s ", charging_status)
         except AttributeError:
             logger.error("charging status not available from api")
-
-    def __record_position(self, vin, mileage, latitude, longitude, date, level, level_fuel, moving):
-        conn = get_db()
-        if mileage == 0:  # fix a bug of the api
-            logger.error("The api return a wrong mileage for %s : %f", vin, mileage)
-        else:
-            if conn.execute("SELECT Timestamp from position where Timestamp=?", (date,)).fetchone() is None:
-                temp = get_temp(latitude, longitude, self.weather_api)
-                if level_fuel == 0:  # fix fuel level not provided when car is off
-                    try:
-                        level_fuel = conn.execute(
-                            "SELECT level_fuel FROM position WHERE level_fuel>0 AND VIN=? ORDER BY Timestamp DESC "
-                            "LIMIT 1",
-                            (vin,)).fetchone()[0]
-                        logger.info("level_fuel fixed with last real value %f for %s", level_fuel, vin)
-                    except TypeError:
-                        level_fuel = None
-                        logger.info("level_fuel unfixed for %s", vin)
-
-                conn.execute("INSERT INTO position(Timestamp,VIN,longitude,latitude,mileage,level,level_fuel,moving,"
-                             "temperature) VALUES(?,?,?,?,?,?,?,?,?)",
-                             (date, vin, longitude, latitude, mileage, level, level_fuel, moving, temp))
-
-                conn.commit()
-                logger.info("new position recorded for %s", vin)
-                clean_position(conn)
-                return True
-            logger.debug("position already saved")
-        return False
-
-    def __record_charging(self, vin, charging_status, charge_date, level, latitude, longitude):
-        conn = get_db()
-        if charging_status == "InProgress":
-            try:
-                in_progress = conn.execute("SELECT stop_at FROM battery WHERE VIN=? ORDER BY start_at DESC limit 1",
-                                           (vin,)).fetchone()[0] is None
-            except TypeError:
-                in_progress = False
-            if not in_progress:
-                conn.execute("INSERT INTO battery(start_at,start_level,VIN) VALUES(?,?,?)", (charge_date, level, vin))
-                conn.commit()
-            Ecomix.get_data_from_co2_signal(latitude, longitude, self.co2_signal_api)
-        else:
-            try:
-                start_at, stop_at, start_level = conn.execute(
-                    "SELECT start_at, stop_at, start_level from battery WHERE VIN=? ORDER BY start_at "
-                    "DESC limit 1", (vin,)).fetchone()
-                in_progress = stop_at is None
-                if in_progress:
-                    co2_per_kw = Ecomix.get_co2_per_kw(start_at, charge_date, latitude, longitude,
-                                                       from_cache=self.co2_signal_api is not None)
-                    consumption_kw = (level - start_level) / 100 * self.vehicles_list.get_car_by_vin(vin).battery_power
-
-                    Charging.update_chargings(conn, start_at, charge_date, level, co2_per_kw, consumption_kw, vin)
-                    conn.commit()
-            except TypeError:
-                logger.debug("battery table is empty")
-        conn.close()
-
-    @staticmethod
-    def get_recorded_position():
-        conn = get_db()
-        res = conn.execute('SELECT * FROM position ORDER BY Timestamp')
-        features_list = []
-        for row in res:
-            if row["longitude"] is None or row["latitude"] is None:
-                continue
-            feature = Feature(geometry=Point((row["longitude"], row["latitude"])),
-                              properties={"vin": row["vin"], "date": row["Timestamp"].strftime("%x %X"),
-                                          "mileage": row["mileage"],
-                                          "level": row["level"], "level_fuel": row["level_fuel"]})
-            features_list.append(feature)
-        feature_collection = FeatureCollection(features_list)
-        conn.close()
-        return geo_dumps(feature_collection, sort_keys=True)
 
     def __iter__(self):
         for key, value in self.__dict__.items():
@@ -553,7 +493,7 @@ class MyPeugeotEncoder(JSONEncoder):
         data = dict(mp)
         mpd = {"proxies": data["_proxies"], "refresh_token": mp.manager.refresh_token,
                "client_secret": mp.service_information.client_secret, "abrp": dict(mp.abrp)}
-        for param in ["client_id", "realm", "remote_refresh_token", "customer_id", "weather_api", "country_code",
-                      "co2_signal_api"]:
+        for param in ["client_id", "realm", "remote_refresh_token", "customer_id", "weather_api", "country_code"]:
             mpd[param] = data[param]
+        mpd["co2_signal_api"] = Ecomix.co2_signal_key
         return mpd

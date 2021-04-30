@@ -2,7 +2,8 @@ from datetime import datetime, timezone, timedelta
 import configparser
 from statistics import mean
 
-CONFIG_FILENAME = "config.ini"
+from mylogger import logger
+
 
 
 def set_number(value):
@@ -18,13 +19,14 @@ def utc_to_local(utc_dt):
 
 class ElecPrice:
     currency = ""
+    CONFIG_FILENAME = "config.ini"
 
     def __init__(self, day_price, night_price=None, nights_hours=None):
         self.day_price = set_number(day_price)
         self.night_price = set_number(night_price)
         self.nights_hour = None
         self.set_night_hour(nights_hours)
-        self.config_filename = CONFIG_FILENAME
+        self.config_filename = ElecPrice.CONFIG_FILENAME
 
     def set_night_hour(self, value):
         if value is not None and isinstance(value, list):
@@ -52,16 +54,24 @@ class ElecPrice:
     def get_price(self, start, end, consumption):
         prices = []
         date = start
-        while date < end:
-            prices.append(self.get_instant_price(date))
-            date = date + timedelta(minutes=30)
-        return round(consumption * mean(prices), 2)
+        res = None
+        if not (start is None or end is None):
+            while date < end:
+                prices.append(self.get_instant_price(date))
+                date = date + timedelta(minutes=30)
+            try:
+                res = round(consumption * mean(prices), 2)
+            except TypeError:
+                logger.error("Can't get_price of charge, check config")
+        return res
 
     def is_enable(self):
         return self.day_price is not None
 
     @staticmethod
-    def read_config(name=CONFIG_FILENAME):
+    def read_config(name=None):
+        if name is None:
+            name = ElecPrice.CONFIG_FILENAME
         config = configparser.ConfigParser()
         if len(config.read(name)) == 0:
             ElecPrice.write_default_config(name)
@@ -79,7 +89,9 @@ class ElecPrice:
         return ElecPrice(elec_config["day price"], night_price, night_hours)
 
     @staticmethod
-    def write_default_config(name=CONFIG_FILENAME):
+    def write_default_config(name=None):
+        if name is None:
+            name = ElecPrice.CONFIG_FILENAME
         config = configparser.ConfigParser()
         config["General"] = {
             "currency": "€"

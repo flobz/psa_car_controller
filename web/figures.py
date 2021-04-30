@@ -1,4 +1,5 @@
 from copy import deepcopy
+
 from typing import List
 
 import dash_bootstrap_components as dbc
@@ -13,8 +14,10 @@ from pandas import DataFrame
 from pandas import options as pandas_options
 import dash_html_components as html
 
-from trip import Trips
+from libs.car import Car
 from libs.elec_price import ElecPrice
+from trip import Trips, Trip
+from web.db import Database
 
 
 def unix_time_millis(date):
@@ -82,8 +85,9 @@ def get_figures(trips: Trips, charging: List[dict]):
     table_fig = dash_table.DataTable(
         id='trips-table',
         sort_action='native',
-        # sort_by=[{'column_id': 'start_at', 'direction': 'desc'}],
-        columns=[{'id': 'start_at', 'name': 'start at', 'type': 'datetime'},
+        sort_by=[{'column_id': 'id', 'direction': 'desc'}],
+        columns=[{'id': 'id', 'name': '#', 'type': 'numeric'},
+                 {'id': 'start_at', 'name': 'start at', 'type': 'datetime'},
                  {'id': 'duration', 'name': 'duration', 'type': 'numeric',
                   'format': deepcopy(nb_format).symbol_suffix(" min").precision(0)},
                  {'id': 'speed_average', 'name': 'average speed', 'type': 'numeric',
@@ -95,8 +99,18 @@ def get_figures(trips: Trips, charging: List[dict]):
                  {'id': 'distance', 'name': 'distance', 'type': 'numeric',
                   'format': nb_format.symbol_suffix(" km").precision(1)},
                  {'id': 'mileage', 'name': 'mileage', 'type': 'numeric',
-                  'format': nb_format.symbol_suffix(" km").precision(1)}],
-        data=[tr.get_info() for tr in trips[::-1]],
+                  'format': nb_format},
+                 {'id': 'altitude_diff', 'name': 'Altitude diff', 'type': 'numeric',
+                  'format': deepcopy(nb_format).symbol_suffix(" m").precision(0)}
+                 ],
+        style_data_conditional=[
+            {
+                'if': {'column_id': ['altitude_diff']},
+                'color': 'dodgerblue',
+                "text-decoration": "underline"
+            }
+        ],
+        data=trips.get_info(),
         page_size=50
     )
     # consumption_fig
@@ -128,6 +142,7 @@ def get_figures(trips: Trips, charging: List[dict]):
         charge_speed = 0
         price_kw = 0
         total_elec = 0
+
     battery_info = html.Div(children=[
         html.Tr(
             [
@@ -175,7 +190,18 @@ def get_figures(trips: Trips, charging: List[dict]):
                  {'id': 'price', 'name': 'price', 'type': 'numeric',
                   'format': deepcopy(nb_format).symbol_suffix(" " + ElecPrice.currency).precision(2), 'editable': True}
                  ],
-        data=charging
+        data=charging,
+        style_data_conditional=[
+            {
+                'if': {'column_id': ['start_level', "end_level"]},
+                'color': 'dodgerblue',
+                "text-decoration": "underline"
+            },
+            {
+                'if': {'column_id': 'price'},
+                'backgroundColor': 'rgb(230, 246, 254)'
+            }
+        ],
     )
     consumption_by_temp_df = consumption_df[consumption_df["consumption_by_temp"].notnull()]
     if len(consumption_by_temp_df) > 0:
@@ -192,7 +218,7 @@ def get_figures(trips: Trips, charging: List[dict]):
 
     else:
         consumption_graph_by_temp = html.Div(Graph(style={'display': 'none'}), id="consumption_graph_by_temp")
-
+    return True
 
 def __calculate_co2_per_kw(charging_data):
     try:
@@ -203,3 +229,34 @@ def __calculate_co2_per_kw(charging_data):
     except KeyError:
         return 0
     return 0
+
+
+def get_battery_curve_fig(row: dict, car: Car):
+    start_date = Database.convert_datetime_from_string(row["start_at"])
+    stop_at = Database.convert_datetime_from_string(row["stop_at"])
+    res = Database.get_battery_curve(Database.get_db(), start_date, car.vin)
+    res.insert(0, {"level": row["start_level"], "date": start_date})
+    res.append({"level": row["end_level"], "date": stop_at})
+    battery_curves = []
+    speed = 0
+    for x in range(1, len(res)):
+        start_level = res[x - 1]["level"]
+        end_level = res[x]["level"]
+        speed = car.get_charge_speed(start_level, end_level, (res[x]["date"] - res[x - 1]["date"]).total_seconds())
+        battery_curves.append({"level": start_level, "speed": speed})
+    battery_curves.append({"level": row["end_level"], "speed": speed})
+    fig = px.line(battery_curves, x="level", y="speed")
+    fig.update_layout(xaxis_title="Battery %", yaxis_title="Charging speed in kW")
+    return html.Div(Graph(figure=fig))
+
+
+def get_altitude_fig(trip: Trip):
+    conn = Database.get_db()
+    res = list(map(list, conn.execute("SELECT mileage, altitude FROM position WHERE Timestamp>=? and Timestamp<=?;",
+                                      (trip.start_at, trip.end_at)).fetchall()))
+    start_mileage = res[0][0]
+    for line in res:
+        line[0] = line[0] - start_mileage
+    fig = px.line(res, x=0, y=1)
+    fig.update_layout(xaxis_title="Distance km", yaxis_title="Altitude m")
+    return html.Div(Graph(figure=fig))

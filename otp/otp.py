@@ -321,7 +321,7 @@ def load_otp(filename="otp.bin"):
             except ModuleNotFoundError:
                 return RenameUnpickler(input_file).load()
     except FileNotFoundError:
-        logger.debug("",exc_info=True)
+        logger.debug("", exc_info=True)
     return None
 
 

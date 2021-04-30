@@ -91,7 +91,7 @@ def create_callback():     # flake8: noqa: C901
         def capture_diffs_in_battery_table(timestamp, data, data_previous):  # pylint: disable=unused-variable
             if timestamp is None:
                 raise PreventUpdate
-            diff_data = diff_dashtable(data, data_previous, "start_at")
+            diff_data = diff_dashtable(data, data_previous,"start_at")
             for changed_line in diff_data:
                 if changed_line['column_name'] == 'price':
                     if not Database.set_chargings_price(Database.get_db(),changed_line['start_at'],

@@ -54,7 +54,8 @@ carmodels = [
     ElecModel("e-2008", 46, "peugeot:e2008:20:48", r"VR3UKZKX.*"),
     ElecModel("e-Spacetourer", 46, "peugeot:etraveler:21:50:citroen", r"VF7VZZKX.*"),
     ElecModel("corsa-e", 46, "opel:corsae:20:50", r"VXKUHZKX.*"),
+    ElecModel("E-C4", 46, "citroen:ec4:21:50", r"VR7BCZKX.*"),  # VR7BCZKXCM
     CarModel("SUV 3008", 10.8, 43),
-    CarModel("SUV 5008 II", 0, 56, reg=r"VF3MRHNS.*"), #vf3mrhnsum
+    CarModel("SUV 5008 II", 0, 56, reg=r"VF3MRHNS.*"),  # vf3mrhnsum
     CarModel("C5 Aircross", 10.8, 43)
 ]

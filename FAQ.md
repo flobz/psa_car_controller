@@ -13,3 +13,11 @@ Your psa account is locked because you makes 20 sms activation. To unlock do thi
 ### 3. No data to show
 The app record your position if "-r" argument is provided.
 You need to make few trips to be able to see stats in the dashboard.
+
+### 4. Permission error
+It's happen if config file aren't writable by the user that launch the process.
+To fix this go to the application directory and execute this command :
+```
+# if the user is launched by pi user do
+sudo chown pi: -R . 
+```

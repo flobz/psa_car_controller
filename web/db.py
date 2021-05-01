@@ -168,7 +168,7 @@ class Database:
                                    "FROM position WHERE altitude IS NULL LIMIT ?;", (max_pos_by_req,)).fetchall()
                 nb_res = len(res)
                 if nb_res > 0:
-                    logger.debug("add altitude for %s positions point", len(nb_null))
+                    logger.debug("add altitude for %s positions point", nb_null)
                     nb_null -= nb_res
                     locations_str = ""
                     for line in res:

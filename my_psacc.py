@@ -476,7 +476,7 @@ class MyPSACC:
         try:
             charging_status = car.status.get_energy('Electric').charging.status
             charging_mode = car.status.get_energy('Electric').charging.charging_mode
-            Charging.record_charging(car, charging_status, charge_date, level, latitude, longitude, charging_mode)
+            Charging.record_charging(car, charging_status, charge_date, level, latitude, longitude, self.country_code, charging_mode)
             logger.debug("charging_status:%s ", charging_status)
         except AttributeError:
             logger.error("charging status not available from api")

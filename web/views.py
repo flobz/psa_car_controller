@@ -186,7 +186,7 @@ def get_position(vin):
         coordinates = res.last_position.geometry.coordinates
     except AttributeError:
         return jsonify({'error': 'last_position not available from api'})
-    longitude, latitude, altitude = coordinates[:2]
+    longitude, latitude = coordinates[:2]
     if len(coordinates) == 3:  # altitude is not always available
         altitude = coordinates[2]
     else:

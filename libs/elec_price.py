@@ -1,6 +1,6 @@
 from datetime import datetime, timezone, timedelta
 import configparser
-from statistics import mean
+from statistics import mean, StatisticsError
 
 from mylogger import logger
 
@@ -61,7 +61,7 @@ class ElecPrice:
                 date = date + timedelta(minutes=30)
             try:
                 res = round(consumption * mean(prices), 2)
-            except TypeError:
+            except (TypeError, StatisticsError):
                 logger.error("Can't get_price of charge, check config")
         return res
 

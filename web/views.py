@@ -250,12 +250,14 @@ def update_trips():
         chargings = Charging.get_chargings()
     except (StopIteration, AssertionError):
         logger.debug("No trips yet")
-        return
+        # return
     # update for slider
     global min_date, max_date, min_millis, max_millis, step, marks
     try:
-        min_date = trips[0].start_at
-        max_date = trips[-1].start_at
+        # min_date = trips[0].start_at
+        # max_date = trips[-1].start_at
+        min_date, max_date = Database.get_range_timestamp()
+        logger.debug("min_date:%s - max_date:%s",min_date, max_date)
         min_millis = figures.unix_time_millis(min_date)
         max_millis = figures.unix_time_millis(max_date)
         step = (max_millis - min_millis) / 100
@@ -263,6 +265,8 @@ def update_trips():
         cached_layout = None  # force regenerate layout
     except (ValueError, IndexError):
         logger.error("update_trips (slider): %s", exc_info=True)
+    except AttributeError:
+        logger.debug("position table is probably empty :", exc_info=True)
     return
 
 

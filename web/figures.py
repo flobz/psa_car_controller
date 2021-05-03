@@ -62,6 +62,12 @@ info = ""
 battery_info = ERROR_DIV
 battery_table = None
 
+SUMMARY_CARDS = {"Average consumption": {"text": None, "src": "static/images/consumption.svg"},
+                 "Average emission": {"text": None, "src": "static/images/pollution.svg"},
+                 "Average charge speed": {"text": None, "src": "static/images/battery-charge-line.svg"},
+                 "Electricity consumption": {"text": None, "src": "static/images/electricity bill.svg"}
+                 }
+
 
 # pylint: disable=too-many-locals
 def get_figures(trips: Trips, charging: List[dict]):
@@ -115,7 +121,8 @@ def get_figures(trips: Trips, charging: List[dict]):
     )
     # consumption_fig
     consumption_df = DataFrame.from_records(trips.get_long_trips())
-    consumption_fig = px.line(consumption_df, x="date", y="consumption", title='Consumption of the car')
+    consumption_fig = px.histogram(consumption_df, x="date", y="consumption", title='Consumption of the car',
+                                   histfunc="avg")
     consumption_fig.update_layout(yaxis_title="Consumption kWh/100Km")
 
     consumption_fig_by_speed = px.histogram(consumption_df, x="speed", y="consumption_km", histfunc="avg",
@@ -143,38 +150,11 @@ def get_figures(trips: Trips, charging: List[dict]):
         price_kw = 0
         total_elec = 0
 
-    battery_info = html.Div(children=[
-        html.Tr(
-            [
-                html.Td('Average emission:', rowSpan=2),
-                html.Td("{:.1f} g/km".format(co2_per_km))]),
-        html.Tr(
-            [
-                "{:.1f} g/kWh".format(co2_per_kw),
-            ]
-        ),
-        html.Tr([
-            html.Td("Average charge speed:", style=PADDING_TOP),
-            html.Td("{:.3f} kW".format(charge_speed))
-        ]),
-        html.Tr(html.Td(" ", colSpan=2)),
-        html.Tr([
-            html.Td('Average Price:', rowSpan=2, style=PADDING_TOP),
-            html.Td("{:.2f} {}/100km".format(price_kw * kw_per_km, ElecPrice.currency)),
-        ]),
-        html.Tr([
-            "{:.2f} {}/kWh".format(price_kw, ElecPrice.currency),
-        ]),
-        html.Tr(html.Td(" ", colSpan=2)),
-        html.Tr([
-            html.Td('Electricity consumption:', rowSpan=2, style=PADDING_TOP),
-            html.Td("{:.0f} kWh".format(total_elec)),
-        ]),
-        html.Tr([
-            "{:.0f} {}".format(total_elec * price_kw, ElecPrice.currency),
-        ]),
-    ])
-
+    SUMMARY_CARDS["Average charge speed"]["text"] = f"{charge_speed:.2f} kW"
+    SUMMARY_CARDS["Average emission"]["text"] = [html.P(f"{co2_per_km:.1f} g/km"), html.P(f"{co2_per_kw:.1f} g/kWh")]
+    SUMMARY_CARDS["Electricity consumption"]["text"] = [f"{total_elec:.0f} kWh", html.Br(), \
+                                                        f"{total_elec * price_kw:.0f} {ElecPrice.currency}"]
+    SUMMARY_CARDS["Average consumption"]["text"] = f"{consumption_df['consumption_km'].mean():.1f} kWh/100km"
     battery_table = dash_table.DataTable(
         id='battery-table',
         sort_action='native',
@@ -219,6 +199,7 @@ def get_figures(trips: Trips, charging: List[dict]):
     else:
         consumption_graph_by_temp = html.Div(Graph(style={'display': 'none'}), id="consumption_graph_by_temp")
     return True
+
 
 def __calculate_co2_per_kw(charging_data):
     try:

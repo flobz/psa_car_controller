@@ -48,10 +48,10 @@ class Ecomix:
             return None
 
     @staticmethod
-    def get_data_from_co2_signal(latitude, longitude):
+    def get_data_from_co2_signal(latitude, longitude, country_code_default):
         if Ecomix.co2_signal_key is not None:
             try:
-                country_code = Ecomix.get_country(latitude, longitude)
+                country_code = Ecomix.get_country(latitude, longitude, country_code_default)
                 assert country_code is not None
                 if country_code not in Ecomix._cache:
                     Ecomix._cache[country_code] = []
@@ -90,19 +90,22 @@ class Ecomix:
         return mean(co2_per_kw)
 
     @staticmethod
-    def get_country(latitude, longitude):
+    def get_country(latitude, longitude, country_code_default):
         try:
             location = reverse_geocode.search([(latitude, longitude)])[0]
             country_code = location["country_code"]
             return country_code
         except (UnicodeDecodeError, IndexError):
             logger.error("Can't find country for %s %s", latitude, longitude)
-            return None
+            # return None
+            country_code = country_code_default
+            logger.warning("Using country of origin : %s (wrong co2 when traveling abroad)", country_code)
+            return country_code
 
     @staticmethod
-    def get_co2_per_kw(start: datetime, end: datetime, latitude, longitude):
+    def get_co2_per_kw(start: datetime, end: datetime, latitude, longitude, country_code_default):
         co2_per_kw = None
-        country_code = Ecomix.get_country(latitude, longitude)
+        country_code = Ecomix.get_country(latitude, longitude, country_code_default)
         if country_code is None:
             return None
         if Ecomix.co2_signal_key is not None:

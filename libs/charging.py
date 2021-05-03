@@ -47,7 +47,7 @@ class Charging:
         Database.clean_battery(conn)
 
     @staticmethod
-    def record_charging(car, charging_status, charge_date: datetime, level, latitude, longitude, charging_mode):
+    def record_charging(car, charging_status, charge_date: datetime, level, latitude, longitude, country_code, charging_mode):
         conn = Database.get_db()
         charge_date = charge_date.replace(microsecond=0)
         if charging_status == "InProgress":
@@ -64,7 +64,7 @@ class Charging:
             else:
                 conn.execute("INSERT INTO battery(start_at,start_level,charging_mode,VIN) VALUES(?,?,?,?)",
                              (charge_date, level, charging_mode, car.vin))
-            Ecomix.get_data_from_co2_signal(latitude, longitude)
+            Ecomix.get_data_from_co2_signal(latitude, longitude, country_code)
         else:
             try:
                 start_at, stop_at, start_level = conn.execute(
@@ -72,7 +72,7 @@ class Charging:
                     "DESC limit 1", (car.vin,)).fetchone()
                 in_progress = stop_at is None
                 if in_progress:
-                    co2_per_kw = Ecomix.get_co2_per_kw(start_at, charge_date, latitude, longitude)
+                    co2_per_kw = Ecomix.get_co2_per_kw(start_at, charge_date, latitude, longitude, country_code)
                     consumption_kw = (level - start_level) / 100 * car.battery_power
 
                     Charging.update_chargings(conn, start_at, charge_date, level, co2_per_kw, consumption_kw, car.vin)

@@ -141,15 +141,6 @@ class Database:
         return res[0]
 
     @staticmethod
-    def get_range_timestamp():
-        conn = Database.get_db()
-        first = conn.execute("SELECT Timestamp FROM position ORDER BY Timestamp limit 1").fetchone()
-        last = conn.execute("SELECT Timestamp FROM position ORDER BY Timestamp DESC limit 1").fetchone()
-        if first is None or last is None:
-            return None, None
-        return first[0], last[0]
-
-    @staticmethod
     def set_chargings_price(conn, start_at, price):
         if isinstance(start_at, str):
             start_at = Database.convert_datetime_from_string(start_at)

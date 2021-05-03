@@ -240,23 +240,34 @@ def after_request(response):
 
 
 def update_trips():
-    global trips, chargings, cached_layout
+    global trips, chargings, cached_layout, min_date, max_date, min_millis, max_millis, step, marks
     logger.info("update_data")
     Database.add_altitude_to_db(Database.get_db(update_callback=False))
+    min_date = None
+    max_date = None
     try:
         trips_by_vin = Trips.get_trips(myp.vehicles_list)
         trips = next(iter(trips_by_vin.values()))  # todo handle multiple car
         assert len(trips) > 0
-        chargings = Charging.get_chargings()
+        min_date = trips[0].start_at
+        max_date = trips[-1].start_at
     except (StopIteration, AssertionError):
         logger.debug("No trips yet")
-        # return
-    # update for slider
-    global min_date, max_date, min_millis, max_millis, step, marks
     try:
-        # min_date = trips[0].start_at
-        # max_date = trips[-1].start_at
-        min_date, max_date = Database.get_range_timestamp()
+        chargings = Charging.get_chargings()
+        assert len(chargings) > 0
+        if min_date:
+            min_date = min(min_date, chargings[0]["start_at"])
+            max_date = max(max_date, chargings[-1]["start_at"])
+        else:
+            min_date = chargings[0]["start_at"]
+            max_date = chargings[-1]["start_at"]
+    except AssertionError:
+        logger.debug("No chargings yet")
+    if min_date is None:
+        return
+    # update for slider
+    try:
         logger.debug("min_date:%s - max_date:%s",min_date, max_date)
         min_millis = figures.unix_time_millis(min_date)
         max_millis = figures.unix_time_millis(max_date)
@@ -268,7 +279,6 @@ def update_trips():
     except AttributeError:
         logger.debug("position table is probably empty :", exc_info=True)
     return
-
 
 def __get_control_tabs():
     tabs = []

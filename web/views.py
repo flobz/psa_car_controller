@@ -4,6 +4,7 @@ from typing import List
 
 import dash_bootstrap_components as dbc
 from dash.dependencies import Output, Input, MATCH, State
+from dash.development.base_component import Component
 from dash.exceptions import PreventUpdate
 import dash_core_components as dcc
 import dash_html_components as html
@@ -61,9 +62,8 @@ def create_callback():  # noqa: MC0001
                            Output('consumption_fig', 'figure'),
                            Output('consumption_fig_by_speed', 'figure'),
                            Output('consumption_graph_by_temp', 'children'),
-                           Output('consumption', 'children'),
+                           Output('summary-cards', 'children'),
                            Output('tab_trips_fig', 'children'),
-                           Output('tab_battery_fig', 'children'),
                            Output('tab_charge', 'children'),
                            Output('date-slider', 'max'),
                            Output('date-slider', 'step'),
@@ -78,11 +78,9 @@ def create_callback():  # noqa: MC0001
                     filtered_trips.append(trip)
             filtered_chargings = Charging.get_chargings(mini, maxi)
             figures.get_figures(filtered_trips, filtered_chargings)
-            consumption = "Average consumption: {:.1f} kWh/100km".format(
-                float(figures.consumption_df["consumption_km"].mean()))
             return figures.trips_map, figures.consumption_fig, figures.consumption_fig_by_speed, \
-                figures.consumption_graph_by_temp, consumption, figures.table_fig, figures.battery_info, \
-                figures.battery_table, max_millis, step, marks
+                   figures.consumption_graph_by_temp, create_card(figures.SUMMARY_CARDS), \
+                   figures.table_fig, figures.battery_table, max_millis, step, marks
 
         @dash_app.callback(Output(EMPTY_DIV, "children"),
                            [Input("battery-table", "data_timestamp")],
@@ -268,7 +266,7 @@ def update_trips():
             return
     # update for slider
     try:
-        logger.debug("min_date:%s - max_date:%s",min_date, max_date)
+        logger.debug("min_date:%s - max_date:%s", min_date, max_date)
         min_millis = figures.unix_time_millis(min_date)
         max_millis = figures.unix_time_millis(max_date)
         step = (max_millis - min_millis) / 100
@@ -279,6 +277,7 @@ def update_trips():
     except AttributeError:
         logger.debug("position table is probably empty :", exc_info=True)
     return
+
 
 def __get_control_tabs():
     tabs = []
@@ -299,14 +298,35 @@ def __get_control_tabs():
     return tabs
 
 
+def create_card(card: dict):
+    res = []
+    for tile, value in card.items():
+        text = value["text"]
+        # if isinstance(text, str):
+        #     text = html.H3(text)
+        res.append(html.Div(
+            dbc.Card([
+                html.H4(tile, className="card-title text-center"),
+                dbc.Row([
+                    dbc.Col(dbc.CardBody(text, style={"white-space": "nowrap", "font-size": "160%"}),
+                            className="text-center"),
+                    dbc.Col(dbc.CardImg(src=value.get("src", Component.UNDEFINED), style={"max-height": "7rem"}))
+                ],
+                    className="align-items-center flex-nowrap")
+            ], className="h-100 p-2"),
+            className="col-sm-12 col-md-6 col-lg-3 py-2"
+        ))
+    return res
+
+
 def serve_layout():
     global cached_layout
     if cached_layout is None:
         logger.debug("Create new layout")
         try:
             figures.get_figures(trips, chargings)
-            summary_tab = [html.H2(id="consumption",
-                                   children=figures.info),
+            summary_tab = [dbc.Container(dbc.Row(id="summary-cards",
+                                                 children=create_card(figures.SUMMARY_CARDS)), fluid=True),
                            dcc.Graph(figure=figures.consumption_fig, id="consumption_fig"),
                            dcc.Graph(figure=figures.consumption_fig_by_speed, id="consumption_fig_by_speed"),
                            figures.consumption_graph_by_temp]
@@ -323,7 +343,7 @@ def serve_layout():
         except (IndexError, TypeError, NameError):
             summary_tab = figures.ERROR_DIV
             maps = figures.ERROR_DIV
-            logger.warning("Failed to generate figure, there is probably not enough data yet")
+            logger.warning("Failed to generate figure, there is probably not enough data yet", exc_info_debug=True)
             range_slider = html.Div()
         data_div = html.Div([
             range_slider,
@@ -347,20 +367,24 @@ def serve_layout():
                                           size="xl",
                                       )
                                       ]),
-                    dbc.Tab(label="Battery", tab_id="battery", id="tab_battery",
-                            children=[html.Div(id="tab_battery_fig", children=[figures.battery_info]),
+                    dbc.Tab(label="Charge", tab_id="charge", id="tab_charge",
+                            children=[figures.battery_table,
                                       dbc.Modal(
                                           [
-                                              dbc.ModalHeader("Charging speed"),
-                                              dbc.ModalBody(html.Div(id="tab_battery_popup_graph")),
+                                              dbc.ModalHeader(
+                                                  "Charging speed"),
+                                              dbc.ModalBody(html.Div(
+                                                  id="tab_battery_popup_graph")),
                                               dbc.ModalFooter(
-                                                  dbc.Button("Close", id="tab_battery_popup-close", className="ml-auto")
+                                                  dbc.Button("Close",
+                                                             id="tab_battery_popup-close",
+                                                             className="ml-auto")
                                               ),
                                           ],
                                           id="tab_battery_popup",
                                           size="xl",
-                                      )]),
-                    dbc.Tab(label="Charge", tab_id="charge", id="tab_charge", children=[figures.battery_table]),
+                                      )
+                                      ]),
                     dbc.Tab(label="Map", tab_id="map", children=[maps]),
                     dbc.Tab(label="Control", tab_id="control", children=dbc.Tabs(id="control-tabs",
                                                                                  children=__get_control_tabs()))],

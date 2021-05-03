@@ -264,8 +264,8 @@ def update_trips():
             max_date = chargings[-1]["start_at"]
     except AssertionError:
         logger.debug("No chargings yet")
-    if min_date is None:
-        return
+        if min_date is None:
+            return
     # update for slider
     try:
         logger.debug("min_date:%s - max_date:%s",min_date, max_date)

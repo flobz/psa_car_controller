@@ -70,17 +70,6 @@ class Trip:
         self.consumption_fuel_km = round(100 * self.consumption_fuel / self.distance, 2)  # L/100 km
         return self.consumption_fuel_km
 
-    def get_consumption(self):
-        return {
-            'date': self.start_at,
-            'consumption': self.consumption_km,
-        }
-
-    def get_consumption_fuel(self):
-        return {
-            'date': self.start_at,
-            'consumption': self.consumption_fuel_km,
-        }
 
     def to_geojson(self):
         multi_line_string = MultiLineString(tuple(map(list, self.positions)))
@@ -99,6 +88,10 @@ class Trip:
             res["id"] = row_id
         return res
 
+    def get_consumption(self):
+        return {"speed": self.speed_average, "consumption_km": self.consumption_km, "date": self.start_at,
+                "consumption_by_temp": self.get_temperature()}
+
     def set_altitude_diff(self, start, end):
         try:
             self.altitude_diff = end - start
@@ -115,11 +108,7 @@ class Trips(list):
         return feature_collection
 
     def get_long_trips(self):
-        res = []
-        for trip in self:
-            if trip.consumption > 1.8:
-                res.append({"speed": trip.speed_average, "consumption_km": trip.consumption_km, "date": trip.start_at,
-                            "consumption": trip.consumption, "consumption_by_temp": trip.get_temperature()})
+        res = [trip.get_consumption() for trip in self if trip.consumption > 1.8]
         return res
 
     def get_distance(self):
@@ -137,8 +126,7 @@ class Trips(list):
     def get_trips(vehicles_list: Cars) -> Dict[str, "Trips"]:
         # pylint: disable=too-many-locals,too-many-statements,too-many-nested-blocks,too-many-branches
         conn = Database.get_db()
-        vehicles = conn.execute(
-            "SELECT DISTINCT vin FROM position;").fetchall()
+        vehicles = conn.execute("SELECT DISTINCT vin FROM position;").fetchall()
         trips_by_vin = {}
         for vin in vehicles:
             trips = Trips()

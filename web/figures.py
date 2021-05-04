@@ -121,7 +121,7 @@ def get_figures(trips: Trips, charging: List[dict]):
     )
     # consumption_fig
     consumption_df = DataFrame.from_records(trips.get_long_trips())
-    consumption_fig = px.histogram(consumption_df, x="date", y="consumption", title='Consumption of the car',
+    consumption_fig = px.histogram(consumption_df, x="date", y="consumption_km", title='Consumption of the car',
                                    histfunc="avg")
     consumption_fig.update_layout(yaxis_title="Consumption kWh/100Km")
 

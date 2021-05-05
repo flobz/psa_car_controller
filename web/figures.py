@@ -78,8 +78,8 @@ def get_figures(trips: Trips, charging: List[dict]):
     names = []
     for trip in trips:
         for points in trip.positions:
-            lats = np.append(lats, points.longitude)
-            lons = np.append(lons, points.latitude)
+            lats = np.append(lats, points.latitude)
+            lons = np.append(lons, points.longitude)
             names = np.append(names, [str(trip.start_at)])
         lats = np.append(lats, None)
         lons = np.append(lons, None)

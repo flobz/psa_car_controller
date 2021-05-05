@@ -183,7 +183,7 @@ class Trips(list):
                             if trip.distance > 0:
                                 trip.start_at = start["Timestamp"]
                                 trip.end_at = end["Timestamp"]
-                                trip.add_points(end["longitude"], end["latitude"])
+                                trip.add_points(end["latitude"], end["longitude"])
                                 if end["temperature"] is not None and start["temperature"] is not None:
                                     trip.add_temperature(end["temperature"])
                                 trip.duration = (end["Timestamp"] - start["Timestamp"]).total_seconds() / 3600
@@ -205,7 +205,7 @@ class Trips(list):
                             start = next_el
                             trip = Trip()
                         else:
-                            trip.add_points(end["longitude"], end["latitude"])
+                            trip.add_points(end["latitude"], end["longitude"])
                     end = next_el
                 trips_by_vin[vin] = trips
         return trips_by_vin

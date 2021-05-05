@@ -89,14 +89,22 @@ class Trip:
         return res
 
     def get_consumption(self):
-        return {"speed": self.speed_average, "consumption_km": self.consumption_km, "date": self.start_at,
-                "consumption_by_temp": self.get_temperature()}
+        return {"speed": self.speed_average, "consumption_km": self.consumption_km, "start_at": self.start_at,
+                "consumption_by_temp": self.get_temperature(), "positions": self.get_positions()}
 
     def set_altitude_diff(self, start, end):
         try:
             self.altitude_diff = end - start
         except (NameError, TypeError):
             pass
+
+    def get_positions(self):
+        lat = []
+        long = []
+        for position in self.positions:
+            lat.append(position.latitude)
+            long.append(position.longitude)
+        return {"lat": lat, "long": long}
 
 
 class Trips(list):

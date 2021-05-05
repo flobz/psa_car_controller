@@ -1,10 +1,10 @@
 from copy import deepcopy
+from statistics import mean
 
 from typing import List
 
 import dash_bootstrap_components as dbc
 import dash_table
-import numpy as np
 from dash_core_components import Graph
 from dash_table.Format import Format, Scheme, Symbol
 from dateutil.relativedelta import relativedelta
@@ -55,37 +55,34 @@ consumption_fig = ERROR_DIV
 consumption_df = ERROR_DIV
 trips_map = ERROR_DIV
 consumption_fig_by_speed = ERROR_DIV
-consumption_graph_by_temp = ERROR_DIV
+consumption_fig_by_temp = ERROR_DIV
 table_fig = ERROR_DIV
 pandas_options.display.float_format = '${:.2f}'.format
 info = ""
 battery_info = ERROR_DIV
 battery_table = None
+consumption_df_dict = None
 
-SUMMARY_CARDS = {"Average consumption": {"text": None, "src": "static/images/consumption.svg"},
-                 "Average emission": {"text": None, "src": "static/images/pollution.svg"},
-                 "Average charge speed": {"text": None, "src": "static/images/battery-charge-line.svg"},
-                 "Electricity consumption": {"text": None, "src": "static/images/electricity bill.svg"}
+SUMMARY_CARDS = {"Average consumption": {"text": None, "src": "assets/images/consumption.svg"},
+                 "Average emission": {"text": None, "src": "assets/images/pollution.svg"},
+                 "Average charge speed": {"text": None, "src": "assets/images/battery-charge-line.svg"},
+                 "Electricity consumption": {"text": None, "src": "assets/images/electricity bill.svg"}
                  }
 
 
 # pylint: disable=too-many-locals
 def get_figures(trips: Trips, charging: List[dict]):
     global consumption_fig, consumption_df, trips_map, consumption_fig_by_speed, table_fig, info, battery_info, \
-        battery_table, consumption_graph_by_temp
-    lats = []
-    lons = []
-    names = []
-    for trip in trips:
-        for points in trip.positions:
-            lats = np.append(lats, points.latitude)
-            lons = np.append(lons, points.longitude)
-            names = np.append(names, [str(trip.start_at)])
-        lats = np.append(lats, None)
-        lons = np.append(lons, None)
-        names = np.append(names, None)
-    trips_map = px.line_mapbox(lat=lats, lon=lons, hover_name=names,
-                               mapbox_style="stamen-terrain", zoom=12)
+        battery_table, consumption_fig_by_temp, consumption_df_dict
+    lats = [42, 41]
+    lons = [1, 2]
+    names = ["undefined", "undefined"]
+    trips_map = px.line_mapbox(lat=lats, lon=lons, hover_name=names, zoom=12, mapbox_style="/assets/style2.json")
+    trips_map.add_trace(go.Scattermapbox(
+        mode="markers",
+        marker={"symbol": "marker", "size": 20},
+        lon=[lons[0]], lat=[lats[0]],
+        showlegend=False, name="Last Position"))
     # table
     nb_format = Format(precision=2, scheme=Scheme.fixed, symbol=Symbol.yes)  # pylint: disable=no-member
     table_fig = dash_table.DataTable(
@@ -120,20 +117,19 @@ def get_figures(trips: Trips, charging: List[dict]):
         page_size=50
     )
     # consumption_fig
-    consumption_df = DataFrame.from_records(trips.get_long_trips())
-    consumption_fig = px.histogram(consumption_df, x="date", y="consumption_km", title='Consumption of the car',
+    consumption_df_dict = trips.get_long_trips()
+    consumption_fig = px.histogram(x=[0], y=[1], title='Consumption of the car',
                                    histfunc="avg")
     consumption_fig.update_layout(yaxis_title="Consumption kWh/100Km")
 
-    consumption_fig_by_speed = px.histogram(consumption_df, x="speed", y="consumption_km", histfunc="avg",
+    consumption_fig_by_speed = px.histogram(x=[0], y=[1], histfunc="avg",
                                             title="Consumption by speed")
     consumption_fig_by_speed.update_traces(xbins_size=15)
     consumption_fig_by_speed.update_layout(bargap=0.05)
-    consumption_fig_by_speed.add_trace(
-        go.Scatter(mode="markers", x=consumption_df["speed"], y=consumption_df["consumption_km"],
-                   name="Trips"))
+    consumption_fig_by_speed.add_trace(go.Scatter(mode="markers", x=[0],
+                                                  y=[0], name="Trips"))
     consumption_fig_by_speed.update_layout(xaxis_title="average Speed km/h", yaxis_title="Consumption kWh/100Km")
-    kw_per_km = float(consumption_df["consumption_km"].mean())
+    kw_per_km = mean([t.consumption_km for t in trips])
     info = "Average consumption: {:.1f} kWh/100km".format(kw_per_km)
 
     # charging
@@ -154,7 +150,7 @@ def get_figures(trips: Trips, charging: List[dict]):
     SUMMARY_CARDS["Average emission"]["text"] = [html.P(f"{co2_per_km:.1f} g/km"), html.P(f"{co2_per_kw:.1f} g/kWh")]
     SUMMARY_CARDS["Electricity consumption"]["text"] = [f"{total_elec:.0f} kWh", html.Br(), \
                                                         f"{total_elec * price_kw:.0f} {ElecPrice.currency}"]
-    SUMMARY_CARDS["Average consumption"]["text"] = f"{consumption_df['consumption_km'].mean():.1f} kWh/100km"
+    SUMMARY_CARDS["Average consumption"]["text"] = f"{kw_per_km:.1f} kWh/100km"
     battery_table = dash_table.DataTable(
         id='battery-table',
         sort_action='native',
@@ -183,21 +179,22 @@ def get_figures(trips: Trips, charging: List[dict]):
             }
         ],
     )
-    consumption_by_temp_df = consumption_df[consumption_df["consumption_by_temp"].notnull()]
-    if len(consumption_by_temp_df) > 0:
-        consumption_fig_by_temp = px.histogram(consumption_by_temp_df, x="consumption_by_temp", y="consumption_km",
+    consumption_fig_by_temp = None
+    temp_value = False
+    for trip in trips:
+        if trip.get_temperature() is not None:
+            temp_value = True
+            break
+    if temp_value:
+        consumption_fig_by_temp = px.histogram(x=[0], y=[0],
                                                histfunc="avg", title="Consumption by temperature")
         consumption_fig_by_temp.update_traces(xbins_size=2)
         consumption_fig_by_temp.update_layout(bargap=0.05)
         consumption_fig_by_temp.add_trace(
-            go.Scatter(mode="markers", x=consumption_by_temp_df["consumption_by_temp"],
-                       y=consumption_by_temp_df["consumption_km"], name="Trips"))
+            go.Scatter(mode="markers", x=[0],
+                       y=[0], name="Trips"))
         consumption_fig_by_temp.update_layout(xaxis_title="average temperature in °C",
                                               yaxis_title="Consumption kWh/100Km")
-        consumption_graph_by_temp = html.Div(Graph(figure=consumption_fig_by_temp), id="consumption_graph_by_temp")
-
-    else:
-        consumption_graph_by_temp = html.Div(Graph(style={'display': 'none'}), id="consumption_graph_by_temp")
     return True
 
 

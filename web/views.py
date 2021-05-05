@@ -55,14 +55,28 @@ def diff_dashtable(data, data_previous, row_id_name="row_id"):
     return changes
 
 
+figures_list = ["consumption_fig", "consumption_fig_by_speed", "consumption_graph_by_temp", "trips_map"]
+y_list = [["consumption_km"], ["consumption_km", "consumption_km"], ["consumption_km", "consumption_km"],
+          ["long", "start_at"]]
+x_list = ["start_at", "speed", "consumption_by_temp", "lat"]
+outputs = [Output(id, "figure") for id in figures_list]
+
+
+dash_app.clientside_callback(
+    """
+    function(data,range, figures) {
+        return filter_dataset(data,range,figures,%s, %s);
+    }
+    """ % (x_list, y_list),
+    *outputs,
+    Input('clientside-data-store', 'data'),
+    Input('date-slider', 'value'),
+    Input('clientside-figure-store', 'data'))
+
 def create_callback():  # noqa: MC0001
     global CALLBACK_CREATED
     if not CALLBACK_CREATED:
-        @dash_app.callback(Output('trips_map', 'figure'),
-                           Output('consumption_fig', 'figure'),
-                           Output('consumption_fig_by_speed', 'figure'),
-                           Output('consumption_graph_by_temp', 'children'),
-                           Output('summary-cards', 'children'),
+        @dash_app.callback(Output('summary-cards', 'children'),
                            Output('tab_trips_fig', 'children'),
                            Output('tab_charge', 'children'),
                            Output('date-slider', 'max'),
@@ -78,8 +92,7 @@ def create_callback():  # noqa: MC0001
                     filtered_trips.append(trip)
             filtered_chargings = Charging.get_chargings(mini, maxi)
             figures.get_figures(filtered_trips, filtered_chargings)
-            return figures.trips_map, figures.consumption_fig, figures.consumption_fig_by_speed, \
-                   figures.consumption_graph_by_temp, create_card(figures.SUMMARY_CARDS), \
+            return create_card(figures.SUMMARY_CARDS), \
                    figures.table_fig, figures.battery_table, max_millis, step, marks
 
         @dash_app.callback(Output(EMPTY_DIV, "children"),
@@ -157,6 +170,21 @@ def get_vehicle_info(vin):
         mimetype='application/json'
     )
     return response
+
+
+STYLE_CACHE = None
+
+
+@app.route("/assets/style2.json")
+def get_style():
+    global STYLE_CACHE
+    if not STYLE_CACHE:
+        with open(app.root_path + "/assets/style.json", "r") as f:
+            res = json.loads(f.read())
+            STYLE_CACHE = res
+    url_root = request.url_root
+    STYLE_CACHE["sprite"] = url_root + "assets/sprites/osm-liberty@2x"
+    return jsonify(STYLE_CACHE)
 
 
 @app.route('/charge_now/<string:vin>/<int:charge>')
@@ -312,9 +340,9 @@ def create_card(card: dict):
             dbc.Card([
                 html.H4(tile, className="card-title text-center"),
                 dbc.Row([
-                    dbc.Col(dbc.CardBody(text, style={"white-space": "nowrap", "font-size": "160%"}),
+                    dbc.Col(dbc.CardBody(text, style={"whiteS   pace": "nowrap", "fontSize": "160%"}),
                             className="text-center"),
-                    dbc.Col(dbc.CardImg(src=value.get("src", Component.UNDEFINED), style={"max-height": "7rem"}))
+                    dbc.Col(dbc.CardImg(src=value.get("src", Component.UNDEFINED), style={"maxHeight": "7rem"}))
                 ],
                     className="align-items-center flex-nowrap")
             ], className="h-100 p-2"),
@@ -331,10 +359,12 @@ def serve_layout():
             figures.get_figures(trips, chargings)
             summary_tab = [dbc.Container(dbc.Row(id="summary-cards",
                                                  children=create_card(figures.SUMMARY_CARDS)), fluid=True),
-                           dcc.Graph(figure=figures.consumption_fig, id="consumption_fig"),
-                           dcc.Graph(figure=figures.consumption_fig_by_speed, id="consumption_fig_by_speed"),
-                           figures.consumption_graph_by_temp]
-            maps = dcc.Graph(figure=figures.trips_map, id="trips_map", style={"height": '90vh'})
+                           dcc.Graph(id="consumption_fig"),
+                           dcc.Graph(id="consumption_fig_by_speed"),
+                           dcc.Graph(id="consumption_graph_by_temp",
+                                     style={'display': 'none'} if figures.consumption_fig_by_temp is None else {},
+                                     )]
+            maps = dcc.Graph(id="trips_map", style={"height": '90vh'})
             create_callback()
             range_slider = dcc.RangeSlider(
                 id='date-slider',
@@ -350,6 +380,9 @@ def serve_layout():
             logger.warning("Failed to generate figure, there is probably not enough data yet", exc_info_debug=True)
             range_slider = html.Div()
         data_div = html.Div([
+            dcc.Store(id='clientside-figure-store', data=[figures.consumption_fig, figures.consumption_fig_by_speed,
+                                                          figures.consumption_fig_by_temp, figures.trips_map]),
+            dcc.Store(id='clientside-data-store', data=figures.consumption_df_dict),
             range_slider,
             html.Div([
                 dbc.Tabs([

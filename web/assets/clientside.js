@@ -40,9 +40,8 @@ function filter_dataset(data, range, old_figure, x,y) {
                         figure["data"][j]["x"] = x_values
                     }
                 }
-                console.log(figure);
+                // console.log(figure);
                 figures.push(figure);
-
             });
             return figures;
 }

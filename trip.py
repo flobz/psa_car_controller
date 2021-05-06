@@ -208,6 +208,7 @@ class Trips(list):
                             trip.add_points(end["latitude"], end["longitude"])
                     end = next_el
                 trips_by_vin[vin] = trips
+        conn.close()
         return trips_by_vin
 
     def get_info(self):

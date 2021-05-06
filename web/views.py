@@ -92,9 +92,11 @@ def create_callback():  # noqa: MC0001
             diff_data = diff_dashtable(data, data_previous, "start_at")
             for changed_line in diff_data:
                 if changed_line['column_name'] == 'price':
-                    if not Database.set_chargings_price(Database.get_db(), changed_line['start_at'],
+                    conn = Database.get_db()
+                    if not Database.set_chargings_price( conn, changed_line['start_at'],
                                                         changed_line['current_value']):
                         logger.error("Can't find line to update in the database")
+                    conn.close()
             return ""
 
         @dash_app.callback([Output("tab_battery_popup_graph", "children"), Output("tab_battery_popup", "is_open"), ],
@@ -240,7 +242,9 @@ def after_request(response):
 def update_trips():
     global trips, chargings, cached_layout, min_date, max_date, min_millis, max_millis, step, marks
     logger.info("update_data")
-    Database.add_altitude_to_db(Database.get_db(update_callback=False))
+    conn = Database.get_db(update_callback=False)
+    Database.add_altitude_to_db(conn)
+    conn.close()
     min_date = None
     max_date = None
     try:

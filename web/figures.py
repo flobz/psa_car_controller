@@ -78,8 +78,8 @@ def get_figures(trips: Trips, charging: List[dict]):
     names = []
     for trip in trips:
         for points in trip.positions:
-            lats = np.append(lats, points.longitude)
-            lons = np.append(lons, points.latitude)
+            lats = np.append(lats, points.latitude)
+            lons = np.append(lons, points.longitude)
             names = np.append(names, [str(trip.start_at)])
         lats = np.append(lats, None)
         lons = np.append(lons, None)
@@ -215,7 +215,9 @@ def __calculate_co2_per_kw(charging_data):
 def get_battery_curve_fig(row: dict, car: Car):
     start_date = Database.convert_datetime_from_string(row["start_at"])
     stop_at = Database.convert_datetime_from_string(row["stop_at"])
-    res = Database.get_battery_curve(Database.get_db(), start_date, car.vin)
+    conn = Database.get_db()
+    res = Database.get_battery_curve(conn, start_date, car.vin)
+    conn.close()
     res.insert(0, {"level": row["start_level"], "date": start_date})
     res.append({"level": row["end_level"], "date": stop_at})
     battery_curves = []
@@ -240,4 +242,5 @@ def get_altitude_fig(trip: Trip):
         line[0] = line[0] - start_mileage
     fig = px.line(res, x=0, y=1)
     fig.update_layout(xaxis_title="Distance km", yaxis_title="Altitude m")
+    conn.close()
     return html.Div(Graph(figure=fig))

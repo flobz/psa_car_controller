@@ -28,6 +28,21 @@ def new_convert_datetime_from_string(string):
     return datetime.fromisoformat(string)
 
 
+class CustomSqliteConnection(sqlite3.Connection):
+
+    def __init__(self, *args, **kwargs):  # real signature unknown
+        super().__init__(*args, **kwargs)
+        self.callbacks = []
+
+    def execute_callbacks(self):
+        for callback in self.callbacks:
+            callback()
+
+    def close(self):
+        if self.total_changes:
+            self.execute_callbacks()
+        super().close()
+
 class Database:
     callback_fct: Callable[[], None] = lambda: None
     DEFAULT_DB_FILE = 'info.db'
@@ -79,8 +94,6 @@ class Database:
         make_backup = False
         conn.execute("CREATE TABLE IF NOT EXISTS battery (start_at DATETIME PRIMARY KEY,stop_at DATETIME,VIN TEXT, "
                      "start_level INTEGER, end_level INTEGER, co2 INTEGER, kw INTEGER);")
-        conn.execute("CREATE TEMP TRIGGER IF NOT EXISTS update_trigger AFTER INSERT ON position BEGIN "
-                     "SELECT update_trips(); END;")
         conn.execute("""CREATE TABLE IF NOT EXISTS battery_curve (start_at DATETIME, VIN TEXT, date DATETIME,
                         level INTEGER, UNIQUE(start_at, VIN, level));""")
         for table, columns in [["position", NEW_POSITION_COLUMNS], ["battery", NEW_BATTERY_COLUMNS]]:
@@ -102,15 +115,15 @@ class Database:
         Database.db_initialized = True
 
     @staticmethod
-    def get_db(db_file=None, update_callback=True):
+    def get_db(db_file=None, update_callback=True) -> CustomSqliteConnection:
         if db_file is None:
             db_file = Database.DEFAULT_DB_FILE
-        conn = sqlite3.connect(db_file, detect_types=sqlite3.PARSE_DECLTYPES | sqlite3.PARSE_COLNAMES)
+        conn = CustomSqliteConnection(db_file, detect_types=sqlite3.PARSE_DECLTYPES | sqlite3.PARSE_COLNAMES)
         conn.row_factory = sqlite3.Row
-        if update_callback:
-            conn.create_function("update_trips", 0, Database.update_callback)
         if not Database.db_initialized:
             Database.init_db(conn)
+        if update_callback:
+            conn.callbacks.append(Database.callback_fct)
         return conn
 
     @staticmethod
@@ -118,7 +131,6 @@ class Database:
         # delete charging longer than 17h
         conn.execute("DElETE FROM battery WHERE JULIANDAY(stop_at)-JULIANDAY(start_at)>0.7;")
         conn.execute("DELETE FROM battery WHERE start_level==end_level;")
-        conn.commit()
 
     @staticmethod
     def clean_position(conn):
@@ -136,6 +148,7 @@ class Database:
         conn = Database.get_db()
         res = conn.execute("SELECT temperature FROM position WHERE VIN=? ORDER BY Timestamp DESC limit 1",
                            (vin,)).fetchone()
+        conn.close()
         if res is None:
             return None
         return res[0]
@@ -208,10 +221,10 @@ class Database:
     # pylint: disable=too-many-arguments
     @staticmethod
     def record_position(weather_api, vin, mileage, latitude, longitude, altitude, date, level, level_fuel, moving):
-        conn = Database.get_db()
         if mileage == 0:  # fix a bug of the api
             logger.error("The api return a wrong mileage for %s : %f", vin, mileage)
         else:
+            conn = Database.get_db()
             if conn.execute("SELECT Timestamp from position where Timestamp=?", (date,)).fetchone() is None:
                 temp = get_temp(latitude, longitude, weather_api)
                 if level_fuel == 0:  # fix fuel level not provided when car is off
@@ -232,6 +245,8 @@ class Database:
                 conn.commit()
                 logger.info("new position recorded for %s", vin)
                 Database.clean_position(conn)
+                conn.close()
                 return True
+            conn.close()
             logger.debug("position already saved")
         return False

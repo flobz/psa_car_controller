@@ -22,6 +22,7 @@ The official api is documented [here](https://developer.groupe-psa.io/webapi/b2c
 
 A video in French was made by vlycop to explain how to use this application : https://youtu.be/XO7-N7G3biU 
 
+For information on configuring the psa_car_controller Docker container [see this section](#docker).
 
 ## I. Get credentials
 We need to get credentials from the android app.
@@ -149,4 +150,7 @@ mitmproxy --set client_certs=MWPMYMA1.pem
 If you want to thank me for my work :smile:
 
 [![donate](https://www.paypalobjects.com/en_US/i/btn/btn_donate_LG.gif)](https://www.paypal.com/donate?hosted_button_id=SM652WPXFNCXS)
+
+# Docker
+
 

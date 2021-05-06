@@ -47,15 +47,14 @@ class Charging:
         Database.clean_battery(conn)
 
     @staticmethod
-    def record_charging(car, charging_status, charge_date: datetime, level, latitude, longitude, country_code, charging_mode):
+    def record_charging(car, charging_status, charge_date: datetime, level, latitude, longitude, country_code,
+                        charging_mode):
         conn = Database.get_db()
         charge_date = charge_date.replace(microsecond=0)
         if charging_status == "InProgress":
-            res = conn.execute("SELECT stop_at, start_at FROM battery WHERE VIN=? ORDER BY start_at "
-                               "DESC limit 1", (car.vin,)).fetchone()
-            in_progress = res and res[0] is None
-            if in_progress:
-                start_at = res[1]
+            stop_at, start_at = conn.execute("SELECT stop_at, start_at FROM battery WHERE VIN=? ORDER BY start_at "
+                               "DESC limit 1", (car.vin,)).fetchone() or [False, None]
+            if stop_at is None:
                 try:
                     conn.execute("INSERT INTO battery_curve(start_at,VIN,date,level) VALUES(?,?,?,?)",
                                  (start_at, car.vin, charge_date, level))

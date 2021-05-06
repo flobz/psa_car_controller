@@ -282,7 +282,7 @@ class MyPSACC:
                     self.refresh_remote_token(force=True)
                     logger.error("retry last request, token was expired")
                 elif data["return_code"] == "300":
-                    logger.error('%d', data["return_code"])
+                    logger.error('%s', data["return_code"])
                 elif data["return_code"] != "0":
                     logger.error('%s : %s', data["return_code"], data["reason"])
                     if msg.topic.endswith("/VehicleState"):

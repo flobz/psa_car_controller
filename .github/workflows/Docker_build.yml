@@ -2,7 +2,7 @@ name: Publish Docker image
 on:
   push:
     tags:
-    - '*'
+     - 'v*.*.*'
   workflow_dispatch:
 jobs:
   push_to_registry:
@@ -17,7 +17,7 @@ jobs:
           if [[ $GITHUB_REF == refs/tags/* ]]; then
             VERSION=${GITHUB_REF#refs/tags/}
             MINOR_VERSION=${VERSION%.*}
-            MAJOR=${VERSION%.*}
+            MAJOR=${MINOR_VERSION%.*}
             TAGS="${DOCKER_IMAGE}:${VERSION},${DOCKER_IMAGE}:${MINOR_VERSION},${DOCKER_IMAGE}:${MAJOR},${DOCKER_IMAGE}:latest"
           else
             TAGS="${DOCKER_IMAGE}:${VERSION}"

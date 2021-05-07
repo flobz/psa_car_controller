@@ -26,8 +26,10 @@ A video in French was made by vlycop to explain how to use this application : ht
 For information on configuring the psa_car_controller Docker container [see this page]
 
  ## I. Installation
-- [Installation on Linux or Windows](docs/Install.md)
-- [Installation in Docker](docs/Docker.md)
+- [Installation on Linux or Windows](https://github.com/flobz/psa_car_controller/blob/master/docs/Install.md)
+- [Installation in Docker](https://github.com/flobz/psa_car_controller/blob/master/docs/Docker.md)
+
+
  ## II. Use the app
   
     2.1 Get the car state :

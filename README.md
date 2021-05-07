@@ -17,62 +17,18 @@ With this app  you will be able to :
  - visualize altitude trip curve
  - get car charging co2 emission
  - get car charging price
+ - send live data to ABetterRoutePlanner
 
 The official api is documented [here](https://developer.groupe-psa.io/webapi/b2c/quickstart/connect/#article) but it is not totally up to date, and contains some errors. 
 
 A video in French was made by vlycop to explain how to use this application : https://youtu.be/XO7-N7G3biU 
 
+For information on configuring the psa_car_controller Docker container [see this page]
 
-## I. Get credentials
-We need to get credentials from the android app.
-We will retrieve this information:
- - client-id and client-secret  for the api
- - some url to login
-
-1.1 Download the app on your computer, the original MyPeugeot app can be downloaded [here](https://apkpure.com/fr/mypeugeot-app/com.psa.mym.mypeugeot/download/2107-APK?from=versions%2Fversion) for example (please download version **1.27**).
-
-1.2 Install requirements :
-
-- You need **python >= 3.6**
-
-- On debian based distribution you can install some requirement from repos: 
- 
- ```sudo apt-get install python3-typing-extensions python3-pandas python3-plotly python3-paho-mqtt  python3-six python3-dateutil python3-brotli  libblas-dev  liblapack-dev gfortran python3-pycryptodome python3-numpy libatlas3-base python3-cryptography```
-    
-- For everyone :
-      ```pip3 install -r requirements.txt```
-
-1.3  run the decoder script : ```python3 app_decoder.py <path to my apk file>```
-  
-    mypeugeot email: <write your mypeugeot email>
-    mypeugeot password: <write your mypeugeot password>
-    What is the car api realm : clientsB2CPeugeot, clientsB2CDS, clientsB2COpel, clientsB2CVauxhall
-    clientsB2CPeugeot
-    What is your country code ? (ex: FR, GB, DE, ES...)
-    FR
-    save config change
-
-    Your vehicles: {'VINNUBMER': {'id': 'vehicule id'}}
-
-1.4 If it works you will have VIN of your vehicles and there ids in the last line. The script generates a test.json file with all credentials needed.
-
+ ## I. Installation
+- [Installation on Linux or Windows](docs/Install.md)
+- [Installation in Docker](docs/Docker.md)
  ## II. Use the app
-  
-            
-  1. start the app:
-        
-     Start the app with charge control enabled :
-
-     ``python3 server.py -f test.json -c charge_config1.json``
-     
-     At the first launch you will receive an SMS, and you will be asked to give it and also give your pin code (the four-digit code that your use on the android app).
-     If it failed you can remove the file otp.bin and retry.
-     
-     You can see all options available with :
-    ``python3 server.py -h``
-
-
-  2. Test it 
   
     2.1 Get the car state :
     http://localhost:5000/get_vehicleinfo/YOURVIN
@@ -96,7 +52,7 @@ We will retrieve this information:
     http://localhost:5000/preconditioning/YOURVIN/1 or 0
 
 
-  ## III. Use the dashboard
+## III. Use the dashboard
      
 You can add the -r argument to record the position of the vehicle and retrieve this information in a dashboard.
 
@@ -108,7 +64,7 @@ You will be able to visualize your trips, your consumption and some statistics:
 ![Screenshot_20210128_104519](https://user-images.githubusercontent.com/48728684/106119895-01c98d80-6156-11eb-8969-9e8bc24f3677.png)
 - You have to add an api key from https://home.openweathermap.org/ in your config file, to be able to see your consumption vs exterior temperature.
 - You have to add an api key from https://co2signal.com/ to have your C02 emission by KM (in France the key isn't needed). 
-### Charge price calculation
+### IV. Charge price calculation
 The dashboard can give you the price by kilometer and price by kw that you pay.
 You just have to set the price in the config file.
 
@@ -119,31 +75,16 @@ If you have a special price during the night you can set "night price", "night h
 Hours need to be in the following format "23h12"?
 
 You can modify a price manually in the dashboard. It can be useful if you use public charge point.
-## IV. Connect your home automation system:
+## V. Connect your home automation system:
 - [Domoticz](docs/domoticz/Domoticz.md)
 - [HomeAssistant](https://github.com/Flodu31/HomeAssistant-PeugeotIntegration)
 - Jeedom (Anyone can share the procedure ?)
 
 ## FAQ
 If you have a problem, or a question please check if the answer isn't in the [FAQ](FAQ.md). 
+If you need information to contribute or edit this program go [here](docs/Develop.md).
 ## Connect to A better Route Planner
 You can connect the app to ABRP, see [this page](docs/abrp.md)
-## API documentation
-The api documentation is described here : [api_spec.md](api_spec.md).
-You can use all functions from the doc, for example :
-```myp.api().get_car_last_position(myp.get_vehicle_id_with_vin("myvin"))```
-## More information
-To analyse the traffics between the app and psa server, you can use mitmproxy.
-You will need the client certificate present in the apk at asssets/MWPMYMA1.pfx
-```bash
-# decrypt the pfx file (there is no password)
-openssl pkcs12 -in MWPMYMA1.pfx -out MWPMYMA1.pem -nodes
-```
-Then you can use mitmproxy for example:
-
-```
-mitmproxy --set client_certs=MWPMYMA1.pem
-```
 
 ## Donation
 If you want to thank me for my work :smile:

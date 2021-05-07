@@ -4,7 +4,6 @@ import os
 import traceback
 from sys import argv
 import sys
-import re
 from getpass import getpass
 
 from androguard.core.bytecodes.apk import APK
@@ -23,33 +22,6 @@ BRAND = {"com.psa.mym.myopel": {"realm": "clientsB2COpel", "brand_code": "OP", "
          "com.psa.mym.myds": {"realm": "clientsB2CDS", "brand_code": "DS", "app_name": "MyDS"},
          "com.psa.mym.myvauxhall": {"realm": "clientsB2CVauxhall", "brand_code": "VX", "app_name": "MyVauxhall"}
          }
-
-
-def getxmlvalue(root, name):
-    for child in root.findall("*[@name='" + name + "']"):
-        return child.text
-
-
-def find_app_path():
-    base_dir = 'apps/'
-    paths = os.listdir(base_dir)
-    if len(paths) > 0:
-        for path in paths:
-            pattern = re.compile('com.psa.mym.\\w*')
-            print(pattern.match(path))
-            if pattern.match(path) is not None:
-                return base_dir + path
-    return None
-
-
-def find_preferences_xml():
-    paths = os.listdir()
-    if len(paths) > 0:
-        for path in paths:
-            pattern = re.compile('com.psa.mym.\\w*_preferences.xml')
-            if pattern.match(path) is not None:
-                return path
-    return None
 
 
 def save_key_to_pem(pfx_data, pfx_password):

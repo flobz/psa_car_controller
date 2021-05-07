@@ -10,6 +10,7 @@ from time import sleep
 from oauth2_client.credentials_manager import ServiceInformation
 import paho.mqtt.client as mqtt
 from requests.exceptions import RequestException
+from urllib3.exceptions import InvalidHeader
 
 import psa_connectedcar as psac
 from libs.car import Cars, Car
@@ -143,7 +144,7 @@ class MyPSACC:
                     if self._record_enabled:
                         self.record_info(car)
                     return res
-            except ApiException as ex:
+            except (ApiException, InvalidHeader) as ex:
                 logger.error("get_vehicle_info: ApiException: %s", ex)
                 logger.debug(exc_info=True)
         car.status = res
@@ -173,7 +174,7 @@ class MyPSACC:
             for vehicle in res.embedded.vehicles:
                 self.vehicles_list.add(Car(vehicle.vin, vehicle.id, vehicle.brand, vehicle.label))
             self.vehicles_list.save_cars()
-        except ApiException:
+        except (ApiException, InvalidHeader):
             logger.exception("get_vehicles:")
         return self.vehicles_list
 

@@ -64,10 +64,6 @@ class Database:
         return date.replace(tzinfo=pytz.UTC).isoformat(timespec='seconds', sep=" ")
 
     @staticmethod
-    def update_callback():
-        Database.callback_fct()
-
-    @staticmethod
     def set_db_callback(callbackfct):
         Database.callback_fct = callbackfct
 

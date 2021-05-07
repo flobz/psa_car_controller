@@ -1,7 +1,7 @@
 # Docker installation
 
 A containerised version of the psa_car_controller Python scripts by Flobz.
-- Docker Hub: https://hub.docker.com/r/sockhamster/psa_car_controller
+- Docker Hub: https://hub.docker.com/r/flobz/psa_car_controller
 
 ### Overview
 Once the container is running, the configuration of the psa_car_controller app is near-identical to setup instructions detailed in the app's readme.

@@ -7,7 +7,6 @@ Werkzeug>=1.0.0
 pandas
 oauth2_client
 requests
-numpy
 pytz
 typing
 argparse

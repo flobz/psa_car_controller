@@ -436,8 +436,8 @@ def serve_layout():
 
 
 try:
-    Database.set_db_callback(update_trips)
     Charging.set_default_price()
+    Database.set_db_callback(update_trips)
     update_trips()
 except (IndexError, TypeError):
     logger.debug("Failed to get trips, there is probably not enough data yet:", exc_info=True)

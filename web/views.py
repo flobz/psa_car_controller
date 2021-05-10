@@ -151,8 +151,9 @@ def get_vehicules():
 
 @app.route('/get_vehicleinfo/<string:vin>')
 def get_vehicle_info(vin):
+    from_cache = int(request.args.get('from_cache', 0)) == 1
     response = app.response_class(
-        response=json.dumps(myp.get_vehicle_info(vin).to_dict(), default=str),
+        response=json.dumps(myp.get_vehicle_info(vin, from_cache).to_dict(), default=str),
         status=200,
         mimetype='application/json'
     )

@@ -33,6 +33,9 @@ For information on configuring the psa_car_controller Docker container [see this
     2.1 Get the car state :
     http://localhost:5000/get_vehicleinfo/YOURVIN
     
+    2.2 Get the car state from cache to avoid to use psa api too much
+    http://localhost:5000/get_vehicleinfo/YOURVIN?from_cache=1
+
     2.2 Stop charge
     http://localhost:5000/charge_now/YOURVIN/0
     

@@ -134,21 +134,24 @@ class MyPSACC:
         self.manager.proxies = self._proxies
         Otp.set_proxies(proxies)
 
-    def get_vehicle_info(self, vin):
+    def get_vehicle_info(self, vin, cache=False):
         res = None
         car = self.vehicles_list.get_car_by_vin(vin)
-        for _ in range(0, 2):
-            try:
-                res = self.api().get_vehicle_status(car.vehicle_id, extension=["odometer"])
-                if res is not None:
-                    car.status = res
-                    if self._record_enabled:
-                        self.record_info(car)
-                    return res
-            except (ApiException, InvalidHeader) as ex:
-                logger.error("get_vehicle_info: ApiException: %s", ex)
-                logger.debug(exc_info=True)
-        car.status = res
+        if cache and car.status is not None:
+            res = car.status
+        else:
+            for _ in range(0, 2):
+                try:
+                    res = self.api().get_vehicle_status(car.vehicle_id, extension=["odometer"])
+                    if res is not None:
+                        car.status = res
+                        if self._record_enabled:
+                            self.record_info(car)
+                        return res
+                except (ApiException, InvalidHeader) as ex:
+                    logger.error("get_vehicle_info: ApiException: %s", ex)
+                    logger.debug(exc_info=True)
+            car.status = res
         return res
 
     def refresh_vehicle_info(self):

@@ -11,7 +11,7 @@ from geojson import Feature, Point, FeatureCollection
 from geojson import dumps as geo_dumps
 
 from mylogger import logger
-from utils import get_temp
+from libs.utils import get_temp
 
 NEW_BATTERY_COLUMNS = [["price", "INTEGER"], ["charging_mode", "TEXT"]]
 NEW_POSITION_COLUMNS = [["level_fuel", "INTEGER"], ["altitude", "INTEGER"]]

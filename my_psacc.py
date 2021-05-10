@@ -22,7 +22,7 @@ from otp.otp import load_otp, new_otp_session, save_otp, ConfigException, Otp
 from psa_connectedcar.rest import ApiException
 from mylogger import logger
 
-from utils import rate_limit
+from libs.utils import rate_limit
 from web.abrp import Abrp
 from web.db import Database
 

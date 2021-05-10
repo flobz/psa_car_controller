@@ -11,7 +11,7 @@ from deepdiff import DeepDiff
 from flask import jsonify, request, Response as FlaskResponse
 
 import web.utils
-from libs.car import Cars
+from libs.car import Cars, Car
 from mylogger import logger
 
 from trip import Trips
@@ -31,7 +31,7 @@ EMPTY_DIV = "empty-div"
 ABRP_SWITCH = 'abrp-switch'
 CALLBACK_CREATED = False
 
-trips: Trips
+trips: Trips = Trips()
 chargings: List[dict]
 min_date = max_date = min_millis = max_millis = step = marks = cached_layout = None
 
@@ -232,8 +232,9 @@ def update_trips():
         min_date = trips[0].start_at
         max_date = trips[-1].start_at
         figures.get_figures(trips[0].car)
-    except (StopIteration, AssertionError):
+    except (AssertionError, KeyError):
         logger.debug("No trips yet")
+        figures.get_figures(Car("vin","vid","brand"))
     try:
         chargings = Charging.get_chargings()
         assert len(chargings) > 0
@@ -288,6 +289,14 @@ def serve_layout():
         logger.debug("Create new layout")
         fig_filter = Figure_Filter()
         try:
+            range_slider = dcc.RangeSlider(
+                id='date-slider',
+                min=min_millis,
+                max=max_millis,
+                step=step,
+                marks=marks,
+                value=[min_millis, max_millis],
+            )
             summary_tab = [
                 dbc.Container(dbc.Row(id="summary-cards",
                                       children=create_card(figures.SUMMARY_CARDS)), fluid=True),
@@ -304,19 +313,13 @@ def serve_layout():
             fig_filter.src = {"trips": trips.get_trips_as_dict(), "chargings": chargings}
             dash_app.clientside_callback(*fig_filter.get_clientside_callback())
             create_callback()
-            range_slider = dcc.RangeSlider(
-                id='date-slider',
-                min=min_millis,
-                max=max_millis,
-                step=step,
-                marks=marks,
-                value=[min_millis, max_millis],
-            )
-        except (IndexError, TypeError, NameError):
+        except (IndexError, TypeError, NameError, AssertionError, NameError):
             summary_tab = figures.ERROR_DIV
             maps = figures.ERROR_DIV
             logger.warning("Failed to generate figure, there is probably not enough data yet", exc_info_debug=True)
             range_slider = html.Div()
+            figures.battery_table = figures.ERROR_DIV
+
         data_div = html.Div([
             *fig_filter.get_store(),
             range_slider,

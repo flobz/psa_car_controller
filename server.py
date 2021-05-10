@@ -16,7 +16,7 @@ from libs.elec_price import ElecPrice
 from mylogger import my_logger
 from mylogger import logger
 from my_psacc import MyPSACC
-from utils import is_port_in_use
+from libs.utils import is_port_in_use
 from web.app import start_app, save_config
 
 CONFIG_NAME = "config.json"

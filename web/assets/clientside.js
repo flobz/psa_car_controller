@@ -100,11 +100,13 @@ function update_figures(data, old_figure, x,y) {
                         figure["data"][0]["lon"].push(...trip["positions"][y_label[0]]);
                         figure["data"][0]["hovertext"].push(...Array(x_pos.length).fill(trip[y_label[1]]), null);
                     }
-                    var last_pos = trip["positions"][y_label[0]].length;
-                    figure.layout.mapbox.center.lat = trip["positions"][x_label][last_pos - 1];
-                    figure.layout.mapbox.center.lon = trip["positions"][y_label[0]][last_pos - 1];
-                    figure.data[1].lat = [figure.layout.mapbox.center.lat]
-                    figure.data[1].lon = [figure.layout.mapbox.center.lon]
+                    if(trip){
+                        var last_pos = trip["positions"][y_label[0]].length;
+                        figure.layout.mapbox.center.lat = trip["positions"][x_label][last_pos - 1];
+                        figure.layout.mapbox.center.lon = trip["positions"][y_label[0]][last_pos - 1];
+                        figure.data[1].lat = [figure.layout.mapbox.center.lat]
+                        figure.data[1].lon = [figure.layout.mapbox.center.lon]
+                    }
                 }
                 else {
                     x_values = trips.map(a => a[x_label])
@@ -131,11 +133,8 @@ function update_table(data, tables){
 
 
 function update_cards_value(data){
-    res = {}
-    avg_co2=new Avg();
-    avg_kw = new Avg();
-    avg_time = new Avg()
-    avg_price = new Avg();
+    var res = {}
+    var avg_co2=new Avg(), avg_kw = new Avg(),avg_time = new Avg(), avg_price = new Avg();
     data["chargings"].forEach(function(charge){
       diff = ((new Date(charge["stop_at"])) - (new Date(charge["start_at"])))/3600000;
       avg_kw.add_value(charge["kw"]);
@@ -145,21 +144,25 @@ function update_cards_value(data){
         avg_time.add_value(diff);
       }
     })
-    total_distance = data["trips"][data["trips"].length-1]["mileage"]-data["trips"][0]["mileage"]
-    avg_kw = avg_kw.average();
-    avg_co2 = avg_co2.average()
-    avg_price_kw = avg_price.average()/avg_kw;
-
-    res["avg_consum_kw"] = Avg.get_average_key(data["trips"], "consumption_km")
-    res["avg_emission_kw"] = avg_co2;
-    res["avg_emission_km"] = res["avg_emission_kw"]*res["avg_consum_kw"]/100;
-    res["avg_chg_speed"] = avg_kw/avg_time.average()
-    res["elec_consum_kw"] = total_distance*res["avg_consum_kw"]/100;
-    res["elec_consum_price"] = avg_price_kw*res["elec_consum_kw"]
-    res["avg_consum_price"] = avg_price_kw*res["avg_consum_kw"]
-    //console.log(res);
+    if(data["chargings"].length>0){
+        avg_kw = avg_kw.average();
+        avg_co2 = avg_co2.average()
+        avg_price_kw = avg_price.average()/avg_kw;
+        res["avg_emission_kw"] = avg_co2;
+        res["avg_chg_speed"] = avg_kw/avg_time.average();
+    }
+    if(data["trips"].length>0){
+        var total_distance = data["trips"][data["trips"].length-1]["mileage"]-data["trips"][0]["mileage"]
+        res["avg_consum_kw"] = Avg.get_average_key(data["trips"], "consumption_km");
+        res["elec_consum_kw"] = total_distance*res["avg_consum_kw"]/100;
+    }
+    if(data["trips"].length>0 && data["chargings"].length>0){
+        res["avg_emission_km"] = res["avg_emission_kw"]*res["avg_consum_kw"]/100;
+        res["elec_consum_price"] = avg_price_kw*res["elec_consum_kw"]
+        res["avg_consum_price"] = avg_price_kw*res["avg_consum_kw"]
+    }
     for (const [key, value] of Object.entries(res)) {
-      document.getElementById(key).innerHTML=value.toPrecision(3);
+          document.getElementById(key).innerHTML=value.toPrecision(3);
     }
 }
 

@@ -5,6 +5,7 @@ import uuid
 from datetime import datetime
 from json import JSONEncoder
 from hashlib import md5
+from os import environ
 from time import sleep
 
 from oauth2_client.credentials_manager import ServiceInformation
@@ -302,6 +303,8 @@ class MyPSACC:
     def start_mqtt(self):
         self.load_otp()
         self.mqtt_client = mqtt.Client(clean_session=True, protocol=mqtt.MQTTv311)
+        if environ.get("MQTT_LOG", "0") == "1":
+            self.mqtt_client.enable_logger(logger=logger)
         self.refresh_remote_token()
         self.mqtt_client.tls_set_context()
         self.mqtt_client.on_connect = self.__on_mqtt_connect

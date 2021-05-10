@@ -38,6 +38,12 @@ class Car:
     def is_hybrid(self) -> bool:
         return self.fuel_capacity > 0 and self.battery_power > 0
 
+    def has_battery(self):
+        return self.battery_power > 0
+
+    def has_fuel(self):
+        return self.fuel_capacity > 0
+
     def get_status(self):
         if self.status is not None:
             return self.status

@@ -1,7 +1,4 @@
 from copy import deepcopy
-from statistics import mean
-
-from typing import List
 
 import dash_bootstrap_components as dbc
 import dash_table
@@ -10,13 +7,11 @@ from dash_table.Format import Format, Scheme, Symbol
 from dateutil.relativedelta import relativedelta
 import plotly.express as px
 import plotly.graph_objects as go
-from pandas import DataFrame
-from pandas import options as pandas_options
 import dash_html_components as html
 
 from libs.car import Car
 from libs.elec_price import ElecPrice
-from trip import Trips, Trip
+from trip import Trip
 from web.db import Database
 
 
@@ -57,21 +52,41 @@ trips_map = ERROR_DIV
 consumption_fig_by_speed = ERROR_DIV
 consumption_fig_by_temp = ERROR_DIV
 table_fig = ERROR_DIV
-pandas_options.display.float_format = '${:.2f}'.format
 info = ""
 battery_info = ERROR_DIV
 battery_table = None
 consumption_df_dict = None
 
-SUMMARY_CARDS = {"Average consumption": {"text": None, "src": "assets/images/consumption.svg"},
-                 "Average emission": {"text": None, "src": "assets/images/pollution.svg"},
-                 "Average charge speed": {"text": None, "src": "assets/images/battery-charge-line.svg"},
-                 "Electricity consumption": {"text": None, "src": "assets/images/electricity bill.svg"}
+
+def card_value_div(card_id, unit, value="-"):
+    return html.Div([html.Div(value, id=card_id, className="mr-2"), html.Div(unit)],
+                    className="d-flex flex-row justify-content-center")
+
+
+AVG_CHARGE_SPEED = "avg_chg_speed"
+AVG_EMISSION_KM = "avg_emission_km"
+AVG_EMISSION_KW = "avg_emission_kw"
+ELEC_CONSUM_KW = "elec_consum_kw"
+ELEC_CONSUM_PRICE = "elec_consum_price"
+AVG_CONSUM_KW = "avg_consum_kw"
+AVG_CONSUM_PRICE = "avg_consum_price"
+
+SUMMARY_CARDS = {"Average consumption": {"text": [card_value_div(AVG_CONSUM_KW, "kWh/100km"),
+                                                  card_value_div(AVG_CONSUM_PRICE, f"{ElecPrice.currency}/100km")],
+                                         "src": "assets/images/consumption.svg"},
+                 "Average emission": {"text": [card_value_div(AVG_EMISSION_KM, " g/km"),
+                                               card_value_div(AVG_EMISSION_KW, "g/kWh")],
+                                      "src": "assets/images/pollution.svg"},
+                 "Average charge speed": {"text": [card_value_div(AVG_CHARGE_SPEED, " kW")],
+                                          "src": "assets/images/battery-charge-line.svg"},
+                 "Electricity consumption": {"text": [card_value_div(ELEC_CONSUM_KW, "kWh"),
+                                                      card_value_div(ELEC_CONSUM_PRICE, ElecPrice.currency)],
+                                             "src": "assets/images/electricity bill.svg"}
                  }
 
 
 # pylint: disable=too-many-locals
-def get_figures(trips: Trips, charging: List[dict]):
+def get_figures(car: Car):
     global consumption_fig, consumption_df, trips_map, consumption_fig_by_speed, table_fig, info, battery_info, \
         battery_table, consumption_fig_by_temp, consumption_df_dict
     lats = [42, 41]
@@ -85,12 +100,17 @@ def get_figures(trips: Trips, charging: List[dict]):
         showlegend=False, name="Last Position"))
     # table
     nb_format = Format(precision=2, scheme=Scheme.fixed, symbol=Symbol.yes)  # pylint: disable=no-member
+    style_cell_conditional = []
+    if car.is_electric():
+        style_cell_conditional.append({'if': {'column_id': 'consumption_fuel_km', }, 'display': 'None', })
+    if car.is_thermal():
+        style_cell_conditional.append({'if': {'column_id': 'consumption_km', }, 'display': 'None', })
     table_fig = dash_table.DataTable(
         id='trips-table',
-        sort_action='native',
+        sort_action='custom',
         sort_by=[{'column_id': 'id', 'direction': 'desc'}],
         columns=[{'id': 'id', 'name': '#', 'type': 'numeric'},
-                 {'id': 'start_at', 'name': 'start at', 'type': 'datetime'},
+                 {'id': 'start_at_str', 'name': 'start at', 'type': 'datetime'},
                  {'id': 'duration', 'name': 'duration', 'type': 'numeric',
                   'format': deepcopy(nb_format).symbol_suffix(" min").precision(0)},
                  {'id': 'speed_average', 'name': 'average speed', 'type': 'numeric',
@@ -113,50 +133,31 @@ def get_figures(trips: Trips, charging: List[dict]):
                 "text-decoration": "underline"
             }
         ],
-        data=trips.get_info(),
+        style_cell_conditional=style_cell_conditional,
+        data=[],
         page_size=50
     )
     # consumption_fig
-    consumption_df_dict = trips.get_long_trips()
     consumption_fig = px.histogram(x=[0], y=[1], title='Consumption of the car',
                                    histfunc="avg")
     consumption_fig.update_layout(yaxis_title="Consumption kWh/100Km", xaxis_title="date")
 
-    consumption_fig_by_speed = px.histogram(x=[0], y=[1], histfunc="avg",
+    consumption_fig_by_speed = px.histogram(data_frame=[{"start_at": 1, "speed_average": 2}], x="start_at",
+                                            y="speed_average", histfunc="avg",
                                             title="Consumption by speed")
     consumption_fig_by_speed.update_traces(xbins_size=15)
     consumption_fig_by_speed.update_layout(bargap=0.05)
     consumption_fig_by_speed.add_trace(go.Scatter(mode="markers", x=[0],
                                                   y=[0], name="Trips"))
     consumption_fig_by_speed.update_layout(xaxis_title="average Speed km/h", yaxis_title="Consumption kWh/100Km")
-    kw_per_km = mean([t.consumption_km for t in trips])
-    info = "Average consumption: {:.1f} kWh/100km".format(kw_per_km)
 
-    # charging
-    charging_data = DataFrame.from_records(charging)
-    co2_per_kw = __calculate_co2_per_kw(charging_data)
-    co2_per_km = co2_per_kw * kw_per_km / 100
-    try:
-        charge_speed = 3600 * charging_data["kw"].mean() / \
-                       (charging_data["stop_at"] - charging_data["start_at"]).mean().total_seconds()
-        price_kw = (charging_data["price"] / charging_data["kw"]).mean()
-        total_elec = kw_per_km * trips.get_distance() / 100
-    except (TypeError, KeyError, ZeroDivisionError):  # when there is no data yet:
-        charge_speed = 0
-        price_kw = 0
-        total_elec = 0
-
-    SUMMARY_CARDS["Average charge speed"]["text"] = f"{charge_speed:.2f} kW"
-    SUMMARY_CARDS["Average emission"]["text"] = [html.P(f"{co2_per_km:.1f} g/km"), html.P(f"{co2_per_kw:.1f} g/kWh")]
-    SUMMARY_CARDS["Electricity consumption"]["text"] = [f"{total_elec:.0f} kWh", html.Br(), \
-                                                        f"{total_elec * price_kw:.0f} {ElecPrice.currency}"]
-    SUMMARY_CARDS["Average consumption"]["text"] = f"{kw_per_km:.1f} kWh/100km"
+    # battery_table
     battery_table = dash_table.DataTable(
         id='battery-table',
-        sort_action='native',
-        sort_by=[{'column_id': 'start_at', 'direction': 'desc'}],
-        columns=[{'id': 'start_at', 'name': 'start at', 'type': 'datetime'},
-                 {'id': 'stop_at', 'name': 'stop at', 'type': 'datetime'},
+        sort_action='custom',
+        sort_by=[{'column_id': 'start_at_str', 'direction': 'desc'}],
+        columns=[{'id': 'start_at_str', 'name': 'start at', 'type': 'datetime'},
+                 {'id': 'stop_at_str', 'name': 'stop at', 'type': 'datetime'},
                  {'id': 'start_level', 'name': 'start level', 'type': 'numeric'},
                  {'id': 'end_level', 'name': 'end level', 'type': 'numeric'},
                  {'id': 'co2', 'name': 'CO2', 'type': 'numeric',
@@ -166,7 +167,7 @@ def get_figures(trips: Trips, charging: List[dict]):
                  {'id': 'price', 'name': 'price', 'type': 'numeric',
                   'format': deepcopy(nb_format).symbol_suffix(" " + ElecPrice.currency).precision(2), 'editable': True}
                  ],
-        data=charging,
+        data=[],
         style_data_conditional=[
             {
                 'if': {'column_id': ['start_level', "end_level"]},
@@ -175,26 +176,19 @@ def get_figures(trips: Trips, charging: List[dict]):
             },
             {
                 'if': {'column_id': 'price'},
-                'backgroundColor': 'rgb(230, 246, 254)'
+                'backgroundColor': '#ABE2FB'
             }
         ],
     )
-    consumption_fig_by_temp = None
-    temp_value = False
-    for trip in trips:
-        if trip.get_temperature() is not None:
-            temp_value = True
-            break
-    if temp_value:
-        consumption_fig_by_temp = px.histogram(x=[0], y=[0],
-                                               histfunc="avg", title="Consumption by temperature")
-        consumption_fig_by_temp.update_traces(xbins_size=2)
-        consumption_fig_by_temp.update_layout(bargap=0.05)
-        consumption_fig_by_temp.add_trace(
-            go.Scatter(mode="markers", x=[0],
-                       y=[0], name="Trips"))
-        consumption_fig_by_temp.update_layout(xaxis_title="average temperature in °C",
-                                              yaxis_title="Consumption kWh/100Km")
+    consumption_fig_by_temp = px.histogram(x=[0], y=[0],
+                                           histfunc="avg", title="Consumption by temperature")
+    consumption_fig_by_temp.update_traces(xbins_size=2)
+    consumption_fig_by_temp.update_layout(bargap=0.05)
+    consumption_fig_by_temp.add_trace(
+        go.Scatter(mode="markers", x=[0],
+                   y=[0], name="Trips"))
+    consumption_fig_by_temp.update_layout(xaxis_title="average temperature in °C",
+                                          yaxis_title="Consumption kWh/100Km")
     return True
 
 

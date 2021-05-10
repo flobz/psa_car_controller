@@ -2,7 +2,6 @@ import logging
 from statistics import mean
 from typing import List, Dict
 
-from dateutil import tz
 from geojson import Feature, FeatureCollection, MultiLineString
 
 from libs.car import Cars, Car
@@ -38,6 +37,7 @@ class Trip:
         self.car: Car = None
         self.altitude_diff = None
         self.temperatures = []
+        self.id = None
 
     def add_points(self, latitude, longitude):
         self.positions.append(Points(latitude, longitude))
@@ -78,19 +78,22 @@ class Trip:
                                                                "average consumption": self.consumption_km,
                                                                "average consumption fuel": self.consumption_fuel_km})
 
-    def get_info(self, row_id=None):
-        res = {"start_at": self.start_at.astimezone(tz.tzlocal()).replace(tzinfo=None).strftime("%x %X"),
-               # convert to naive tz,
-               "duration": self.duration * 60, "speed_average": self.speed_average,
-               "consumption_km": self.consumption_km, "consumption_fuel_km": self.consumption_fuel_km,
-               "distance": self.distance, "mileage": self.mileage, "altitude_diff": self.altitude_diff}
-        if row_id is not None:
-            res["id"] = row_id
-        return res
 
-    def get_consumption(self):
-        return {"speed": self.speed_average, "consumption_km": self.consumption_km, "start_at": self.start_at,
-                "consumption_by_temp": self.get_temperature(), "positions": self.get_positions()}
+    def get_info(self):
+
+        res =  {"consumption_km": self.consumption_km, "start_at": self.start_at,
+                "consumption_by_temp": self.get_temperature(), "positions": self.get_positions(),
+                "duration": self.duration * 60, "speed_average": self.speed_average, "distance": self.distance,
+                "mileage": self.mileage, "altitude_diff": self.altitude_diff, "id": self.id,
+                "consumption": self.consumption
+                }
+        if self.car.has_battery():
+            res["consumption_km"] = self.consumption_km
+
+        if self.car.has_fuel():
+            res["consumption_fuel_km"] = self.consumption_fuel_km
+
+        return res
 
     def set_altitude_diff(self, start, end):
         try:
@@ -110,14 +113,14 @@ class Trip:
 class Trips(list):
     def __init__(self, *args):
         list.__init__(self, *args)
+        self.trip_num = 1
 
     def to_geo_json(self):
         feature_collection = FeatureCollection(self)
         return feature_collection
 
-    def get_long_trips(self):
-        res = [trip.get_consumption() for trip in self if trip.consumption > 1.8]
-        return res
+    def get_trips_as_dict(self):
+        return [trip.get_info() for trip in self]
 
     def get_distance(self):
         return self[-1].mileage - self[0].mileage
@@ -125,6 +128,8 @@ class Trips(list):
     def check_and_append(self, trip: Trip):
         if trip.consumption_km <= trip.car.max_elec_consumption and \
                 trip.consumption_fuel_km <= trip.car.max_fuel_consumption:
+            trip.id = self.trip_num
+            self.trip_num += 1
             self.append(trip)
             return True
         logger.debugv("trip discarded")
@@ -218,11 +223,3 @@ class Trips(list):
                 trips_by_vin[vin] = trips
         conn.close()
         return trips_by_vin
-
-    def get_info(self):
-        res = []
-        row_id = 1
-        for trip in self:
-            res.append(trip.get_info(row_id))
-            row_id += 1
-        return res

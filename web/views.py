@@ -1,5 +1,4 @@
 import json
-from datetime import datetime, timezone
 from typing import List
 
 import dash_bootstrap_components as dbc
@@ -12,6 +11,7 @@ import dash_daq as daq
 import pandas as pd
 from flask import jsonify, request, Response as FlaskResponse
 
+from libs.car import Cars
 from mylogger import logger
 
 from trip import Trips
@@ -23,6 +23,8 @@ from web.app import app, dash_app, myp, chc
 from web.db import Database
 
 # pylint: disable=invalid-name
+from web.figure_filter import Figure_Filter
+
 RESPONSE = "-response"
 EMPTY_DIV = "empty-div"
 ABRP_SWITCH = 'abrp-switch'
@@ -55,46 +57,9 @@ def diff_dashtable(data, data_previous, row_id_name="row_id"):
     return changes
 
 
-figures_list = ["consumption_fig", "consumption_fig_by_speed", "consumption_graph_by_temp", "trips_map"]
-y_list = [["consumption_km"], ["consumption_km", "consumption_km"], ["consumption_km", "consumption_km"],
-          ["long", "start_at"]]
-x_list = ["start_at", "speed", "consumption_by_temp", "lat"]
-outputs = [Output(id, "figure") for id in figures_list]
-
-
-dash_app.clientside_callback(
-    """
-    function(data,range, figures) {
-        return filter_dataset(data,range,figures,%s, %s);
-    }
-    """ % (x_list, y_list),
-    *outputs,
-    Input('clientside-data-store', 'data'),
-    Input('date-slider', 'value'),
-    Input('clientside-figure-store', 'data'))
-
 def create_callback():  # noqa: MC0001
     global CALLBACK_CREATED
     if not CALLBACK_CREATED:
-        @dash_app.callback(Output('summary-cards', 'children'),
-                           Output('tab_trips_fig', 'children'),
-                           Output('tab_charge', 'children'),
-                           Output('date-slider', 'max'),
-                           Output('date-slider', 'step'),
-                           Output('date-slider', 'marks'),
-                           Input('date-slider', 'value'))
-        def display_value(value):  # pylint: disable=unused-variable
-            mini = datetime.fromtimestamp(value[0], tz=timezone.utc)
-            maxi = datetime.fromtimestamp(value[1], tz=timezone.utc)
-            filtered_trips = Trips()
-            for trip in trips:
-                if mini <= trip.start_at <= maxi:
-                    filtered_trips.append(trip)
-            filtered_chargings = Charging.get_chargings(mini, maxi)
-            figures.get_figures(filtered_trips, filtered_chargings)
-            return create_card(figures.SUMMARY_CARDS), \
-                   figures.table_fig, figures.battery_table, max_millis, step, marks
-
         @dash_app.callback(Output(EMPTY_DIV, "children"),
                            [Input("battery-table", "data_timestamp")],
                            [State("battery-table", "data"),
@@ -106,13 +71,13 @@ def create_callback():  # noqa: MC0001
             for changed_line in diff_data:
                 if changed_line['column_name'] == 'price':
                     conn = Database.get_db()
-                    if not Database.set_chargings_price( conn, changed_line['start_at'],
+                    if not Database.set_chargings_price(conn, changed_line['start_at'],
                                                         changed_line['current_value']):
                         logger.error("Can't find line to update in the database")
                     conn.close()
             return ""
 
-        @dash_app.callback([Output("tab_battery_popup_graph", "children"), Output("tab_battery_popup", "is_open"), ],
+        @dash_app.callback([Output("tab_battery_popup_graph", "children"), Output("tab_battery_popup", "is_open")],
                            [Input("battery-table", "active_cell"),
                             Input("tab_battery_popup-close", "n_clicks")],
                            [State('battery-table', 'data'),
@@ -129,7 +94,7 @@ def create_callback():  # noqa: MC0001
                            [Input("trips-table", "active_cell"),
                             Input("tab_trips_popup-close", "n_clicks")],
                            State("tab_trips_popup", "is_open"))
-        def get_altitude(active_cell, close, is_open):  # pylint: disable=unused-argument, unused-variable
+        def get_altitude_graph(active_cell, close, is_open):  # pylint: disable=unused-argument, unused-variable
             if is_open is None:
                 is_open = False
             if active_cell is not None and active_cell["column_id"] in ["altitude_diff"] and not is_open:
@@ -275,12 +240,14 @@ def update_trips():
     conn.close()
     min_date = None
     max_date = None
+    car = myp.vehicles_list[0]  # todo handle multiple car
     try:
-        trips_by_vin = Trips.get_trips(myp.vehicles_list)
-        trips = next(iter(trips_by_vin.values()))  # todo handle multiple car
+        trips_by_vin = Trips.get_trips(Cars([car]))
+        trips = trips_by_vin[car.vin]
         assert len(trips) > 0
         min_date = trips[0].start_at
         max_date = trips[-1].start_at
+        figures.get_figures(trips[0].car)
     except (StopIteration, AssertionError):
         logger.debug("No trips yet")
     try:
@@ -304,6 +271,7 @@ def update_trips():
         step = (max_millis - min_millis) / 100
         marks = figures.get_marks_from_start_end(min_date, max_date)
         cached_layout = None  # force regenerate layout
+        figures.get_figures(car)
     except (ValueError, IndexError):
         logger.error("update_trips (slider): %s", exc_info=True)
     except AttributeError:
@@ -333,14 +301,17 @@ def __get_control_tabs():
 def create_card(card: dict):
     res = []
     for tile, value in card.items():
-        text = value["text"]
+        rows = value["text"]
         # if isinstance(text, str):
         #     text = html.H3(text)
+        html_text = []
+        for row in rows:
+            html_text.append(html.Div(row, className="d-flex flex-row justify-content-center"))
         res.append(html.Div(
             dbc.Card([
                 html.H4(tile, className="card-title text-center"),
                 dbc.Row([
-                    dbc.Col(dbc.CardBody(text, style={"whiteS   pace": "nowrap", "fontSize": "160%"}),
+                    dbc.Col(dbc.CardBody(html_text, style={"whiteSpace": "nowrap", "fontSize": "160%"}),
                             className="text-center"),
                     dbc.Col(dbc.CardImg(src=value.get("src", Component.UNDEFINED), style={"maxHeight": "7rem"}))
                 ],
@@ -355,16 +326,23 @@ def serve_layout():
     global cached_layout
     if cached_layout is None:
         logger.debug("Create new layout")
+        fig_filter = Figure_Filter()
         try:
-            figures.get_figures(trips, chargings)
-            summary_tab = [dbc.Container(dbc.Row(id="summary-cards",
-                                                 children=create_card(figures.SUMMARY_CARDS)), fluid=True),
-                           dcc.Graph(id="consumption_fig"),
-                           dcc.Graph(id="consumption_fig_by_speed"),
-                           dcc.Graph(id="consumption_graph_by_temp",
-                                     style={'display': 'none'} if figures.consumption_fig_by_temp is None else {},
-                                     )]
-            maps = dcc.Graph(id="trips_map", style={"height": '90vh'})
+            summary_tab = [
+                dbc.Container(dbc.Row(id="summary-cards",
+                                      children=create_card(figures.SUMMARY_CARDS)), fluid=True),
+                fig_filter.add_graph(dcc.Graph(id="consumption_fig"), "start_at", ["consumption_km"],
+                                     figures.consumption_fig),
+                fig_filter.add_graph(dcc.Graph(id="consumption_fig_by_speed"), "speed_average",
+                                     ["consumption_km"] * 2, figures.consumption_fig_by_speed),
+                fig_filter.add_graph(dcc.Graph(id="consumption_graph_by_temp"), "consumption_by_temp",
+                                     ["consumption_km"] * 2, figures.consumption_fig_by_temp)]
+            maps = fig_filter.add_map(dcc.Graph(id="trips_map", style={"height": '90vh'}), "lat",
+                                      ["long", "start_at"], figures.trips_map)
+            fig_filter.add_table("trips", figures.table_fig)
+            fig_filter.add_table("chargings", figures.battery_table)
+            fig_filter.src = {"trips": trips.get_trips_as_dict(), "chargings": chargings}
+            dash_app.clientside_callback(*fig_filter.get_clientside_callback())
             create_callback()
             range_slider = dcc.RangeSlider(
                 id='date-slider',
@@ -380,9 +358,7 @@ def serve_layout():
             logger.warning("Failed to generate figure, there is probably not enough data yet", exc_info_debug=True)
             range_slider = html.Div()
         data_div = html.Div([
-            dcc.Store(id='clientside-figure-store', data=[figures.consumption_fig, figures.consumption_fig_by_speed,
-                                                          figures.consumption_fig_by_temp, figures.trips_map]),
-            dcc.Store(id='clientside-data-store', data=figures.consumption_df_dict),
+            *fig_filter.get_store(),
             range_slider,
             html.Div([
                 dbc.Tabs([

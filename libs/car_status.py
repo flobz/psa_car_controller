@@ -23,6 +23,9 @@ class CarStatus(Status):
                                           properties=PositionProperties(updated_at=None))
         if self.kinetic is None:
             self.kinetic = Kinetic()
+        # always put electric energy first
+        if len(self._energy) == 2 and self._energy[0].type != 'Electric':
+            self._energy = self._energy[::-1]
 
     def is_moving(self):
         try:

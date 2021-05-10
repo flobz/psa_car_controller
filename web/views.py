@@ -3,14 +3,14 @@ from typing import List
 
 import dash_bootstrap_components as dbc
 from dash.dependencies import Output, Input, MATCH, State
-from dash.development.base_component import Component
 from dash.exceptions import PreventUpdate
 import dash_core_components as dcc
 import dash_html_components as html
 import dash_daq as daq
-import pandas as pd
+from deepdiff import DeepDiff
 from flask import jsonify, request, Response as FlaskResponse
 
+import web.utils
 from libs.car import Cars
 from mylogger import logger
 
@@ -24,6 +24,7 @@ from web.db import Database
 
 # pylint: disable=invalid-name
 from web.figure_filter import Figure_Filter
+from web.utils import dash_date_to_datetime, create_card
 
 RESPONSE = "-response"
 EMPTY_DIV = "empty-div"
@@ -33,28 +34,6 @@ CALLBACK_CREATED = False
 trips: Trips
 chargings: List[dict]
 min_date = max_date = min_millis = max_millis = step = marks = cached_layout = None
-
-
-def diff_dashtable(data, data_previous, row_id_name="row_id"):
-    df, df_previous = pd.DataFrame(data=data), pd.DataFrame(data_previous)
-    for _df in [df, df_previous]:
-        assert row_id_name in _df.columns
-        _df = _df.set_index(row_id_name)
-    mask = df.ne(df_previous)
-    df_diff = df[mask].dropna(how="all", axis="columns").dropna(how="all", axis="rows")
-    changes = []
-    for idx, row in df_diff.iterrows():
-        row.dropna(inplace=True)
-        for change in row.iteritems():
-            changes.append(
-                {
-                    row_id_name: data[idx][row_id_name],
-                    "column_name": change[0],
-                    "current_value": change[1],
-                    "previous_value": df_previous.at[idx, change[0]],
-                }
-            )
-    return changes
 
 
 def create_callback():  # noqa: MC0001
@@ -67,15 +46,20 @@ def create_callback():  # noqa: MC0001
         def capture_diffs_in_battery_table(timestamp, data, data_previous):  # pylint: disable=unused-variable
             if timestamp is None:
                 raise PreventUpdate
-            diff_data = diff_dashtable(data, data_previous, "start_at")
-            for changed_line in diff_data:
-                if changed_line['column_name'] == 'price':
+            diff_data = DeepDiff(data_previous, data, ignore_numeric_type_changes=True, ignore_order=True, view="tree",
+                                 verbose_level=1)
+            for value_changed in diff_data["values_changed"]:
+                index, column_name = value_changed.path(output_format='list')
+                new_value = value_changed.t2
+                if column_name == 'price':
                     conn = Database.get_db()
-                    if not Database.set_chargings_price(conn, changed_line['start_at'],
-                                                        changed_line['current_value']):
+                    date = dash_date_to_datetime(data[index]['start_at'])
+                    if not Database.set_chargings_price(conn, date, new_value):
                         logger.error("Can't find line to update in the database")
+                    else:
+                        logger.debug("update price %s of %s", value_changed, date)
                     conn.close()
-            return ""
+            return ""  # don't need to update dashboard
 
         @dash_app.callback([Output("tab_battery_popup_graph", "children"), Output("tab_battery_popup", "is_open")],
                            [Input("battery-table", "active_cell"),
@@ -266,10 +250,10 @@ def update_trips():
     # update for slider
     try:
         logger.debug("min_date:%s - max_date:%s", min_date, max_date)
-        min_millis = figures.unix_time_millis(min_date)
-        max_millis = figures.unix_time_millis(max_date)
+        min_millis = web.utils.unix_time_millis(min_date)
+        max_millis = web.utils.unix_time_millis(max_date)
         step = (max_millis - min_millis) / 100
-        marks = figures.get_marks_from_start_end(min_date, max_date)
+        marks = web.utils.get_marks_from_start_end(min_date, max_date)
         cached_layout = None  # force regenerate layout
         figures.get_figures(car)
     except (ValueError, IndexError):
@@ -296,30 +280,6 @@ def __get_control_tabs():
             html.Div(id={'role': ABRP_SWITCH + RESPONSE, 'vin': car.vin})
         ]))
     return tabs
-
-
-def create_card(card: dict):
-    res = []
-    for tile, value in card.items():
-        rows = value["text"]
-        # if isinstance(text, str):
-        #     text = html.H3(text)
-        html_text = []
-        for row in rows:
-            html_text.append(html.Div(row, className="d-flex flex-row justify-content-center"))
-        res.append(html.Div(
-            dbc.Card([
-                html.H4(tile, className="card-title text-center"),
-                dbc.Row([
-                    dbc.Col(dbc.CardBody(html_text, style={"whiteSpace": "nowrap", "fontSize": "160%"}),
-                            className="text-center"),
-                    dbc.Col(dbc.CardImg(src=value.get("src", Component.UNDEFINED), style={"maxHeight": "7rem"}))
-                ],
-                    className="align-items-center flex-nowrap")
-            ], className="h-100 p-2"),
-            className="col-sm-12 col-md-6 col-lg-3 py-2"
-        ))
-    return res
 
 
 def serve_layout():

@@ -4,7 +4,6 @@ import dash_bootstrap_components as dbc
 import dash_table
 from dash_core_components import Graph
 from dash_table.Format import Format, Scheme, Symbol
-from dateutil.relativedelta import relativedelta
 import plotly.express as px
 import plotly.graph_objects as go
 import dash_html_components as html
@@ -13,35 +12,7 @@ from libs.car import Car
 from libs.elec_price import ElecPrice
 from trip import Trip
 from web.db import Database
-
-
-def unix_time_millis(date):
-    return int(date.timestamp())
-
-
-def get_marks_from_start_end(start, end):
-    nb_marks = 10
-    result = []
-    time_delta = int((end - start).total_seconds() / nb_marks)
-    current = start
-    if time_delta > 0:
-        while current <= end:
-            result.append(current)
-            current += relativedelta(seconds=time_delta)
-        result[-1] = end
-        if time_delta < 3600 * 24:
-            if time_delta > 3600:
-                date_f = '%x %Hh'
-            else:
-                date_f = '%x %Hh%M'
-        else:
-            date_f = '%x'
-        marks = {}
-        for date in result:
-            marks[unix_time_millis(date)] = str(date.strftime(date_f))
-        return marks
-    return None
-
+from web.utils import card_value_div, dash_date_to_datetime
 
 # pylint: disable=invalid-name
 ERROR_DIV = dbc.Alert("No data to show, there is probably no trips recorded yet", color="danger")
@@ -56,12 +27,6 @@ info = ""
 battery_info = ERROR_DIV
 battery_table = None
 consumption_df_dict = None
-
-
-def card_value_div(card_id, unit, value="-"):
-    return html.Div([html.Div(value, id=card_id, className="mr-2"), html.Div(unit)],
-                    className="d-flex flex-row justify-content-center")
-
 
 AVG_CHARGE_SPEED = "avg_chg_speed"
 AVG_EMISSION_KM = "avg_emission_km"
@@ -192,20 +157,9 @@ def get_figures(car: Car):
     return True
 
 
-def __calculate_co2_per_kw(charging_data):
-    try:
-        co2_data = charging_data[charging_data["co2"] > 0]
-        co2_kw_sum = co2_data["kw"].sum()
-        if co2_kw_sum > 0:
-            return co2_data["co2"].sum() / co2_kw_sum
-    except KeyError:
-        return 0
-    return 0
-
-
 def get_battery_curve_fig(row: dict, car: Car):
-    start_date = Database.convert_datetime_from_string(row["start_at"])
-    stop_at = Database.convert_datetime_from_string(row["stop_at"])
+    start_date = dash_date_to_datetime(row["start_at"])
+    stop_at = dash_date_to_datetime(row["stop_at"])
     conn = Database.get_db()
     res = Database.get_battery_curve(conn, start_date, car.vin)
     conn.close()

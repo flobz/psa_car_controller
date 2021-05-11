@@ -104,9 +104,9 @@ class Figure_Filter:
         else:
             log_level = 20
         fct_def = f"""function(data,range, figures, {self.gen_unused_variable()}) {{
-                        var params={self.get_params()};
-                        var log_level={log_level};
-                        return filter_and_sort(data,range, figures, params, log_level)
+                        const params={self.get_params()};
+                        const logLevel={log_level};
+                        return filterAndSort(data, range, figures, params, logLevel);
                       }}"""
         res = [fct_def,
                *self.__get_output(),

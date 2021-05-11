@@ -1,0 +1,15 @@
+{
+    "abrp": {
+        "token": null
+    },
+    "client_id": "cid",
+    "client_secret": "csec",
+    "co2_signal_api": null,
+    "country_code": "FR",
+    "customer_id": "AP-ACNT1234",
+    "proxies": null,
+    "realm": "clientsB2CPeugeot",
+    "refresh_token": "aasds-aaa",
+    "remote_refresh_token": "aa",
+    "weather_api": null
+}

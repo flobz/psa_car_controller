@@ -1,0 +1,13 @@
+[
+    {
+        "abrp_name": "peugeot:e208:20:50",
+        "battery_power": 46,
+        "brand": "Peugeot",
+        "fuel_capacity": 0,
+        "label": "e-208",
+        "max_elec_consumption": 70,
+        "max_fuel_consumption": 0,
+        "vehicle_id": "vid",
+        "vin": "VR3UHZKXZL"
+    }
+]

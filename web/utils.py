@@ -3,6 +3,7 @@ from datetime import datetime, timedelta
 import dash_bootstrap_components as dbc
 import dash_html_components as html
 from dash.development.base_component import Component
+from pytz import UTC
 
 
 def unix_time_millis(date):
@@ -39,7 +40,7 @@ def card_value_div(card_id, unit, value="-"):
 
 
 def dash_date_to_datetime(st):
-    return datetime.strptime(st, "%Y-%m-%dT%H:%M:%S.000Z")
+    return datetime.strptime(st, "%Y-%m-%dT%H:%M:%S.000Z").replace(tzinfo=UTC)
 
 
 def create_card(card: dict):

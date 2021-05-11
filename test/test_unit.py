@@ -214,8 +214,8 @@ class TestUnit(unittest.TestCase):
                                          'price': 3.84,
                                          'charging_mode': 'slow'}])
         assert get_figures(car)
-        row = {"start_at": date0.strftime("%Y-%m-%dT%H:%M:%S+00:00"),
-               "stop_at": date3.strftime("%Y-%m-%dT%H:%M:%S+00:00"), "start_level": start_level, "end_level": end_level}
+        row = {"start_at": date0.strftime('%Y-%m-%dT%H:%M:%S.000Z'),
+               "stop_at": date3.strftime('%Y-%m-%dT%H:%M:%S.000Z'), "start_level": start_level, "end_level": end_level}
         assert get_battery_curve_fig(row, car) is not None
         assert get_altitude_fig(trip) is not None
 

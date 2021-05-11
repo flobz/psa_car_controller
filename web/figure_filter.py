@@ -1,6 +1,7 @@
 import json
 from logging import DEBUG
 
+from dash._utils import create_callback_id
 from dash.dependencies import Output, Input
 from dash_core_components import Store
 from mylogger import logger
@@ -98,23 +99,26 @@ class Figure_Filter:
         }, indent=4)
         return params
 
-    def get_clientside_callback(self):
-        if logger.isEnabledFor(DEBUG):
-            log_level = 10
-        else:
-            log_level = 20
-        fct_def = f"""function(data,range, figures, {self.gen_unused_variable()}) {{
-                        const params={self.get_params()};
-                        const logLevel={log_level};
-                        return filterAndSort(data, range, figures, params, logLevel);
-                      }}"""
-        res = [fct_def,
-               *self.__get_output(),
-               Input('clientside-data-store', 'data'),
-               Input('date-slider', 'value'),
-               Input('clientside-figure-store', 'data'),
-               *self.__get_table_input_sort_by()]
-        return res
+    def set_clientside_callback(self, dash_app):
+        callback_id = create_callback_id(self.__get_output())
+        if callback_id not in dash_app.callback_map:
+            if logger.isEnabledFor(DEBUG):
+                log_level = 10
+            else:
+                log_level = 20
+            fct_def = f"""function(data,range, figures, {self.gen_unused_variable()}) {{
+                            const params={self.get_params()};
+                            const logLevel={log_level};
+                            return filterAndSort(data, range, figures, params, logLevel);
+                          }}"""
+            dash_app.clientside_callback(fct_def,
+                   *self.__get_output(),
+                   Input('clientside-data-store', 'data'),
+                   Input('date-slider', 'value'),
+                   Input('clientside-figure-store', 'data'),
+                   *self.__get_table_input_sort_by())
+            return True
+        return False
 
     def get_store(self):
         return [Store(id='clientside-figure-store', data=self.__get_figures()),

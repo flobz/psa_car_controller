@@ -3,6 +3,7 @@ from datetime import datetime, timedelta
 import dash_bootstrap_components as dbc
 import dash_html_components as html
 from dash.development.base_component import Component
+from pandas import DataFrame
 from pytz import UTC
 
 
@@ -65,3 +66,25 @@ def create_card(card: dict):
             className="col-sm-12 col-md-6 col-lg-3 py-2"
         ))
     return res
+
+
+def diff_dashtable(data, data_previous, row_id_name="row_id"):
+    df, df_previous = DataFrame(data=data), DataFrame(data_previous)
+    for _df in [df, df_previous]:
+        assert row_id_name in _df.columns
+        _df = _df.set_index(row_id_name)
+    mask = df.ne(df_previous)
+    df_diff = df[mask].dropna(how="all", axis="columns").dropna(how="all", axis="rows")
+    changes = []
+    for idx, row in df_diff.iterrows():
+        row.dropna(inplace=True)
+        for change in row.iteritems():
+            changes.append(
+                {
+                    row_id_name: data[idx][row_id_name],
+                    "column_name": change[0],
+                    "current_value": change[1],
+                    "previous_value": df_previous.at[idx, change[0]],
+                }
+            )
+    return changes

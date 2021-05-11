@@ -4,6 +4,7 @@ dash_daq
 plotly>=4
 cryptography>=2.6
 Werkzeug>=1.0.0
+pandas
 oauth2_client
 requests
 pytz
@@ -15,7 +16,6 @@ geojson
 reverse_geocode
 androguard
 pycryptodomex
-deepdiff
 
 #swagger req
 certifi >= 14.05.14

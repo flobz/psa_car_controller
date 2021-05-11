@@ -7,7 +7,6 @@ from dash.exceptions import PreventUpdate
 import dash_core_components as dcc
 import dash_html_components as html
 import dash_daq as daq
-from deepdiff import DeepDiff
 from flask import jsonify, request, Response as FlaskResponse
 
 import web.utils
@@ -21,10 +20,11 @@ from web import figures
 
 from web.app import app, dash_app, myp, chc
 from web.db import Database
+from web.utils import diff_dashtable, dash_date_to_datetime
 
 # pylint: disable=invalid-name
 from web.figure_filter import Figure_Filter
-from web.utils import dash_date_to_datetime, create_card
+from web.utils import create_card
 
 RESPONSE = "-response"
 EMPTY_DIV = "empty-div"
@@ -46,18 +46,15 @@ def create_callback():  # noqa: MC0001
         def capture_diffs_in_battery_table(timestamp, data, data_previous):  # pylint: disable=unused-variable
             if timestamp is None:
                 raise PreventUpdate
-            diff_data = DeepDiff(data_previous, data, ignore_numeric_type_changes=True, ignore_order=True, view="tree",
-                                 verbose_level=1)
-            for value_changed in diff_data["values_changed"]:
-                index, column_name = value_changed.path(output_format='list')
-                new_value = value_changed.t2
-                if column_name == 'price':
+            diff_data = diff_dashtable(data, data_previous, "start_at")
+            for changed_line in diff_data:
+                if changed_line['column_name'] == 'price':
                     conn = Database.get_db()
-                    date = dash_date_to_datetime(data[index]['start_at'])
-                    if not Database.set_chargings_price(conn, date, new_value):
+                    if not Database.set_chargings_price(conn, dash_date_to_datetime(changed_line['start_at']),
+                                                        changed_line['current_value']):
                         logger.error("Can't find line to update in the database")
                     else:
-                        logger.debug("update price %s of %s", value_changed, date)
+                        logger.debug("update price %s of %s", changed_line['current_value'], changed_line['start_at'])
                     conn.close()
             return ""  # don't need to update dashboard
 
@@ -312,7 +309,7 @@ def serve_layout():
             fig_filter.add_table("trips", figures.table_fig)
             fig_filter.add_table("chargings", figures.battery_table)
             fig_filter.src = {"trips": trips.get_trips_as_dict(), "chargings": chargings}
-            dash_app.clientside_callback(*fig_filter.get_clientside_callback())
+            fig_filter.set_clientside_callback(dash_app)
             create_callback()
         except (IndexError, TypeError, NameError, AssertionError, NameError):
             summary_tab = figures.ERROR_DIV

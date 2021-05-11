@@ -13,17 +13,9 @@ class Charging:
     elec_price: ElecPrice = ElecPrice(None)
 
     @staticmethod
-    def get_chargings(mini=None, maxi=None) -> List[dict]:
+    def get_chargings() -> List[dict]:
         conn = Database.get_db()
-        if mini is not None:
-            if maxi is not None:
-                res = conn.execute("select * from battery WHERE start_at>=? and start_at<=?", (mini, maxi)).fetchall()
-            else:
-                res = conn.execute("select * from battery WHERE start_at>=?", (mini,)).fetchall()
-        elif maxi is not None:
-            res = conn.execute("select * from battery WHERE start_at<=?", (maxi,)).fetchall()
-        else:
-            res = conn.execute("select * from battery").fetchall()
+        res = conn.execute("select * from battery ORDER BY start_at").fetchall()
         conn.close()
         return list(map(dict, res))
 

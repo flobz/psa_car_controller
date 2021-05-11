@@ -13,7 +13,7 @@ We will retrieve this information:
 - On debian based distribution you can install some requirement from repos, it's faster than installtion with pip: 
  
  ```
- sudo apt-get install python3-typing-extensions python3-pandas python3-plotly python3-paho-mqtt  python3-six python3-dateutil python3-brotli  libblas-dev  liblapack-dev gfortran python3-pycryptodome python3-numpy libatlas3-base python3-cryptography
+ sudo apt-get install python3-typing-extensions python3-plotly python3-paho-mqtt  python3-six python3-dateutil python3-brotli  libblas-dev  liblapack-dev gfortran python3-pycryptodome python3-cryptography
  ```
     
 - For everyone :

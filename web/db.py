@@ -11,7 +11,7 @@ from geojson import Feature, Point, FeatureCollection
 from geojson import dumps as geo_dumps
 
 from mylogger import logger
-from utils import get_temp
+from libs.utils import get_temp
 
 NEW_BATTERY_COLUMNS = [["price", "INTEGER"], ["charging_mode", "TEXT"]]
 NEW_POSITION_COLUMNS = [["level_fuel", "INTEGER"], ["altitude", "INTEGER"]]
@@ -126,7 +126,10 @@ class Database:
     def clean_battery(conn):
         # delete charging longer than 17h
         conn.execute("DElETE FROM battery WHERE JULIANDAY(stop_at)-JULIANDAY(start_at)>0.7;")
-        conn.execute("DELETE FROM battery WHERE start_level==end_level;")
+        # delete charging not finished longer than 17h
+        conn.execute("DELETE from battery where stop_at is NULL and JULIANDAY()-JULIANDAY(start_at)>0.7;")
+        #delete little charge
+        conn.execute("DELETE FROM battery WHERE start_level >= end_level-1;")
 
     @staticmethod
     def clean_position(conn):

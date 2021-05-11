@@ -3,6 +3,7 @@ use: flask
 max-line-length: 120
 ignore-paths:
   - psa_connectedcar
+  - test
 pep8:
   disable:
     - E722

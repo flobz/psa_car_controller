@@ -30,4 +30,5 @@ jobs:
           echo install coverage,
           pip install coverage
           echo test
+          coverage run -m unittest || exit 1
           coverage xml -o cobertura.xml && bash <(curl -Ls https://coverage.codacy.com/get.sh) report -r cobertura.xml

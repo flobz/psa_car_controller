@@ -25,10 +25,10 @@ jobs:
       # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
       - uses: actions/checkout@v2
       # Runs a set of commands using the runners shell
+      - name: install req
+        run: pip install -r requirements.txt coverage
       - name: test app
         run: |
-          echo install coverage,
-          pip install coverage
           echo test
           coverage run -m unittest || exit 1
           coverage xml -o cobertura.xml && bash <(curl -Ls https://coverage.codacy.com/get.sh) report -r cobertura.xml

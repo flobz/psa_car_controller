@@ -6,6 +6,7 @@ import dash_bootstrap_components as dbc
 from flask import Flask
 
 from werkzeug import run_simple
+from werkzeug.middleware.proxy_fix import ProxyFix
 
 try:
     from werkzeug.middleware.dispatcher import DispatcherMiddleware
@@ -40,6 +41,7 @@ def start_app(title, base_path, debug: bool, host, port, reloader=False,   # pyl
     if unminified:
         locale_url = ["assets/plotly-with-meta.js"]
     app = Flask(__name__)
+    app.wsgi_app = ProxyFix(app.wsgi_app)
     app.config["DEBUG"] = debug
     if base_path == "/":
         application = DispatcherMiddleware(app)

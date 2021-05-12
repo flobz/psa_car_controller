@@ -122,7 +122,7 @@ def get_vehicle_info(vin):
 STYLE_CACHE = None
 
 
-@app.route("/assets/style2.json")
+@app.route("/style.json")
 def get_style():
     global STYLE_CACHE
     if not STYLE_CACHE:

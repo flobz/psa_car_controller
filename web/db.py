@@ -1,6 +1,7 @@
 import sys
 import sqlite3
 from datetime import datetime
+from threading import Lock
 from time import sleep
 
 from typing import Callable
@@ -41,13 +42,16 @@ class CustomSqliteConnection(sqlite3.Connection):
     def close(self):
         if self.total_changes:
             self.execute_callbacks()
+        self.rollback()
+        self.execute("PRAGMA optimize;")
+        self.commit()
         super().close()
 
 class Database:
     callback_fct: Callable[[], None] = lambda: None
     DEFAULT_DB_FILE = 'info.db'
     db_initialized = False
-
+    __thread_lock = Lock()
     @staticmethod
     def convert_datetime_from_string(string):
         try:
@@ -107,6 +111,8 @@ class Database:
         Database.clean_battery(conn)
         Database.add_altitude_to_db(conn)
         conn.commit()
+        conn.execute("VACUUM;")
+        conn.commit()
         if sys.version_info >= (3, 7):
             Database.convert_datetime_from_string = new_convert_datetime_from_string
         sqlite3.register_converter("DATETIME", Database.convert_datetime_from_bytes)
@@ -119,8 +125,10 @@ class Database:
             db_file = Database.DEFAULT_DB_FILE
         conn = CustomSqliteConnection(db_file, detect_types=sqlite3.PARSE_DECLTYPES | sqlite3.PARSE_COLNAMES)
         conn.row_factory = sqlite3.Row
+        Database.__thread_lock.acquire()
         if not Database.db_initialized:
             Database.init_db(conn)
+        Database.__thread_lock.release()
         if update_callback:
             conn.callbacks.append(Database.callback_fct)
         return conn

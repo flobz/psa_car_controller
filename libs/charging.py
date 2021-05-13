@@ -59,15 +59,15 @@ class Charging:
         else:
             try:
                 start_at, stop_at, start_level = conn.execute(
-                    "SELECT start_at, stop_at, start_level from battery WHERE VIN=? ORDER BY start_at "
-                    "DESC limit 1", (car.vin,)).fetchone()
+                    "SELECT start_at, stop_at, start_level from battery WHERE VIN=? ORDER BY start_at DESC limit 1",
+                    (car.vin,)).fetchone()
                 in_progress = stop_at is None
-                if in_progress:
-                    co2_per_kw = Ecomix.get_co2_per_kw(start_at, charge_date, latitude, longitude, country_code)
-                    consumption_kw = (level - start_level) / 100 * car.battery_power
-
-                    Charging.update_chargings(conn, start_at, charge_date, level, co2_per_kw, consumption_kw, car.vin)
             except TypeError:
                 logger.debug("battery table is probably empty :", exc_info=True)
+                in_progress = False
+            if in_progress:
+                co2_per_kw = Ecomix.get_co2_per_kw(start_at, charge_date, latitude, longitude, country_code)
+                consumption_kw = (level - start_level) / 100 * car.battery_power
+                Charging.update_chargings(conn, start_at, charge_date, level, co2_per_kw, consumption_kw, car.vin)
         conn.commit()
         conn.close()

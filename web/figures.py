@@ -168,8 +168,10 @@ def get_battery_curve_fig(row: dict, car: Car):
     for x in range(1, len(res)):
         start_level = res[x - 1]["level"]
         end_level = res[x]["level"]
-        speed = car.get_charge_speed(start_level, end_level, (res[x]["date"] - res[x - 1]["date"]).total_seconds())
-        battery_curves.append({"level": start_level, "speed": speed})
+        diff_sec = (res[x]["date"] - res[x - 1]["date"]).total_seconds()
+        if diff_sec > 0:
+            speed = car.get_charge_speed(start_level, end_level, diff_sec)
+            battery_curves.append({"level": start_level, "speed": speed})
     battery_curves.append({"level": row["end_level"], "speed": speed})
     fig = px.line(battery_curves, x="level", y="speed")
     fig.update_layout(xaxis_title="Battery %", yaxis_title="Charging speed in kW")

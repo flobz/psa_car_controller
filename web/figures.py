@@ -162,16 +162,20 @@ def get_battery_curve_fig(row: dict, car: Car):
     res = Database.get_battery_curve(conn, start_date, car.vin)
     conn.close()
     res.insert(0, {"level": row["start_level"], "date": start_date})
-    res.append({"level": row["end_level"], "date": stop_at})
+    if row["end_level"] is not None:
+        res.append({"level": row["end_level"], "date": stop_at})
     battery_curves = []
     speed = 0
-    for x in range(1, len(res)):
-        start_level = res[x - 1]["level"]
-        end_level = res[x]["level"]
-        diff_sec = (res[x]["date"] - res[x - 1]["date"]).total_seconds()
-        if diff_sec > 0:
-            speed = car.get_charge_speed(start_level, end_level, diff_sec)
+    start = 0
+    for end in range(1, len(res)):
+        start_level = res[start]["level"]
+        end_level = res[end]["level"]
+        diff_level = end_level-start_level
+        diff_sec = (res[end]["date"] - res[start]["date"]).total_seconds()
+        if diff_sec > 0 and diff_level > 3:
+            speed = car.get_charge_speed(diff_level, diff_sec)
             battery_curves.append({"level": start_level, "speed": speed})
+            start = end
     battery_curves.append({"level": row["end_level"], "speed": speed})
     fig = px.line(battery_curves, x="level", y="speed")
     fig.update_layout(xaxis_title="Battery %", yaxis_title="Charging speed in kW")

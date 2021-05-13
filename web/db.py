@@ -15,7 +15,7 @@ from libs.utils import get_temp
 
 NEW_BATTERY_COLUMNS = [["price", "INTEGER"], ["charging_mode", "TEXT"]]
 NEW_POSITION_COLUMNS = [["level_fuel", "INTEGER"], ["altitude", "INTEGER"]]
-
+NEW_BATTERY_CURVE_COLUMNS = [["rate", "INTEGER"], ["autonomy", "INTEGER"]]
 
 def convert_sql_res(rows):
     return list(map(dict, rows))
@@ -72,7 +72,7 @@ class Database:
         if sys.version_info < (3, 7):
             logger.warning("Can't do database backup, please upgrade to python 3.7")
         else:
-            back_conn = sqlite3.connect("info_backup.db")
+            back_conn = sqlite3.connect(f"info_backup_{datetime.now()}.db")
             conn.backup(back_conn)
             back_conn.close()
 
@@ -92,7 +92,10 @@ class Database:
                      "start_level INTEGER, end_level INTEGER, co2 INTEGER, kw INTEGER);")
         conn.execute("""CREATE TABLE IF NOT EXISTS battery_curve (start_at DATETIME, VIN TEXT, date DATETIME,
                         level INTEGER, UNIQUE(start_at, VIN, level));""")
-        for table, columns in [["position", NEW_POSITION_COLUMNS], ["battery", NEW_BATTERY_COLUMNS]]:
+        table_to_update = [["position", NEW_POSITION_COLUMNS],
+                           ["battery", NEW_BATTERY_COLUMNS],
+                           ["battery_curve", NEW_BATTERY_CURVE_COLUMNS]]
+        for table, columns in table_to_update:
             for column, column_type in columns:
                 try:
                     conn.execute(f"ALTER TABLE {table} ADD {column} {column_type};")
@@ -125,9 +128,9 @@ class Database:
     @staticmethod
     def clean_battery(conn):
         # delete charging longer than 17h
-        conn.execute("DElETE FROM battery WHERE JULIANDAY(stop_at)-JULIANDAY(start_at)>0.7;")
+        #conn.execute("DElETE FROM battery WHERE JULIANDAY(stop_at)-JULIANDAY(start_at)>0.7;")
         # delete charging not finished longer than 17h
-        conn.execute("DELETE from battery where stop_at is NULL and JULIANDAY()-JULIANDAY(start_at)>0.7;")
+        #conn.execute("DELETE from battery where stop_at is NULL and JULIANDAY()-JULIANDAY(start_at)>0.7;")
         #delete little charge
         conn.execute("DELETE FROM battery WHERE start_level >= end_level-1;")
 

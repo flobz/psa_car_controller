@@ -12,7 +12,7 @@ from libs.elec_price import ElecPrice
 from my_psacc import MyPSACC
 from ecomix import Ecomix
 from libs.car_model import CarModel
-from mylogger import my_logger
+from mylogger import my_logger, logger
 from otp.otp import load_otp, save_otp
 from charge_control import ChargeControls
 from trip import Trips
@@ -129,10 +129,10 @@ class TestUnit(unittest.TestCase):
         list(map(dict, conn.execute('PRAGMA database_list').fetchall()))
         vin = "VR3UHZKXZL"
         car = Car(vin, "id", "Peugeot")
-        Charging.record_charging(car, "InProgress", date0, 50, latitude, longitude, "FR", "slow")
-        Charging.record_charging(car, "InProgress", date1, 75, latitude, longitude, "FR", "slow")
-        Charging.record_charging(car, "InProgress", date2, 85, latitude, longitude, "FR", "slow")
-        Charging.record_charging(car, "InProgress", date3, 90, latitude, longitude, "FR", "slow")
+        Charging.record_charging(car, "InProgress", date0, 50, latitude, longitude, "FR", "slow",20,60)
+        Charging.record_charging(car, "InProgress", date1, 75, latitude, longitude, "FR", "slow",20,60)
+        Charging.record_charging(car, "InProgress", date2, 85, latitude, longitude, "FR", "slow",20,60)
+        Charging.record_charging(car, "InProgress", date3, 90, latitude, longitude, "FR", "slow",20,60)
 
         res = Database.get_battery_curve(Database.get_db(), date0, vin)
         assert len(res) == 3
@@ -148,8 +148,8 @@ class TestUnit(unittest.TestCase):
                      'occurence': {'day': ['Sat']}}]}},
             'energy': [{'updatedAt': '2021-02-23T22:29:03Z', 'type': 'Fuel', 'level': 0},
                        {'updatedAt': '2021-04-01T16:17:01Z', 'type': 'Electric', 'level': 70, 'autonomy': 192,
-                        'charging': {'plugged': False, 'status': 'Disconnected', 'remainingTime': 'PT0S',
-                                     'chargingRate': 0, 'chargingMode': 'No', 'nextDelayedTime': 'PT21H30M'}}],
+                        'charging': {'plugged': True, 'status': 'InProgress', 'remainingTime': 'PT0S',
+                                     'chargingRate': 20, 'chargingMode': 'Slow', 'nextDelayedTime': 'PT21H30M'}}],
             'createdAt': '2021-04-01T16:17:01Z',
             'battery': {'voltage': 99, 'current': 0, 'createdAt': '2021-04-01T16:17:01Z'},
             'kinetic': {'createdAt': '2021-03-29T05:16:10Z', 'moving': False},
@@ -196,11 +196,11 @@ class TestUnit(unittest.TestCase):
         Charging.elec_price = ElecPrice.read_config()
         start_level = 40
         end_level = 85
-        Charging.record_charging(car, "InProgress", date0, start_level, latitude, longitude, None, "slow")
-        Charging.record_charging(car, "InProgress", date1, 70, latitude, longitude, "FR", "slow")
-        Charging.record_charging(car, "InProgress", date1, 70, latitude, longitude, "FR", "slow")
-        Charging.record_charging(car, "InProgress", date2, 80, latitude, longitude, "FR", "slow")
-        Charging.record_charging(car, "Stopped", date3, end_level, latitude, longitude, "FR", "slow")
+        Charging.record_charging(car, "InProgress", date0, start_level, latitude, longitude, None, "slow", 20, 60)
+        Charging.record_charging(car, "InProgress", date1, 70, latitude, longitude, "FR", "slow", 20, 60)
+        Charging.record_charging(car, "InProgress", date1, 70, latitude, longitude, "FR", "slow",20, 60)
+        Charging.record_charging(car, "InProgress", date2, 80, latitude, longitude, "FR", "slow", 20, 60)
+        Charging.record_charging(car, "Stopped", date3, end_level, latitude, longitude, "FR", "slow", 20, 60)
         chargings = Charging.get_chargings()
         co2 = chargings[0]["co2"]
         assert isinstance(co2, float)
@@ -213,6 +213,7 @@ class TestUnit(unittest.TestCase):
                                          'kw': 20.7,
                                          'price': 3.84,
                                          'charging_mode': 'slow'}])
+        print()
         assert get_figures(car)
         row = {"start_at": date0.strftime('%Y-%m-%dT%H:%M:%S.000Z'),
                "stop_at": date3.strftime('%Y-%m-%dT%H:%M:%S.000Z'), "start_level": start_level, "end_level": end_level}

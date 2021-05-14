@@ -17,7 +17,6 @@ from mylogger import my_logger
 from mylogger import logger
 from my_psacc import MyPSACC
 from libs.utils import is_port_in_use
-from web.app import start_app, save_config
 
 CONFIG_NAME = "config.json"
 
@@ -86,7 +85,8 @@ if __name__ == "__main__":
             t2.setDaemon(True)
             t2.start()
 
-    save_config(web.app.myp, CONFIG_NAME)
-    t1 = Thread(target=start_app, args=["My car info", args.base_path, logger.level < 20, args.listen, int(args.port)])
+    web.app.save_config(web.app.myp, CONFIG_NAME)
+    t1 = Thread(target=web.app.start_app,
+                args=["My car info", args.base_path, logger.level < 20, args.listen, int(args.port)])
     t1.setDaemon(True)
     t1.start()

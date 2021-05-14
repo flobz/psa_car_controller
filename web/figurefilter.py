@@ -118,7 +118,6 @@ class FigureFilter:
             else:
                 log_level = 20
             fct_def = f"""function(data,range, figures, {self.gen_sort_variable()}) {{
-                            console.log("=============")
                             const params={self.get_params()}
                             const logLevel={log_level}
                             return filterAndSort(data, range, figures, params, logLevel, {self.__gen_sort_dict()})

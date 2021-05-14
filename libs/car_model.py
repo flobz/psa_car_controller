@@ -57,6 +57,7 @@ carmodels = [
     ElecModel("E-C4", 46, "citroen:ec4:21:50", r"VR7BCZKX.*"),  # VR7BCZKXCM
     CarModel("SUV 3008", 10.8, 43),
     CarModel("308", 0, 56, reg=r"VF3L35GG.*"),
+    CarModel("2008", 0, 44, reg=r"VR3USHNS.*"),  # VR3USHNSKM
     CarModel("SUV 5008 II", 0, 56, reg=r"VF3MRHNS.*"),  # vf3mrhnsum
     CarModel("C5 Aircross", 10.8, 43),
     CarModel("DS7 Crossback E-Tense", 13.2, 43, reg="VR1J45GBUK.*")

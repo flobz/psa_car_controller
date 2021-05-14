@@ -10,7 +10,7 @@ import dash_daq as daq
 from flask import jsonify, request, Response as FlaskResponse
 
 import web.utils
-from libs.car import Cars, Car
+from libs.car import Cars
 from mylogger import logger
 
 from trip import Trips
@@ -222,17 +222,17 @@ def update_trips():
     conn.close()
     min_date = None
     max_date = None
-    car = myp.vehicles_list[0]  # todo handle multiple car
     try:
+        assert len(myp.vehicles_list) > 0
+        car = myp.vehicles_list[0]  # todo handle multiple car
+        figures.get_figures(car)
         trips_by_vin = Trips.get_trips(Cars([car]))
         trips = trips_by_vin[car.vin]
         assert len(trips) > 0
         min_date = trips[0].start_at
         max_date = trips[-1].start_at
-        figures.get_figures(trips[0].car)
     except (AssertionError, KeyError):
         logger.debug("No trips yet")
-        figures.get_figures(Car("vin","vid","brand"))
     try:
         chargings = Charging.get_chargings()
         assert len(chargings) > 0

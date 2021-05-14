@@ -18,7 +18,6 @@ from mylogger import logger
 from my_psacc import MyPSACC
 
 # pylint: disable=invalid-name
-
 app = None
 dash_app = None
 dispatcher = None
@@ -28,9 +27,15 @@ myp: MyPSACC = None
 chc: ChargeControls = None
 
 
-def start_app(title, base_path, debug: bool, host, port, reloader=False,   # pylint: disable=too-many-arguments
-              unminified=False):
+def start_app(*args, **kwargs):
+    run(config_flask(*args, **kwargs))
+
+
+def config_flask(title, base_path, debug: bool, host, port, reloader=False,  # pylint: disable=too-many-arguments
+                 unminified=False):
     global app, dash_app, dispatcher
+    reload_view = app is not None
+    app = Flask(__name__)
     try:
         lang = locale.getlocale()[0].split("_")[0]
         locale.setlocale(locale.LC_TIME, ".".join(locale.getlocale()))  # make sure LC_TIME is set
@@ -40,7 +45,6 @@ def start_app(title, base_path, debug: bool, host, port, reloader=False,   # pyl
         logger.warning("Can't get language")
     if unminified:
         locale_url = ["assets/plotly-with-meta.js"]
-    app = Flask(__name__)
     app.wsgi_app = ProxyFix(app.wsgi_app)
     app.config["DEBUG"] = debug
     if base_path == "/":
@@ -53,8 +57,15 @@ def start_app(title, base_path, debug: bool, host, port, reloader=False,   # pyl
                          server=app, requests_pathname_prefix=requests_pathname_prefix)
     dash_app.enable_dev_tools(reloader)
     # keep this line
-    import web.views  # pylint: disable=unused-import,import-outside-toplevel
-    return run_simple(host, port, application, use_reloader=reloader, use_debugger=debug)
+    import web.views  # pylint: disable=import-outside-toplevel
+    if reload_view:
+        import importlib # pylint: disable=import-outside-toplevel
+        importlib.reload(web.views)
+    return {"hostname": host, "port": port, "application": application, "use_reloader": reloader, "use_debugger": debug}
+
+
+def run(config):
+    return run_simple(**config)
 
 
 def save_config(my_peugeot: MyPSACC, name):

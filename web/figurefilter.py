@@ -34,7 +34,7 @@ def figures_to_dict(figures):
     return el_list
 
 
-class Figure_Filter:
+class FigureFilter:
 
     def __init__(self):
         self.graphs = []
@@ -74,18 +74,29 @@ class Figure_Filter:
         outputs.extend([Output(graph.graph_id, "figure") for graph in self.maps])
         return outputs
 
-    def __get_graph_x_label(self, graphs):
+    @staticmethod
+    def __get_graph_x_label(graphs):
         return [graph.x for graph in graphs]
 
-    def __get_graph_y_label(self, graphs):
+    @staticmethod
+    def __get_graph_y_label(graphs):
         return [graph.y for graph in graphs]
 
     def __get_table_input_sort_by(self):
         inputs = [Input(table.table_id, 'sort_by') for table in self.tables]
         return inputs
 
-    def gen_unused_variable(self):
+    def gen_sort_variable(self):
         res = ", ".join([chr(i) for i in range(ord('a'), ord('a') + len(self.tables))])
+        return res
+
+    def __gen_sort_dict(self):
+        res = "{"
+        i = ord("a")
+        for table in self.tables:
+            res+= f'"{table.table_id}": {chr(i)},'
+            i += 1
+        res = res[:-1] + "}"
         return res
 
     def get_params(self):
@@ -106,17 +117,18 @@ class Figure_Filter:
                 log_level = 10
             else:
                 log_level = 20
-            fct_def = f"""function(data,range, figures, {self.gen_unused_variable()}) {{
-                            const params={self.get_params()};
-                            const logLevel={log_level};
-                            return filterAndSort(data, range, figures, params, logLevel);
+            fct_def = f"""function(data,range, figures, {self.gen_sort_variable()}) {{
+                            console.log("=============")
+                            const params={self.get_params()}
+                            const logLevel={log_level}
+                            return filterAndSort(data, range, figures, params, logLevel, {self.__gen_sort_dict()})
                           }}"""
             dash_app.clientside_callback(fct_def,
-                   *self.__get_output(),
-                   Input('clientside-data-store', 'data'),
-                   Input('date-slider', 'value'),
-                   Input('clientside-figure-store', 'data'),
-                   *self.__get_table_input_sort_by())
+                                         *self.__get_output(),
+                                         Input('clientside-data-store', 'data'),
+                                         Input('date-slider', 'value'),
+                                         Input('clientside-figure-store', 'data'),
+                                         *self.__get_table_input_sort_by())
             return True
         return False
 

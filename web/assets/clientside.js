@@ -70,6 +70,7 @@ function filterDataset (data, range) {
   return res
 }
 
+
 function filterShortTrip (data) {
   const longTrips = {
     trips: data.trips.filter(line => line.distance > 10),
@@ -172,10 +173,10 @@ function updateCardsValue (data) {
 
 function sortDataset (ctx, data, tables) {
   const tableId = ctx.prop_id.split('.')[0]
-  if (ctx.value.length > 0) {
+  const table = tables.filter(table => table.table_id === tableId)[0]
+  if (ctx.value.length > 0 && data[table.src].length > 0) {
     const asc = ctx.value[0].direction === 'asc'
     let columnId = ctx.value[0].column_id
-    const table = tables.filter(table => table.table_id === tableId)[0]
     let sorted
     if (columnId.endsWith('_str')) {
       columnId = columnId.slice(0, -4)
@@ -196,7 +197,17 @@ function sortDataset (ctx, data, tables) {
   }
 }
 
-function filterAndSort (data, range, figures, p, log) { // eslint-disable-line no-unused-vars
+function sort_multiple_table(sort_params, data, tables){
+  for ([prop_id, value] of Object.entries(sort_params)) {
+    let ctx = {}
+    ctx.prop_id = prop_id+".sort_by";
+    ctx.value = value
+    console.log(ctx)
+    sortDataset(ctx, data, tables);
+  }
+}
+
+function filterAndSort (data, range, figures, p, log, sort) { // eslint-disable-line no-unused-vars
   if (log > 10) {
     logger.disableLogger()
   }
@@ -205,6 +216,7 @@ function filterAndSort (data, range, figures, p, log) { // eslint-disable-line n
   console.log('figures:', figures)
   console.log('data:', data)
   console.log('ctx', ctx)
+  console.log("sort", sort)
   if (ctx.length > 0 && ctx[0].prop_id.endsWith('sort_by')) {
     dataFiltered = filterDataset(data, range)
     sortDataset(ctx[0], dataFiltered, p.table_src)
@@ -214,6 +226,7 @@ function filterAndSort (data, range, figures, p, log) { // eslint-disable-line n
   } else {
     addLocaleDate(data, p.date_columns)
     dataFiltered = filterDataset(data, range)
+    sort_multiple_table(sort, dataFiltered, p.table_src)
     outFigures.push(...updateTables(dataFiltered, p.table_src))
     console.log(dataFiltered.trips.length)
     const longTrips = filterShortTrip(dataFiltered)

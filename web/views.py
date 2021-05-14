@@ -23,7 +23,7 @@ from web.db import Database
 from web.utils import diff_dashtable, dash_date_to_datetime
 
 # pylint: disable=invalid-name
-from web.figure_filter import Figure_Filter
+from web.figurefilter import FigureFilter
 from web.utils import create_card
 
 RESPONSE = "-response"
@@ -285,7 +285,7 @@ def serve_layout():
     global cached_layout
     if cached_layout is None:
         logger.debug("Create new layout")
-        fig_filter = Figure_Filter()
+        fig_filter = FigureFilter()
         try:
             range_slider = dcc.RangeSlider(
                 id='date-slider',

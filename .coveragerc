@@ -1,0 +1,7 @@
+[run]
+parallel=True
+concurrency=thread
+omit =
+	psa_connectedcar/*
+	venv/*
+	test/*

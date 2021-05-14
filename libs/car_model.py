@@ -31,7 +31,7 @@ class CarModel:
             if carmodel.match(vin):
                 return carmodel
         logger.warning("Can't get car model, please report an issue on github with your car model"
-                       " and first ten letter of your VIN")
+                       " and first ten letter of your VIN : %s", vin[:10])
         return CarModel("unknown", DEFAULT_BATTERY_POWER, DEFAULT_FUEL_CAPACITY)
 
     @staticmethod

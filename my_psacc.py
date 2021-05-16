@@ -149,8 +149,7 @@ class MyPSACC:
                             self.record_info(car)
                         return res
                 except (ApiException, InvalidHeader) as ex:
-                    logger.error("get_vehicle_info: ApiException: %s", ex)
-                    logger.debug(exc_info=True)
+                    logger.error("get_vehicle_info: ApiException: %s", ex, exc_info_debug=True)
             car.status = res
         return res
 

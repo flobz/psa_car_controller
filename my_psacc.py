@@ -1,5 +1,4 @@
 import json
-import re
 import threading
 import uuid
 from datetime import datetime
@@ -22,7 +21,7 @@ from otp.otp import load_otp, new_otp_session, save_otp, ConfigException, Otp
 from psa_connectedcar.rest import ApiException
 from mylogger import logger
 
-from libs.utils import rate_limit
+from libs.utils import rate_limit, parse_hour
 from web.abrp import Abrp
 from web.db import Database
 
@@ -337,17 +336,10 @@ class MyPSACC:
         return json.dumps(data)
 
     def __get_charge_hour(self, vin):
-        reg = r"PT([0-9]{1,2})H([0-9]{1,2})?"
         data = self.get_vehicle_info(vin)
         hour_str = data.get_energy('Electric').charging.next_delayed_time
         try:
-            hour_minute = re.findall(reg, hour_str)[0]
-            hour = int(hour_minute[0])
-            if hour_minute[1] == '':
-                minute = 0
-            else:
-                minute = hour_minute[1]
-            return hour, minute
+            return parse_hour(hour_str)[:2]
         except IndexError:
             logger.exception("Can't get charge hour: %s", hour_str)
             return None

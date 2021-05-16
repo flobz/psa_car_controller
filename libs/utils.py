@@ -1,3 +1,4 @@
+import re
 from functools import wraps
 from threading import Semaphore, Timer
 import socket
@@ -47,3 +48,19 @@ def rate_limit(limit, every):
 def is_port_in_use(ip, port):
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
         return s.connect_ex((ip, port)) == 0
+
+
+def parse_hour(hour_str):
+    reg = r"PT([0-9]{1,2})H([0-9]{1,2})?|PT([0-9]{1,2})S"
+    hour_minute = re.findall(reg, hour_str)[0]
+    second = 0
+    if hour_minute[0] == '':
+        hour = 0
+        second = hour_minute[2]
+    else:
+        hour = int(hour_minute[0])
+    if hour_minute[1] == '':
+        minute = 0
+    else:
+        minute = hour_minute[1]
+    return hour, minute, second

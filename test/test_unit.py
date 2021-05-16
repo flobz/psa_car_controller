@@ -16,7 +16,7 @@ from mylogger import my_logger
 from otp.otp import load_otp, save_otp
 from charge_control import ChargeControls
 from trip import Trips
-from libs.utils import get_temp
+from libs.utils import get_temp, parse_hour
 from web.db import Database
 from web.figures import get_figures, get_battery_curve_fig, get_altitude_fig
 import pytz
@@ -249,6 +249,11 @@ class TestUnit(unittest.TestCase):
         assert old_dummy_value == dummy_value
         Database.record_position(None, "xx", 11, latitude, longitude - 0.05, None, date0, 40, None, False)
         assert old_dummy_value != dummy_value
+
+    def test_parse_hour(self):
+        expected_res = [(2, 0, 0), (3, '14', 0), (0, 0, '2')]
+        assert expected_res == [parse_hour(h) for h in ["PT2H", "PT3H14", "PT2S"]]
+
 
 if __name__ == '__main__':
     my_logger(handler_level=os.environ.get("DEBUG_LEVEL", 20))

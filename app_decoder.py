@@ -132,11 +132,11 @@ if len(res) == 0:
 
 for vehicle in res_dict["vehicles"]:
     car = psacc.vehicles_list.get_car_by_vin(vehicle["vin"])
-    if "short_label" in vehicle and car.label == "unknown":
+    if "short_label" in vehicle and car is not None and car.label == "unknown":
         car.label = vehicle["short_label"].split(" ")[-1]  # remove new, nouvelle, neu word....
         car.set_energy_capacity()
     else:
-        print("Warning: Can't get car model please check cars.json")
+        print("Warning: Can't get car model please check cars.json %s", vehicle)
 psacc.vehicles_list.save_cars()
 
 

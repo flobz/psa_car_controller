@@ -124,6 +124,12 @@ os.chdir(current_dir)
 psacc.save_config(name="test.json")
 res = psacc.get_vehicles()
 
+print(f"\nYour vehicles: {res}")
+
+if len(res) == 0:
+    print("No vehicle in your account is compatible with this API, you vehicle is probably too old...")
+    sys.exit(1)
+
 for vehicle in res_dict["vehicles"]:
     car = psacc.vehicles_list.get_car_by_vin(vehicle["vin"])
     if "short_label" in vehicle and car.label == "unknown":
@@ -133,7 +139,6 @@ for vehicle in res_dict["vehicles"]:
         print("Warning: Can't get car model please check cars.json")
 psacc.vehicles_list.save_cars()
 
-print(f"\nYour vehicles: {res}")
 
 # Charge control
 charge_controls = ChargeControls("charge_config1.json")

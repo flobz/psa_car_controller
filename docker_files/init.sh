@@ -20,5 +20,5 @@ then
     /bin/bash
 else
     echo "SHELL_ONLY = FALSE. Running server.py"
-    python3 /psa_car_controller/server.py -f /config/test.json -c /config/charge_config1.json -p 5000 -l 0.0.0.0
+    python3 /psa_car_controller/server.py -f /config/test.json -c /config/charge_config1.json -p 5000 -l 0.0.0.0 -r
 fi

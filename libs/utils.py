@@ -1,9 +1,9 @@
-import re
 from functools import wraps
 from threading import Semaphore, Timer
 import socket
 
 import requests
+from typing import List
 
 from mylogger import logger
 
@@ -50,17 +50,19 @@ def is_port_in_use(ip, port):
         return s.connect_ex((ip, port)) == 0
 
 
-def parse_hour(hour_str):
-    reg = r"PT([0-9]{1,2})H([0-9]{1,2})?|PT([0-9]{1,2})S"
-    hour_minute = re.findall(reg, hour_str)[0]
-    second = 0
-    if hour_minute[0] == '':
-        hour = 0
-        second = hour_minute[2]
-    else:
-        hour = int(hour_minute[0])
-    if hour_minute[1] == '':
-        minute = 0
-    else:
-        minute = hour_minute[1]
-    return hour, minute, second
+def parse_hour(s):
+    s = s[2:]
+    separators = ("H", "M", "S")
+    res: List[int] = []
+    for sep in separators:
+        if sep in s:
+            n, s = s.split(sep)
+        else:
+            n = 0
+        res.append(int(n))
+        if s.isnumeric():
+            res.append(int(s))
+            break
+    if len(res) == 2:
+        res.append(0)
+    return res

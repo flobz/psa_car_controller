@@ -251,8 +251,8 @@ class TestUnit(unittest.TestCase):
         assert old_dummy_value != dummy_value
 
     def test_parse_hour(self):
-        expected_res = [(2, 0, 0), (3, '14', 0), (0, 0, '2')]
-        assert expected_res == [parse_hour(h) for h in ["PT2H", "PT3H14", "PT2S"]]
+        expected_res = [[2, 0, 0], [3, 14, 0], [0, 0, 2], [0, 30, 0]]
+        assert expected_res == [parse_hour(h) for h in ["PT2H", "PT3H14", "PT2S", "PT30M"]]
 
 
 if __name__ == '__main__':

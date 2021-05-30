@@ -38,6 +38,7 @@ realm_info = {
                            "app_name": "MyVauxhall"}
 }
 
+
 AUTHORIZE_SERVICE = "https://api.mpsa.com/api/connectedcar/v2/oauth/authorize"
 REMOTE_URL = "https://api.groupe-psa.com/connectedcar/v4/virtualkey/remoteaccess/token?client_id="
 SCOPE = ['openid profile']
@@ -105,6 +106,7 @@ class MyPSACC:
         self.set_proxies(proxies)
         self.config_file = DEFAULT_CONFIG_FILENAME
         Ecomix.co2_signal_key = co2_signal_api
+        self.refresh_thread = None
 
     def get_app_name(self):
         return realm_info[self.realm]['app_name']
@@ -153,7 +155,7 @@ class MyPSACC:
             car.status = res
         return res
 
-    def refresh_vehicle_info(self):
+    def __refresh_vehicle_info(self):
         if self.info_refresh_rate is not None:
             while True:
                 sleep(self.info_refresh_rate)
@@ -162,6 +164,12 @@ class MyPSACC:
                     self.get_vehicle_info(car.vin)
                 for callback in self.info_callback:
                     callback()
+
+    def start_refresh_thread(self):
+        if self.refresh_thread is None:
+            self.refresh_thread = threading.Thread(target=self.__refresh_vehicle_info)
+            self.refresh_thread.setDaemon(True)
+            self.refresh_thread.start()
 
     # monitor doesn't seem to work
     def new_monitor(self, vin, body):
@@ -232,7 +240,7 @@ class MyPSACC:
         try:
             if self.remote_refresh_token is None:
                 logger.error("remote_refresh_token isn't defined")
-                self.load_otp(force_new=True)
+                return None
             res = self.manager.post(REMOTE_URL + self.client_id,
                                     json={"grant_type": "refresh_token", "refresh_token": self.remote_refresh_token},
                                     headers=self.headers)
@@ -305,14 +313,14 @@ class MyPSACC:
         self.mqtt_client = mqtt.Client(clean_session=True, protocol=mqtt.MQTTv311)
         if environ.get("MQTT_LOG", "0") == "1":
             self.mqtt_client.enable_logger(logger=logger)
-        self.refresh_remote_token()
-        self.mqtt_client.tls_set_context()
-        self.mqtt_client.on_connect = self.__on_mqtt_connect
-        self.mqtt_client.on_message = self.__on_mqtt_message
-        self.mqtt_client.on_disconnect = self._on_mqtt_disconnect
-        self.mqtt_client.connect(MQTT_SERVER, 8885, 60)
-        self.mqtt_client.loop_start()
-        self.__keep_mqtt()
+        if self.refresh_remote_token():
+            self.mqtt_client.tls_set_context()
+            self.mqtt_client.on_connect = self.__on_mqtt_connect
+            self.mqtt_client.on_message = self.__on_mqtt_message
+            self.mqtt_client.on_disconnect = self._on_mqtt_disconnect
+            self.mqtt_client.connect(MQTT_SERVER, 8885, 60)
+            self.mqtt_client.loop_start()
+            self.__keep_mqtt()
         return self.mqtt_client.is_connected()
 
     def __keep_mqtt(self):  # avoid token expiration

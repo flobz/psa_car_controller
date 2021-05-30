@@ -39,13 +39,13 @@ class Charging:
         Database.clean_battery(conn)
 
     @staticmethod
-    def record_charging(car, charging_status, charge_date: datetime, level, latitude, # pylint: disable=too-many-locals
+    def record_charging(car, charging_status, charge_date: datetime, level, latitude,  # pylint: disable=too-many-locals
                         longitude, country_code, charging_mode, charging_rate, autonomy):
         conn = Database.get_db()
         charge_date = charge_date.replace(microsecond=0)
         if charging_status == "InProgress":
             stop_at, start_at = conn.execute("SELECT stop_at, start_at FROM battery WHERE VIN=? ORDER BY start_at "
-                               "DESC limit 1", (car.vin,)).fetchone() or [False, None]
+                                             "DESC limit 1", (car.vin,)).fetchone() or [False, None]
             try:
                 conn.execute("INSERT INTO battery_curve(start_at,VIN,date,level,rate,autonomy) VALUES(?,?,?,?,?,?)",
                              (start_at, car.vin, charge_date, level, charging_rate, autonomy))

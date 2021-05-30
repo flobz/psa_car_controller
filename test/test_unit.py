@@ -3,6 +3,8 @@ import json
 import os
 import unittest
 from datetime import datetime, timedelta
+
+import libs.config
 from psa_connectedcar import ApiClient
 import psa_connectedcar as psacc
 import reverse_geocode
@@ -67,7 +69,7 @@ class TestUnit(unittest.TestCase):
             myp.abrp.abrp_enable_vin.add(car.vin)
             res = myp.get_vehicle_info(myp.vehicles_list[0].vin)
             myp.abrp.call(car, 22.1)
-            myp.save_config()
+            libs.config.save_config()
             assert isinstance(get_temp(str(latitude), str(longitude), myp.weather_api), float)
 
     def test_car_model(self):

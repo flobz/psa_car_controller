@@ -2,12 +2,10 @@
 import json
 import os
 import traceback
-from sys import argv
-import sys
-from getpass import getpass
+from urllib import request
+from os import path
 
 from androguard.core.bytecodes.apk import APK
-
 import requests
 from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.serialization import pkcs12
@@ -22,6 +20,8 @@ BRAND = {"com.psa.mym.myopel": {"realm": "clientsB2COpel", "brand_code": "OP", "
          "com.psa.mym.myds": {"realm": "clientsB2CDS", "brand_code": "DS", "app_name": "MyDS"},
          "com.psa.mym.myvauxhall": {"realm": "clientsB2CVauxhall", "brand_code": "VX", "app_name": "MyVauxhall"}
          }
+
+DOWNLOAD_URL = "https://github.com/flobz/psa_apk/raw/main/"
 
 
 def save_key_to_pem(pfx_data, pfx_password):
@@ -40,111 +40,97 @@ def save_key_to_pem(pfx_data, pfx_password):
                                           encryption_algorithm=serialization.NoEncryption()))
 
 
-current_dir = os.getcwd()
-script_dir = dir_path = os.path.dirname(os.path.realpath(__file__))
-if sys.version_info < (3, 6):
-    raise RuntimeError("This application requires Python 3.6+")
+def firstLaunchConfig(package_name, client_email, client_password, country_code, # pylint: disable=too-many-locals
+                      config_prefix=""):
+    filename = package_name.split(".")[-1]+".apk"
+    if not path.exists(filename):
+        request.urlretrieve(DOWNLOAD_URL+filename, filename)
+    a = APK(filename)
+    package_name = a.get_package()
+    resources = a.get_android_resources()  # .get_strings_resources()
+    client_id = resources.get_string(package_name, "PSA_API_CLIENT_ID_PROD")[1]
+    client_secret = resources.get_string(package_name, "PSA_API_CLIENT_SECRET_PROD")[1]
+    HOST_BRANDID_PROD = resources.get_string(package_name, "HOST_BRANDID_PROD")[1]
+    REMOTE_REFRESH_TOKEN = None
+    ## Get Customer id
+    site_code = BRAND[package_name]["brand_code"] + "_" + country_code + "_ESP"
+    try:
+        res = requests.post(HOST_BRANDID_PROD + "/GetAccessToken",
+                            headers={
+                                "Connection": "Keep-Alive",
+                                "Content-Type": "application/json",
+                                "User-Agent": "okhttp/2.3.0"
+                            },
+                            params={"jsonRequest": json.dumps(
+                                {"siteCode": site_code, "culture": "fr-FR", "action": "authenticate",
+                                 "fields": {"USR_EMAIL": {"value": client_email},
+                                            "USR_PASSWORD": {"value": client_password}}
+                                 }
+                            )}
+                            )
 
-if not argv[1].endswith(".apk"):
-    print("No apk given")
-    sys.exit(1)
-print("APK loading...")
-a = APK(argv[1])
-package_name = a.get_package()
-resources = a.get_android_resources()  # .get_strings_resources()
-client_id = resources.get_string(package_name, "PSA_API_CLIENT_ID_PROD")[1]
-client_secret = resources.get_string(package_name, "PSA_API_CLIENT_SECRET_PROD")[1]
-HOST_BRANDID_PROD = resources.get_string(package_name, "HOST_BRANDID_PROD")[1]
-pfx_cert = a.get_file("assets/MWPMYMA1.pfx")
-REMOTE_REFRESH_TOKEN = None
-print("APK loaded !")
+        token = res.json()["accessToken"]
+    except:  # pylint: disable=bare-except
+        msg = traceback.format_exc() + f"\nHOST_BRANDID : {HOST_BRANDID_PROD} sitecode: {site_code}"
+        try:
+            msg += res.text
+        except:
+            pass
+        raise Exception(msg)
 
-client_email = input(f"{BRAND[package_name]['app_name']} email: ")
-client_password = getpass(f"{BRAND[package_name]['app_name']} password: ")
+    try:
+        res2 = requests.post(
+            f"https://mw-{BRAND[package_name]['brand_code'].lower()}-m2c.mym.awsmpsa.com/api/v1/"
+            f"user?culture=fr_FR&width=1080&v=1.27.0",
+            data=json.dumps({"site_code": site_code, "ticket": token}),
+            headers={
+                "Connection": "Keep-Alive",
+                "Content-Type": "application/json;charset=UTF-8",
+                "Source-Agent": "App-Android",
+                "Token": token,
+                "User-Agent": "okhttp/4.8.0",
+                "Version": "1.27.0"
+            },
+            cert=("certs/public.pem", "certs/private.pem"),
+        )
 
-country_code = input("What is your country code ? (ex: FR, GB, DE, ES...)\n")
+        res_dict = res2.json()["success"]
+        customer_id = BRAND[package_name]["brand_code"] + "-" + res_dict["id"]
+    except:  # pylint: disable=bare-except
+        msg = traceback.format_exc()
+        try:
+            msg += res2.text
+        except:
+            pass
+        Exception(msg)
 
-## Get Customer id
-site_code = BRAND[package_name]["brand_code"] + "_" + country_code + "_ESP"
-try:
-    res = requests.post(HOST_BRANDID_PROD + "/GetAccessToken",
-                        headers={
-                            "Connection": "Keep-Alive",
-                            "Content-Type": "application/json",
-                            "User-Agent": "okhttp/2.3.0"
-                        },
-                        params={"jsonRequest": json.dumps(
-                            {"siteCode": site_code, "culture": "fr-FR", "action": "authenticate",
-                             "fields": {"USR_EMAIL": {"value": client_email},
-                                        "USR_PASSWORD": {"value": client_password}}
-                             }
-                        )}
-                        )
+    # Psacc
+    psacc = MyPSACC(None, client_id, client_secret, REMOTE_REFRESH_TOKEN, customer_id, BRAND[package_name]["realm"],
+                    country_code)
+    psacc.connect(client_email, client_password)
 
-    token = res.json()["accessToken"]
-except: # pylint: disable=bare-except
-    traceback.print_exc()
-    print(f"HOST_BRANDID : {HOST_BRANDID_PROD} sitecode: {site_code}")
-    print(res.text)
-    sys.exit(1)
+    psacc.save_config(name=config_prefix + "config.json")
+    res = psacc.get_vehicles()
+    print(f"\nYour vehicles: {res}")
 
-save_key_to_pem(pfx_cert, "")
+    if len(res) == 0:
+        Exception("No vehicle in your account is compatible with this API, you vehicle is probably too old...")
 
-try:
-    res2 = requests.post(
-        f"https://mw-{BRAND[package_name]['brand_code'].lower()}-m2c.mym.awsmpsa.com/api/v1/"
-        f"user?culture=fr_FR&width=1080&v=1.27.0",
-        data=json.dumps({"site_code": site_code, "ticket": token}),
-        headers={
-            "Connection": "Keep-Alive",
-            "Content-Type": "application/json;charset=UTF-8",
-            "Source-Agent": "App-Android",
-            "Token": token,
-            "User-Agent": "okhttp/4.8.0",
-            "Version": "1.27.0"
-        },
-        cert=("certs/public.pem", "certs/private.pem"),
-    )
+    for vehicle in res_dict["vehicles"]:
+        car = psacc.vehicles_list.get_car_by_vin(vehicle["vin"])
+        if car is not None and "short_label" in vehicle and car.label == "unknown":
+            car.label = vehicle["short_label"].split(" ")[-1]  # remove new, nouvelle, neu word....
+            car.set_energy_capacity()
+        else:
+            print("Warning: Can't get car model for please check cars.json")
+    psacc.vehicles_list.save_cars()
 
-    res_dict = res2.json()["success"]
-    customer_id = BRAND[package_name]["brand_code"] + "-" + res_dict["id"]
+    print(f"\nYour vehicles: {res}")
 
-except:  # pylint: disable=bare-except
-    traceback.print_exc()
-    print(res2.text)
-    sys.exit(1)
-
-# Psacc
-
-psacc = MyPSACC(None, client_id, client_secret, REMOTE_REFRESH_TOKEN, customer_id, BRAND[package_name]["realm"],
-                country_code)
-psacc.connect(client_email, client_password)
-
-os.chdir(current_dir)
-psacc.save_config(name="test.json")
-res = psacc.get_vehicles()
-
-print(f"\nYour vehicles: {res}")
-
-if len(res) == 0:
-    print("No vehicle in your account is compatible with this API, you vehicle is probably too old...")
-    sys.exit(1)
-
-for vehicle in res_dict["vehicles"]:
-    car = psacc.vehicles_list.get_car_by_vin(vehicle["vin"])
-    if "short_label" in vehicle and car.label == "unknown":
-        car.label = vehicle["short_label"].split(" ")[-1]  # remove new, nouvelle, neu word....
-        car.set_energy_capacity()
-    else:
-        print("Warning: Can't get car model please check cars.json")
-psacc.vehicles_list.save_cars()
-
-
-# Charge control
-charge_controls = ChargeControls("charge_config1.json")
-for vehicle in res:
-    chc = ChargeControl(psacc, vehicle.vin, 100, [0, 0])
-    charge_controls[vehicle.vin] = chc
-charge_controls.save_config()
-
-print("Success !!!")
+    # Charge control
+    charge_controls = ChargeControls(config_prefix + "charge_config.json")
+    for vehicle in res:
+        chc = ChargeControl(psacc, vehicle.vin, 100, [0, 0])
+        charge_controls[vehicle.vin] = chc
+    charge_controls.save_config()
+    return "Success !!!"

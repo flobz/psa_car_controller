@@ -18,3 +18,4 @@ if __name__ == "__main__":
                 args=["My car info", args.base_path, logger.level < 20, args.listen, int(args.port)])
     t1.setDaemon(True)
     t1.start()
+    t1.join()

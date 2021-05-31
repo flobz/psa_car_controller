@@ -33,9 +33,9 @@ python3 /psa_car_controller/app_decoder.py /config/com.psa.mym.myvauxhall_1.27.1
 ```
 Start server.py for a first run:
 ```
-python3 /psa_car_controller/server.py -f /config/test.json -c /config/charge_config1.json -p 5000 -l 0.0.0.0 -r -b /config
+python3 /psa_car_controller/server.py -f /config/test.json -c /config/charge_config1.json -p 5000 -l 0.0.0.0 -r
 ```
-You will be prompted to enter a code, sent you you by SMS to your registered mobile number, and the PIN for your account. Sometimes it asks twice (???), but once accepted the service should run. Allow it to run for about a minute before pressing ctrl+c to quit. You should end up back at the bash prompt within the container.
+You will be prompted to enter a code, sent by SMS to your registered mobile number, and the PIN for your account. Sometimes it asks twice (???), but once accepted the service should run. Allow it to run for about a minute before pressing ctrl+c to quit. You should end up back at the bash prompt within the container.
 
 The final task is to update the container's configuration file to tell it to run the service automatically on next boot. This is done by editing /config/dockerconfig.conf and changing the SHELL_ONLY parameter to FALSE. Alternatively, paste the below command into your shell one by one. These will update the dockerconfig.conf file, exit the container's bash shell, stop the container, then restart the container.
 

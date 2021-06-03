@@ -21,6 +21,14 @@ dash_app = None
 dispatcher = None
 
 
+class MyProxyFix(ProxyFix):
+    def __call__(self, environ, start_response):
+        ingress_path = environ.get("HTTP_X_INGRESS_PATH")
+        if ingress_path:
+            environ["HTTP_X_FORWARDED_PREFIX"] = ingress_path
+        return super().__call__(environ, start_response)
+
+
 def start_app(*args, **kwargs):
     run(config_flask(*args, **kwargs))
 
@@ -39,7 +47,7 @@ def config_flask(title, base_path, debug: bool, host, port, reloader=False,  # p
         logger.warning("Can't get language")
     if unminified:
         locale_url = ["assets/plotly-with-meta.js"]
-    app.wsgi_app = ProxyFix(app.wsgi_app)
+    app.wsgi_app = MyProxyFix(app.wsgi_app, x_prefix=1)
     app.config["DEBUG"] = debug
     if base_path == "/":
         application = DispatcherMiddleware(app)

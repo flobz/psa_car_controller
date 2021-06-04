@@ -295,11 +295,9 @@ class MyPSACC:
                     logger.error("retry last request, token was expired")
                 elif data["return_code"] != "0":
                     logger.error('%s : %s', data["return_code"], data.get("reason", "?"))
-                    if msg.topic.endswith("/VehicleState"):
-                        charge_info = data["resp_data"]["charging_state"]
-                        self.precond_programs[data["vin"]] = data["resp_data"]["precond_state"]["programs"]
             elif msg.topic.startswith(MQTT_EVENT_TOPIC):
                 charge_info = data["charging_state"]
+                self.precond_programs[data["vin"]] = data["precond_state"]["programs"]
             if charge_info is not None and charge_info['remaining_time'] != 0 and charge_info['rate'] == 0:
                 # fix a psa server bug where charge beginning without status api being properly updated
                 logger.warning("charge begin but API isn't updated")
@@ -326,7 +324,7 @@ class MyPSACC:
     def __keep_mqtt(self):  # avoid token expiration
         timeout = 3600 * 24  # 1 day
         if len(self.vehicles_list) > 0:
-            self.get_state(self.vehicles_list[0].vin)
+            self.wakeup(self.vehicles_list[0].vin)
         t = threading.Timer(timeout, self.__keep_mqtt)
         t.setDaemon(True)
         t.start()
@@ -398,14 +396,6 @@ class MyPSACC:
         self.mqtt_client.publish(MQTT_REQ_TOPIC + self.customer_id + "/VehCharge/state", msg)
         return True
 
-    # get state from server by mqtt
-    def get_state(self, vin):
-        logger.info("ask state to %s", vin)
-        msg = self.mqtt_request(vin, {"action": "state"})
-        logger.info(msg)
-        self.mqtt_client.publish(MQTT_REQ_TOPIC + self.customer_id + "/VehicleState", msg)
-        return True
-
     def lock_door(self, vin, lock: bool):
         if lock:
             value = "lock"
@@ -422,8 +412,6 @@ class MyPSACC:
             value = "activate"
         else:
             value = "deactivate"
-        self.get_state(vin)
-        sleep(2)  # wait for rep
         if vin in self.precond_programs:
             programs = self.precond_programs[vin]
         else:

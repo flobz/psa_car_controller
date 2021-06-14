@@ -54,6 +54,9 @@ For information on configuring the psa_car_controller Docker container [see this
     
     2.7 Start/Stop preconditioning
     http://localhost:5000/preconditioning/YOURVIN/1 or 0
+    
+    2.8 Change charge hour (for example: set it to 22h30)
+    http://127.0.0.1:5000/charge_hour?vin=YOURVIN&hour=22&min=30
 
 
 ## III. Use the dashboard

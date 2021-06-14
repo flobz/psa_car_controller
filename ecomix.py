@@ -5,6 +5,7 @@ import numbers
 
 import requests
 import reverse_geocode
+from pytz import UTC
 
 from mylogger import logger
 
@@ -51,12 +52,13 @@ class Ecomix:
     def get_data_from_co2_signal(latitude, longitude, country_code_default):
         if Ecomix.co2_signal_key is not None:
             try:
+                now = datetime.utcnow().replace(tzinfo=UTC)
                 country_code = Ecomix.get_country(latitude, longitude, country_code_default)
                 assert country_code is not None
                 if country_code not in Ecomix._cache:
                     Ecomix._cache[country_code] = []
                 elif len(Ecomix._cache[country_code]) > 0 and \
-                        (datetime.now() - Ecomix._cache[country_code][-1][0]).total_seconds() < CO2_SIGNAL_REQ_INTERVAL:
+                        (now - Ecomix._cache[country_code][-1][0]).total_seconds() < CO2_SIGNAL_REQ_INTERVAL:
                     return False
                 res = requests.get(CO2_SIGNAL_URL + "/v1/latest",
                                    headers={"auth-token": Ecomix.co2_signal_key},
@@ -64,7 +66,7 @@ class Ecomix:
                 data = res.json()
                 value = data["data"]["carbonIntensity"]
                 assert isinstance(value, numbers.Number)
-                Ecomix._cache[country_code].append([datetime.now(), value])
+                Ecomix._cache[country_code].append([now, value])
                 return data["status"] == "ok"
             except (AssertionError, NameError, KeyError):
                 logger.debug("ecomix:", exc_info=True)

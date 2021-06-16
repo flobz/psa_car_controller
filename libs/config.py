@@ -65,7 +65,7 @@ class Config(metaclass=Singleton):
                 self.myp.start_refresh_thread()
 
     def load_app(self) -> bool:
-        my_logger(handler_level=self.args.debug)
+        my_logger(handler_level=int(self.args.debug))
         if self.args.config:
             self.config_name = self.args.config
         if path.exists(self.config_name):

@@ -42,12 +42,13 @@ CONFIG = Config()
 @dash_app.callback(Output('page-content', 'children'),
                    [Input('url', 'pathname')])
 def display_page(pathname):
+    pathname = pathname[len(dash_app.requests_pathname_external_prefix)-1:]
     if pathname == "/config":
         return config_layout
     if pathname == "/log":
         return log_layout()
     if not CONFIG.is_good:
-        return dcc.Location(pathname="/config", id="config_redirect")
+        return dcc.Location(pathname=dash_app.requests_pathname_external_prefix + "config", id="config_redirect")
     if pathname == "/config_otp":
         return config_otp_layout
     return serve_layout()

@@ -37,7 +37,7 @@ def openTab(driver, n):
 
 def getDriver():
     chrome_options = Options()
-    if not os.environ.get("NO_HEADLESS", "0") == "1":
+    if os.environ.get("NO_HEADLESS", "0") != "1":
         chrome_options.add_argument("--headless")
     driver = webdriver.Chrome(options=chrome_options)
     driver.implicitly_wait(10)
@@ -79,9 +79,6 @@ class ServerThread(threading.Thread):
 
 
 class FrontTest(unittest.TestCase):
-    def __init__(self, methodName='runTest'):
-        super().__init__(methodName)
-
     def test_trips_only(self):
         get_new_test_db()
         driver = getDriver()
@@ -103,8 +100,8 @@ class FrontTest(unittest.TestCase):
         record_charging()
         flask_app.start()
         wait_for_start(driver, URL)
-        assert "-" != driver.find_element_by_id("avg_emission_kw")
-        assert "18.6" == driver.find_element_by_id("avg_chg_speed").text
+        assert driver.find_element_by_id("avg_emission_kw") != "-"
+        assert driver.find_element_by_id("avg_chg_speed").text == "18.6"
         openTab(driver, 2)
         assert "18.86 kWh" in driver.find_element_by_id("battery-table").text
         flask_app.stop()

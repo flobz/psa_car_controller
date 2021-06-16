@@ -21,22 +21,26 @@ date4 = date3 + timedelta(minutes=1)
 vehicule_list = Cars()
 vehicule_list.extend(
     [Car("VR3UHZKX", "vid", "Peugeot"), Car("VXXXXX", "XXXX", "Peugeot", label="SUV 3008")])
-car=vehicule_list[0]
+car = vehicule_list[0]
 DB_DIR = DATA_DIR + "tmp.db"
+
+
 def get_new_test_db():
     try:
         os.remove(DATA_DIR + "tmp.db")
-    except:
+    except FileNotFoundError:
         pass
     Database.DEFAULT_DB_FILE = DB_DIR
     Database.db_initialized = False
     conn = Database.get_db()
     return conn
 
+
 def record_position():
     Database.record_position(None, car.vin, 11, latitude, longitude - 0.05, None, date0, 40, None, False)
     Database.record_position(None, car.vin, 20, latitude, longitude, 32, date1, 35, None, False)
     Database.record_position(None, car.vin, 30, latitude, longitude, 42, date2, 30, None, False)
+
 
 def record_charging():
     Charging.record_charging(car, "InProgress", date0, 50, latitude, longitude, "FR", "slow", 20, 60)

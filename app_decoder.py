@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
 import json
-import logging
 import os
 import traceback
 from urllib import request
@@ -105,14 +104,13 @@ def firstLaunchConfig(package_name, client_email, client_password, country_code,
             msg += res2.text
         except:
             pass
-        logging.error(msg)
+        logger.error(msg)
         Exception(msg)
 
     # Psacc
     psacc = MyPSACC(None, client_id, client_secret, REMOTE_REFRESH_TOKEN, customer_id, BRAND[package_name]["realm"],
                     country_code)
     psacc.connect(client_email, client_password)
-
     psacc.save_config(name=config_prefix + "config.json")
     res = psacc.get_vehicles()
     print(f"\nYour vehicles: {res}")

@@ -3,6 +3,7 @@ from threading import Semaphore, Timer
 import socket
 
 import requests
+from typing import List
 
 from mylogger import logger
 
@@ -47,3 +48,21 @@ def rate_limit(limit, every):
 def is_port_in_use(ip, port):
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
         return s.connect_ex((ip, port)) == 0
+
+
+def parse_hour(s):
+    s = s[2:]
+    separators = ("H", "M", "S")
+    res: List[int] = []
+    for sep in separators:
+        if sep in s:
+            n, s = s.split(sep)
+        else:
+            n = 0
+        res.append(int(n))
+        if s.isnumeric():
+            res.append(int(s))
+            break
+    if len(res) == 2:
+        res.append(0)
+    return res

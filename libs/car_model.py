@@ -55,10 +55,17 @@ carmodels = [
     ElecModel("e-2008", 46, "peugeot:e2008:20:48", r"VR3UKZKX.*"),
     ElecModel("e-Spacetourer", 46, "peugeot:etraveler:21:50:citroen", r"VF7VZZKX.*"),
     ElecModel("corsa-e", 46, "opel:corsae:20:50", r"VXKUHZKX.*"),
+    # Use corsa in abrp because Mokka isn't available
+    ElecModel("Mokka-e", 46, "opel:corsae:20:50", r"VXKUKZKX.*"),  # VXKUKZKXZM
+    ElecModel("Zaphira-e", 68, "peugeot:etraveler:21:75:opel", r"VXEVZZKX.*"),  # VXEVZZKXZMZ
     ElecModel("E-C4", 46, "citroen:ec4:21:50", r"VR7BCZKX.*"),  # VR7BCZKXCM
     CarModel("SUV 3008", 10.8, 43),
     CarModel("308", 0, 56, reg=r"VF3L35GG.*"),
+    CarModel("2008", 0, 44, reg=r"VR3USHNS.*"),  # VR3USHNSKM
     CarModel("SUV 5008 II", 0, 56, reg=r"VF3MRHNS.*"),  # vf3mrhnsum
+    CarModel("SUV 5008 II 2018", 0, 56, reg=r"VF3MRHNY.*"),  #  VF3MRHNYHH
     CarModel("C5 Aircross", 10.8, 43),
-    CarModel("DS7 Crossback E-Tense", 13.2, 43, reg="VR1J45GBUK.*")
+    CarModel("DS7 Crossback E-Tense", 11.5, 43, reg="VR1J45GBUK.*"),
+    CarModel("DS7 Crossback E-Tense 300 4x4", 11.5, 43, reg=" VR1J45GBUL.*"),
+    CarModel("508 SW Hybrid", 11.5, 45, reg=r"VR3F4DGZ.*") # VR3F4DGZTL
 ]

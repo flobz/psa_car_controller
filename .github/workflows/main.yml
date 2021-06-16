@@ -33,4 +33,4 @@ jobs:
         run: |
           echo Test
           coverage run -m unittest || exit 1
-          coverage xml -o cobertura.xml && bash <(curl -Ls https://coverage.codacy.com/get.sh) report -r cobertura.xml
+          [ -n "$CODACY_PROJECT_TOKEN" ] && coverage xml -o cobertura.xml && bash <(curl -Ls https://coverage.codacy.com/get.sh) report -r cobertura.xml

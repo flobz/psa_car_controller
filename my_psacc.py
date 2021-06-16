@@ -1,5 +1,4 @@
 import json
-import re
 import threading
 import uuid
 from datetime import datetime
@@ -22,7 +21,7 @@ from otp.otp import load_otp, new_otp_session, save_otp, ConfigException, Otp
 from psa_connectedcar.rest import ApiException
 from mylogger import logger
 
-from libs.utils import rate_limit
+from libs.utils import rate_limit, parse_hour
 from web.abrp import Abrp
 from web.db import Database
 
@@ -38,6 +37,12 @@ realm_info = {
                            "app_name": "MyVauxhall"}
 }
 
+MQTT_BRANDCODE = {"AP": "AP",
+                  "AC": "AC",
+                  "DS": "AC",
+                  "VX": "OV",
+                  "OP": "OV"
+                  }
 
 AUTHORIZE_SERVICE = "https://api.mpsa.com/api/connectedcar/v2/oauth/authorize"
 REMOTE_URL = "https://api.groupe-psa.com/connectedcar/v4/virtualkey/remoteaccess/token?client_id="
@@ -263,10 +268,14 @@ class MyPSACC:
             sleep(60)
             return None
 
+    def __get_mqtt_customer_id(self):
+        brand_code = self.customer_id[:2]
+        return MQTT_BRANDCODE[brand_code]+self.customer_id[2:]
+
     # pylint: disable=unused-argument
     def __on_mqtt_connect(self, client, userdata, result_code, _):
         logger.info("Connected with result code %s", result_code)
-        topics = [MQTT_RESP_TOPIC + self.customer_id + "/#"]
+        topics = [MQTT_RESP_TOPIC + self.__get_mqtt_customer_id() + "/#"]
         for car in self.vehicles_list:
             topics.append(MQTT_EVENT_TOPIC + car.vin)
         for topic in topics:
@@ -333,24 +342,17 @@ class MyPSACC:
         self.refresh_token()
         date = datetime.utcnow()
         date_str = date.strftime(PSA_DATE_FORMAT)
-        data = {"access_token": self.remote_access_token, "customer_id": self.customer_id,
+        data = {"access_token": self.remote_access_token, "customer_id": self.__get_mqtt_customer_id(),
                 "correlation_id": gen_correlation_id(date), "req_date": date_str, "vin": vin,
                 "req_parameters": req_parameters}
 
         return json.dumps(data)
 
     def __get_charge_hour(self, vin):
-        reg = r"PT([0-9]{1,2})H([0-9]{1,2})?"
         data = self.get_vehicle_info(vin)
         hour_str = data.get_energy('Electric').charging.next_delayed_time
         try:
-            hour_minute = re.findall(reg, hour_str)[0]
-            hour = int(hour_minute[0])
-            if hour_minute[1] == '':
-                minute = 0
-            else:
-                minute = hour_minute[1]
-            return hour, minute
+            return parse_hour(hour_str)[:2]
         except IndexError:
             logger.exception("Can't get charge hour: %s", hour_str)
             return None
@@ -363,7 +365,7 @@ class MyPSACC:
     def __veh_charge_request(self, vin, hour, minute, charge_type):
         msg = self.mqtt_request(vin, {"program": {"hour": hour, "minute": minute}, "type": charge_type})
         logger.info(msg)
-        self.mqtt_client.publish(MQTT_REQ_TOPIC + self.customer_id + "/VehCharge", msg)
+        self.mqtt_client.publish(MQTT_REQ_TOPIC + self.__get_mqtt_customer_id() + "/VehCharge", msg)
 
     def change_charge_hour(self, vin, hour, miinute):
         self.__veh_charge_request(vin, hour, miinute, "delayed")
@@ -381,19 +383,18 @@ class MyPSACC:
     def horn(self, vin, count):
         msg = self.mqtt_request(vin, {"nb_horn": count, "action": "activate"})
         logger.info(msg)
-        self.mqtt_client.publish(MQTT_REQ_TOPIC + self.customer_id + "/Horn", msg)
+        self.mqtt_client.publish(MQTT_REQ_TOPIC + self.__get_mqtt_customer_id() + "/Horn", msg)
 
     def lights(self, vin, duration: int):
         msg = self.mqtt_request(vin, {"action": "activate", "duration": duration})
         logger.info(msg)
-        self.mqtt_client.publish(MQTT_REQ_TOPIC + self.customer_id + "/Lights", msg)
+        self.mqtt_client.publish(MQTT_REQ_TOPIC + self.__get_mqtt_customer_id() + "/Lights", msg)
 
     @rate_limit(3, 60 * 20)
     def wakeup(self, vin):
         logger.info("ask wakeup to %s", vin)
         msg = self.mqtt_request(vin, {"action": "state"})
         logger.info(msg)
-        self.mqtt_client.publish(MQTT_REQ_TOPIC + self.customer_id + "/VehCharge/state", msg)
         return True
 
     def lock_door(self, vin, lock: bool):
@@ -404,7 +405,7 @@ class MyPSACC:
 
         msg = self.mqtt_request(vin, {"action": value})
         logger.info(msg)
-        self.mqtt_client.publish(MQTT_REQ_TOPIC + self.customer_id + "/Doors", msg)
+        self.mqtt_client.publish(MQTT_REQ_TOPIC + self.__get_mqtt_customer_id() + "/Doors", msg)
         return True
 
     def preconditioning(self, vin, activate: bool):
@@ -423,7 +424,7 @@ class MyPSACC:
             }
         msg = self.mqtt_request(vin, {"asap": value, "programs": programs})
         logger.info(msg)
-        self.mqtt_client.publish(MQTT_REQ_TOPIC + self.customer_id + "/ThermalPrecond", msg)
+        self.mqtt_client.publish(MQTT_REQ_TOPIC + self.__get_mqtt_customer_id() + "/ThermalPrecond", msg)
         return True
 
     def save_config(self, name=None, force=False):
@@ -436,7 +437,7 @@ class MyPSACC:
                 f.write(config_str)
             self._config_hash = new_hash
             logger.info("save config change")
-
+# disconnect
     @staticmethod
     def load_config(name="config.json"):
         with open(name, "r") as f:

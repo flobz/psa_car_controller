@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 import json
+import logging
 import os
 import traceback
 from urllib import request
@@ -13,6 +14,7 @@ from cryptography.hazmat.backends import default_backend
 
 from charge_control import ChargeControl, ChargeControls
 from my_psacc import MyPSACC
+from mylogger import logger
 
 BRAND = {"com.psa.mym.myopel": {"realm": "clientsB2COpel", "brand_code": "OP", "app_name": "MyOpel"},
          "com.psa.mym.mypeugeot": {"realm": "clientsB2CPeugeot", "brand_code": "AP", "app_name": "MyPeugeot"},
@@ -54,6 +56,8 @@ def firstLaunchConfig(package_name, client_email, client_password, country_code,
     REMOTE_REFRESH_TOKEN = None
     ## Get Customer id
     site_code = BRAND[package_name]["brand_code"] + "_" + country_code + "_ESP"
+    pfx_cert = a.get_file("assets/MWPMYMA1.pfx")
+    save_key_to_pem(pfx_cert, "")
     try:
         res = requests.post(HOST_BRANDID_PROD + "/GetAccessToken",
                             headers={
@@ -77,7 +81,6 @@ def firstLaunchConfig(package_name, client_email, client_password, country_code,
         except:
             pass
         raise Exception(msg)
-
     try:
         res2 = requests.post(
             f"https://mw-{BRAND[package_name]['brand_code'].lower()}-m2c.mym.awsmpsa.com/api/v1/"
@@ -102,6 +105,7 @@ def firstLaunchConfig(package_name, client_email, client_password, country_code,
             msg += res2.text
         except:
             pass
+        logging.error(msg)
         Exception(msg)
 
     # Psacc

@@ -18,31 +18,15 @@ We will retrieve this information:
     
 - For everyone :
       ```pip3 install -r requirements.txt```
-
-1.3  run the decoder script : ```python3 app_decoder.py <path to my apk file>```
   
-    mypeugeot email: <write your mypeugeot email>
-    mypeugeot password: <write your mypeugeot password>
-    What is the car api realm : clientsB2CPeugeot, clientsB2CDS, clientsB2COpel, clientsB2CVauxhall
-    clientsB2CPeugeot
-    What is your country code ? (ex: FR, GB, DE, ES...)
-    FR
-    save config change
-
-    Your vehicles: {'VINNUBMER': {'id': 'vehicule id'}}
-
-1.4 If it works you will have VIN of your vehicles and there ids in the last line. 
-The script generates a test.json file with all credentials needed.
-
-
             
-1.5 start the app:
+1.3 start the app:
         
 Start the app with charge control enabled :
 
-``python3 server.py -f test.json -c charge_config1.json``
+``python3 server.py -f test.json -c charge_config1.json --web-conf``
 
-At the first launch you will receive an SMS, and you will be asked to give it and also give your pin code (the four-digit code that your use on the android app).
+At the first launch you will be asked to connect and give a code that you will receive by SMS and also give your pin code (the four-digit code that your use on the android app).
 If it failed you can remove the file otp.bin and retry.
 
 You can see all options available with :

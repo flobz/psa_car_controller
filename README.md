@@ -30,6 +30,7 @@ For information on configuring the psa_car_controller Docker container [see this
 
  ## I. Installation
 - [Installation on Linux or Windows](docs/Install.md)
+- [Instalation as Home Assistant addon](https://github.com/flobz/psacc-ha/blob/main/psacc-ha/README.md)  
 - [Installation in Docker](docs/Docker.md)
  ## II. Use the app
   

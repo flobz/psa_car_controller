@@ -36,8 +36,8 @@ class MyProxyFix(ProxyFix):
             self.dash_app.requests_pathname_external_prefix = prefix
             self.dash_app.config.assets_external_path = prefix
         else:
-            self.flask_app.config['APPLICATION_ROOT'] = "/"
-            self.dash_app.requests_pathname_external_prefix = "/"
+            self.flask_app.config['APPLICATION_ROOT'] = self.dash_app.config.requests_pathname_prefix
+            self.dash_app.requests_pathname_external_prefix = self.dash_app.config.requests_pathname_prefix
         return super().__call__(environ, start_response)
 
 

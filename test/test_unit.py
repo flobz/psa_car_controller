@@ -4,6 +4,8 @@ import os
 import unittest
 from datetime import datetime, timedelta
 
+from pytz import UTC
+
 import libs.config
 from psa_connectedcar import ApiClient
 import psa_connectedcar as psacc
@@ -78,8 +80,8 @@ class TestUnit(unittest.TestCase):
         assert CarModel.find_model_by_vin("VXKUHZKXZL").name == "corsa-e"
 
     def test_c02_signal_cache(self):
-        start = datetime.now() - timedelta(minutes=30)
-        end = datetime.now()
+        start = datetime.utcnow().replace(tzinfo=UTC) - timedelta(minutes=30)
+        end = datetime.utcnow().replace(tzinfo=UTC)
         Ecomix._cache = {'FR': [[start - timedelta(days=1), 100],
                                 [start + timedelta(minutes=1), 10],
                                 [start + timedelta(minutes=2), 20],

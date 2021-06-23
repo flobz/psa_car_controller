@@ -10,7 +10,7 @@ import dash_daq as daq
 from flask import jsonify, request, Response as FlaskResponse
 
 import web.utils
-from libs.car import Cars
+from libs.car import Cars, Car
 from mylogger import logger
 
 from trip import Trips
@@ -18,13 +18,15 @@ from trip import Trips
 from libs.charging import Charging
 from web import figures
 
-from web.app import app, dash_app, myp, chc
+from web.app import app, dash_app
 from web.db import Database
+from web.config_views import config_layout, config_otp_layout, log_layout
 from web.utils import diff_dashtable, dash_date_to_datetime
 
 # pylint: disable=invalid-name
-from web.figure_filter import Figure_Filter
+from web.figurefilter import FigureFilter
 from web.utils import create_card
+from libs.config import Config
 
 RESPONSE = "-response"
 EMPTY_DIV = "empty-div"
@@ -34,6 +36,22 @@ CALLBACK_CREATED = False
 trips: Trips = Trips()
 chargings: List[dict]
 min_date = max_date = min_millis = max_millis = step = marks = cached_layout = None
+CONFIG = Config()
+
+
+@dash_app.callback(Output('page-content', 'children'),
+                   [Input('url', 'pathname')])
+def display_page(pathname):
+    pathname = pathname[len(dash_app.requests_pathname_external_prefix)-1:]
+    if pathname == "/config":
+        return config_layout
+    if pathname == "/log":
+        return log_layout()
+    if not CONFIG.is_good:
+        return dcc.Location(pathname=dash_app.requests_pathname_external_prefix + "config", id="config_redirect")
+    if pathname == "/config_otp":
+        return config_otp_layout
+    return serve_layout()
 
 
 def create_callback():  # noqa: MC0001
@@ -68,7 +86,7 @@ def create_callback():  # noqa: MC0001
                 is_open = False
             if active_cell is not None and active_cell["column_id"] in ["start_level", "end_level"] and not is_open:
                 row = data[active_cell["row"]]
-                return figures.get_battery_curve_fig(row, myp.vehicles_list[0]), True
+                return figures.get_battery_curve_fig(row, CONFIG.myp.vehicles_list[0]), True
             return "", False
 
         @dash_app.callback([Output("tab_trips_popup_graph", "children"), Output("tab_trips_popup", "is_open"), ],
@@ -91,17 +109,17 @@ def create_callback():  # noqa: MC0001
 def update_abrp(div_id, value):
     vin = div_id["vin"]
     if value:
-        myp.abrp.abrp_enable_vin.add(vin)
+        CONFIG.myp.abrp.abrp_enable_vin.add(vin)
     else:
-        myp.abrp.abrp_enable_vin.discard(vin)
-    myp.save_config()
+        CONFIG.myp.abrp.abrp_enable_vin.discard(vin)
+    CONFIG.myp.save_config()
     return " "
 
 
 @app.route('/get_vehicles')
 def get_vehicules():
     response = app.response_class(
-        response=json.dumps(myp.get_vehicles(), default=lambda car: car.to_dict()),
+        response=json.dumps(CONFIG.myp.get_vehicles(), default=lambda car: car.to_dict()),
         status=200,
         mimetype='application/json'
     )
@@ -112,7 +130,7 @@ def get_vehicules():
 def get_vehicle_info(vin):
     from_cache = int(request.args.get('from_cache', 0)) == 1
     response = app.response_class(
-        response=json.dumps(myp.get_vehicle_info(vin, from_cache).to_dict(), default=str),
+        response=json.dumps(CONFIG.myp.get_vehicle_info(vin, from_cache).to_dict(), default=str),
         status=200,
         mimetype='application/json'
     )
@@ -136,27 +154,27 @@ def get_style():
 
 @app.route('/charge_now/<string:vin>/<int:charge>')
 def charge_now(vin, charge):
-    return jsonify(myp.charge_now(vin, charge != 0))
+    return jsonify(CONFIG.myp.charge_now(vin, charge != 0))
 
 
 @app.route('/charge_hour')
 def change_charge_hour():
-    return jsonify(myp.change_charge_hour(request.form['vin'], request.form['hour'], request.form['minute']))
+    return jsonify(CONFIG.myp.change_charge_hour(request.form['vin'], request.form['hour'], request.form['minute']))
 
 
 @app.route('/wakeup/<string:vin>')
 def wakeup(vin):
-    return jsonify(myp.wakeup(vin))
+    return jsonify(CONFIG.myp.wakeup(vin))
 
 
 @app.route('/preconditioning/<string:vin>/<int:activate>')
 def preconditioning(vin, activate):
-    return jsonify(myp.preconditioning(vin, activate))
+    return jsonify(CONFIG.myp.preconditioning(vin, activate))
 
 
 @app.route('/position/<string:vin>')
 def get_position(vin):
-    res = myp.get_vehicle_info(vin)
+    res = CONFIG.myp.get_vehicle_info(vin)
     try:
         coordinates = res.last_position.geometry.coordinates
     except AttributeError:
@@ -176,14 +194,14 @@ def get_position(vin):
 def get_charge_control():
     logger.info(request)
     vin = request.args['vin']
-    charge_control = chc.get(vin)
+    charge_control = CONFIG.chc.get(vin)
     if charge_control is None:
         return jsonify("error: VIN not in list")
     if 'hour' in request.args and 'minute' in request.args:
         charge_control.set_stop_hour([int(request.args["hour"]), int(request.args["minute"])])
     if 'percentage' in request.args:
         charge_control.percentage_threshold = int(request.args['percentage'])
-    chc.save_config()
+    CONFIG.chc.save_config()
     return jsonify(charge_control.get_dict())
 
 
@@ -199,12 +217,12 @@ def abrp():
     token = request.args.get('token', None)
     if vin is not None and enable is not None:
         if enable == '1':
-            myp.abrp.abrp_enable_vin.add(vin)
+            CONFIG.myp.abrp.abrp_enable_vin.add(vin)
         else:
-            myp.abrp.abrp_enable_vin.discard(vin)
+            CONFIG.myp.abrp.abrp_enable_vin.discard(vin)
     if token is not None:
-        myp.abrp.token = token
-    return jsonify(dict(myp.abrp))
+        CONFIG.myp.abrp.token = token
+    return jsonify(dict(CONFIG.myp.abrp))
 
 
 @app.after_request
@@ -222,49 +240,50 @@ def update_trips():
     conn.close()
     min_date = None
     max_date = None
-    try:
-        assert len(myp.vehicles_list) > 0
-        car = myp.vehicles_list[0]  # todo handle multiple car
-        figures.get_figures(car)
-        trips_by_vin = Trips.get_trips(Cars([car]))
-        trips = trips_by_vin[car.vin]
-        assert len(trips) > 0
-        min_date = trips[0].start_at
-        max_date = trips[-1].start_at
-    except (AssertionError, KeyError):
-        logger.debug("No trips yet")
-    try:
-        chargings = Charging.get_chargings()
-        assert len(chargings) > 0
-        if min_date:
-            min_date = min(min_date, chargings[0]["start_at"])
-            max_date = max(max_date, chargings[-1]["start_at"])
-        else:
-            min_date = chargings[0]["start_at"]
-            max_date = chargings[-1]["start_at"]
-    except AssertionError:
-        logger.debug("No chargings yet")
-        if min_date is None:
-            return
-    # update for slider
-    try:
-        logger.debug("min_date:%s - max_date:%s", min_date, max_date)
-        min_millis = web.utils.unix_time_millis(min_date)
-        max_millis = web.utils.unix_time_millis(max_date)
-        step = (max_millis - min_millis) / 100
-        marks = web.utils.get_marks_from_start_end(min_date, max_date)
-        cached_layout = None  # force regenerate layout
-        figures.get_figures(car)
-    except (ValueError, IndexError):
-        logger.error("update_trips (slider): %s", exc_info=True)
-    except AttributeError:
-        logger.debug("position table is probably empty :", exc_info=True)
+    if CONFIG.is_good:
+        car = CONFIG.myp.vehicles_list[0]  # todo handle multiple car
+        try:
+            trips_by_vin = Trips.get_trips(Cars([car]))
+            trips = trips_by_vin[car.vin]
+            assert len(trips) > 0
+            min_date = trips[0].start_at
+            max_date = trips[-1].start_at
+            figures.get_figures(trips[0].car)
+        except (AssertionError, KeyError):
+            logger.debug("No trips yet")
+            figures.get_figures(Car("vin", "vid", "brand"))
+        try:
+            chargings = Charging.get_chargings()
+            assert len(chargings) > 0
+            if min_date:
+                min_date = min(min_date, chargings[0]["start_at"])
+                max_date = max(max_date, chargings[-1]["start_at"])
+            else:
+                min_date = chargings[0]["start_at"]
+                max_date = chargings[-1]["start_at"]
+        except AssertionError:
+            logger.debug("No chargings yet")
+            if min_date is None:
+                return
+        # update for slider
+        try:
+            logger.debug("min_date:%s - max_date:%s", min_date, max_date)
+            min_millis = web.utils.unix_time_millis(min_date)
+            max_millis = web.utils.unix_time_millis(max_date)
+            step = (max_millis - min_millis) / 100
+            marks = web.utils.get_marks_from_start_end(min_date, max_date)
+            cached_layout = None  # force regenerate layout
+            figures.get_figures(car)
+        except (ValueError, IndexError):
+            logger.error("update_trips (slider): %s", exc_info=True)
+        except AttributeError:
+            logger.debug("position table is probably empty :", exc_info=True)
     return
 
 
 def __get_control_tabs():
     tabs = []
-    for car in myp.vehicles_list:
+    for car in CONFIG.myp.vehicles_list:
         if car.label is None:
             label = car.vin
         else:
@@ -273,7 +292,7 @@ def __get_control_tabs():
         tabs.append(dbc.Tab(label=label, id="tab-" + car.vin, children=[
             daq.ToggleSwitch(
                 id={'role': ABRP_SWITCH, 'vin': car.vin},
-                value=car.vin in myp.abrp.abrp_enable_vin,
+                value=car.vin in CONFIG.myp.abrp.abrp_enable_vin,
                 label="Send data to ABRP"
             ),
             html.Div(id={'role': ABRP_SWITCH + RESPONSE, 'vin': car.vin})
@@ -285,7 +304,7 @@ def serve_layout():
     global cached_layout
     if cached_layout is None:
         logger.debug("Create new layout")
-        fig_filter = Figure_Filter()
+        fig_filter = FigureFilter()
         try:
             range_slider = dcc.RangeSlider(
                 id='date-slider',
@@ -311,7 +330,7 @@ def serve_layout():
             fig_filter.src = {"trips": trips.get_trips_as_dict(), "chargings": chargings}
             fig_filter.set_clientside_callback(dash_app)
             create_callback()
-        except (IndexError, TypeError, NameError, AssertionError, NameError):
+        except (IndexError, TypeError, NameError, AssertionError, NameError, AttributeError):
             summary_tab = figures.ERROR_DIV
             maps = figures.ERROR_DIV
             logger.warning("Failed to generate figure, there is probably not enough data yet", exc_info_debug=True)
@@ -320,8 +339,8 @@ def serve_layout():
 
         data_div = html.Div([
             *fig_filter.get_store(),
-            range_slider,
             html.Div([
+                range_slider,
                 dbc.Tabs([
                     dbc.Tab(label="Summary", tab_id="summary", children=summary_tab),
                     dbc.Tab(label="Trips", tab_id="trips", id="tab_trips",
@@ -368,7 +387,7 @@ def serve_layout():
                 html.Div(id=EMPTY_DIV),
                 html.Div(id=EMPTY_DIV + "1")
             ])])
-        cached_layout = dbc.Container(fluid=True, children=[html.H1('My car info'), data_div])
+        cached_layout = data_div
     return cached_layout
 
 
@@ -379,4 +398,5 @@ try:
 except (IndexError, TypeError):
     logger.debug("Failed to get trips, there is probably not enough data yet:", exc_info=True)
 
-dash_app.layout = serve_layout
+dash_app.layout = dbc.Container(fluid=True, children=[dcc.Location(id='url', refresh=False),
+                                                      html.H1('My car info'), html.Div(id='page-content')])

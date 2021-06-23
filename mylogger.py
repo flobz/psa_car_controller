@@ -1,6 +1,8 @@
 import logging
 from logging.handlers import RotatingFileHandler
 
+LOG_FILE = 'activity.log'
+
 DEBUG_LEVELV_NUM = 9
 logging.addLevelName(DEBUG_LEVELV_NUM, "DEBUGV")
 
@@ -28,7 +30,7 @@ logging.setLoggerClass(CustomLogger)
 logger = logging.getLogger("log")
 
 
-def my_logger(file='activity.log', handler_level=logging.INFO):
+def my_logger(file=LOG_FILE, handler_level=logging.INFO):
     global logger
     logger.setLevel(handler_level)
     formatter = logging.Formatter('%(asctime)s :: %(levelname)s :: %(message)s')

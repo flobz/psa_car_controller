@@ -9,7 +9,7 @@ ABRP will optimize your itinerary with these parameters.
 ### Prerequisite
 1. A working last version of psa_car_controller
 2. A abetterrouteplanner account
-3. label must be set in cars.json
+3. Make sure that you don't have a "Can't get car model error" if so look at the [FAQ](../FAQ.md)
 
 ### Procedure
 1. Go to [https://abetterrouteplanner.com/](https://abetterrouteplanner.com/)

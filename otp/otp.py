@@ -17,6 +17,8 @@ from .load import IWData
 
 
 # pylint: disable=too-many-instance-attributes,invalid-name
+CONFIG_NAME = "otp.bin"
+
 
 def etree_to_dict(t):
     d = {t.tag: {} if t.attrib else None}
@@ -255,7 +257,7 @@ class Otp:
         password = self.data.iwK1 + ":" + str(self.defi) + ":" + self.data.iwsecval
         res = bytes(hashlib.sha256(password.encode("utf-8")).digest())
         nb = ((int.from_bytes(res[:4], byteorder="big") & 0xfffffff) * 1024) + (
-            int.from_bytes(res[4:8], byteorder="big") & 1023)
+                int.from_bytes(res[4:8], byteorder="big") & 1023)
         otp = number_to_base36(nb)
         return otp
 
@@ -313,7 +315,7 @@ class RenameUnpickler(pickle.Unpickler):
         return super().find_class(renamed_module, name)
 
 
-def load_otp(filename="otp.bin"):
+def load_otp(filename=CONFIG_NAME):
     try:
         with open(filename, 'rb') as input_file:
             try:
@@ -325,13 +327,17 @@ def load_otp(filename="otp.bin"):
     return None
 
 
-def new_otp_session(old_otp_session: Otp = None):
+def new_otp_session(old_otp_session: Otp = None, smscode=None, codepin=None):
     if old_otp_session is None:
         otp = Otp("bb8e981582b0f31353108fb020bead1c")
     else:
         otp = Otp("bb8e981582b0f31353108fb020bead1c", device_id=old_otp_session.device_id)
-    otp.smsCode = input("What is the code you just received by SMS ?")
-    otp.codepin = input("What is your app pin code ?")
+    if smscode is None:
+        otp.smsCode = input("What is the code you just received by SMS ?")
+        otp.codepin = input("What is your app pin code ?")
+    else:
+        otp.smsCode = smscode
+        otp.codepin = codepin
     otp.activation_start()
     otp.activation_finalyze()
     save_otp(otp)

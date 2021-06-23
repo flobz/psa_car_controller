@@ -23,6 +23,13 @@ jobs:
             TAGS="${DOCKER_IMAGE}:${VERSION}"
           fi
           echo ::set-output name=tags::${TAGS}
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@master
+        with:
+          platforms: all
+      - name: Set up Docker Buildx
+        id: buildx
+        uses: docker/setup-buildx-action@master
       - name: Check out the repo
         uses: actions/checkout@v2
       - name: Login to DockerHub
@@ -38,6 +45,7 @@ jobs:
           context: .
           push: true
           tags: ${{ steps.prep.outputs.tags }}
+          platforms: linux/amd64,linux/arm64,linux/arm/v7
       -
         name: Image digest
         run: echo ${{ steps.docker_build.outputs.digest }}

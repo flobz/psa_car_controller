@@ -78,9 +78,9 @@ class Car:
             self._status.__class__ = CarStatus
             self._status.correct()
 
-    def get_charge_speed(self, start_level, end_level, duration_in_sec) -> float:
+    def get_charge_speed(self, diff_elvel, duration_in_sec) -> float:
         duration_in_hour = duration_in_sec / 3600
-        charged_kw = self.battery_power * (end_level - start_level) / 100
+        charged_kw = self.battery_power * diff_elvel / 100
         kw_hour = charged_kw / duration_in_hour
         return kw_hour
 

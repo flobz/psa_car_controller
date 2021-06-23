@@ -111,6 +111,7 @@ class MyPSACC:
         self.set_proxies(proxies)
         self.config_file = DEFAULT_CONFIG_FILENAME
         Ecomix.co2_signal_key = co2_signal_api
+        self.refresh_thread = None
 
     def get_app_name(self):
         return realm_info[self.realm]['app_name']
@@ -159,7 +160,7 @@ class MyPSACC:
             car.status = res
         return res
 
-    def refresh_vehicle_info(self):
+    def __refresh_vehicle_info(self):
         if self.info_refresh_rate is not None:
             while True:
                 sleep(self.info_refresh_rate)
@@ -168,6 +169,12 @@ class MyPSACC:
                     self.get_vehicle_info(car.vin)
                 for callback in self.info_callback:
                     callback()
+
+    def start_refresh_thread(self):
+        if self.refresh_thread is None:
+            self.refresh_thread = threading.Thread(target=self.__refresh_vehicle_info)
+            self.refresh_thread.setDaemon(True)
+            self.refresh_thread.start()
 
     # monitor doesn't seem to work
     def new_monitor(self, vin, body):
@@ -238,7 +245,7 @@ class MyPSACC:
         try:
             if self.remote_refresh_token is None:
                 logger.error("remote_refresh_token isn't defined")
-                self.load_otp(force_new=True)
+                return None
             res = self.manager.post(REMOTE_URL + self.client_id,
                                     json={"grant_type": "refresh_token", "refresh_token": self.remote_refresh_token},
                                     headers=self.headers)
@@ -313,14 +320,14 @@ class MyPSACC:
         self.mqtt_client = mqtt.Client(clean_session=True, protocol=mqtt.MQTTv311)
         if environ.get("MQTT_LOG", "0") == "1":
             self.mqtt_client.enable_logger(logger=logger)
-        self.refresh_remote_token()
-        self.mqtt_client.tls_set_context()
-        self.mqtt_client.on_connect = self.__on_mqtt_connect
-        self.mqtt_client.on_message = self.__on_mqtt_message
-        self.mqtt_client.on_disconnect = self._on_mqtt_disconnect
-        self.mqtt_client.connect(MQTT_SERVER, 8885, 60)
-        self.mqtt_client.loop_start()
-        self.__keep_mqtt()
+        if self.refresh_remote_token():
+            self.mqtt_client.tls_set_context()
+            self.mqtt_client.on_connect = self.__on_mqtt_connect
+            self.mqtt_client.on_message = self.__on_mqtt_message
+            self.mqtt_client.on_disconnect = self._on_mqtt_disconnect
+            self.mqtt_client.connect(MQTT_SERVER, 8885, 60)
+            self.mqtt_client.loop_start()
+            self.__keep_mqtt()
         return self.mqtt_client.is_connected()
 
     def __keep_mqtt(self):  # avoid token expiration
@@ -388,7 +395,6 @@ class MyPSACC:
         logger.info("ask wakeup to %s", vin)
         msg = self.mqtt_request(vin, {"action": "state"})
         logger.info(msg)
-        self.mqtt_client.publish(MQTT_REQ_TOPIC + self.__get_mqtt_customer_id() + "/VehCharge/state", msg)
         return True
 
     def lock_door(self, vin, lock: bool):
@@ -471,8 +477,10 @@ class MyPSACC:
         try:
             charging_status = car.status.get_energy('Electric').charging.status
             charging_mode = car.status.get_energy('Electric').charging.charging_mode
+            charging_rate = car.status.get_energy('Electric').charging.charging_rate
+            autonomy = car.status.get_energy('Electric').autonomy
             Charging.record_charging(car, charging_status, charge_date, level, latitude, longitude, self.country_code,
-                                     charging_mode)
+                                     charging_mode, charging_rate, autonomy)
             logger.debug("charging_status:%s ", charging_status)
         except AttributeError:
             logger.error("charging status not available from api")

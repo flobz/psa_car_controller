@@ -1,7 +1,19 @@
 # FAQ 
 ## Frequent error
 ### 1. Can't get car model
-Open an issue with [this template](https://github.com/flobz/psa_car_controller/issues/new?assignees=&labels=Car_model&template=can-t-get-car-model.md&title=%5BNew+Car+model%5D+my+model)
+The car model need to be known by the app. To find it, the app use the first 10 character of your VIN.
+If the car isn't in the list we need to add it, to do so you have two options:
+- If you have the skills :
+    
+  You can add your car to the list yourself to do so look at [this example](https://github.com/flobz/psa_car_controller/pull/112/commits/e7304ef8f4e4a4498f202a7a4a7bbe451fbfe977). 
+  Don't forget to do a pull request with your changes.
+
+
+- If you don't: 
+  
+    Open an issue with [this template](https://github.com/flobz/psa_car_controller/issues/new?assignees=&labels=Car_model&template=can-t-get-car-model.md&title=%5BNew+Car+model%5D+my+model)
+
+
 ### 2. Error during activation {'newversion': '2.0.0', 'newversionurl': 'http://m.inwebo.com/', 'err': 'NOK:FORBIDDEN'}
 Your psa account is locked because you makes 20 sms activation. To unlock do this : 
 1. Install on a smartphone mypeugeot, myopel etc, depending on your car brand

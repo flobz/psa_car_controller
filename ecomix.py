@@ -76,7 +76,7 @@ class Ecomix:
 
     @staticmethod
     def clean_cache():
-        max_date = datetime.now() - timedelta(days=1)
+        max_date = datetime.utcnow().replace(tzinfo=UTC) - timedelta(days=1)
         for country in Ecomix._cache:
             Ecomix._cache[country][:] = [x for x in Ecomix._cache[country] if max_date < x[0]]
 

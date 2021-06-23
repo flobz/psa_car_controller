@@ -71,7 +71,8 @@ class TestUnit(unittest.TestCase):
             myp.abrp.abrp_enable_vin.add(car.vin)
             res = myp.get_vehicle_info(myp.vehicles_list[0].vin)
             myp.abrp.call(car, 22.1)
-            libs.config.save_config()
+            libs.config.Config().myp = myp
+            libs.config.Config().save_config()
             assert isinstance(get_temp(str(latitude), str(longitude), myp.weather_api), float)
 
     def test_car_model(self):
@@ -94,7 +95,7 @@ class TestUnit(unittest.TestCase):
             Ecomix.co2_signal_key = key
             def_country = "FR"
             Ecomix.get_data_from_co2_signal(latitude, longitude, def_country)
-            res = Ecomix.get_co2_from_signal_cache(datetime.now() - timedelta(minutes=5), datetime.now(), def_country)
+            res = Ecomix.get_co2_from_signal_cache(datetime.utcnow().replace(tzinfo=UTC) - timedelta(minutes=5), datetime.now(), def_country)
             assert isinstance(res, float)
 
     def test_charge_control(self):

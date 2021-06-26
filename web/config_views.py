@@ -25,7 +25,7 @@ config_layout = dbc.Row(dbc.Col(className="col-md-12 col-lg-2 ml-2", children=[
                     {"label": "Opel", "value": "com.psa.mym.myopel"},
                     {"label": "Cirtroën", "value": "com.psa.mym.citroen"},
                     {"label": "DS", "value": "com.psa.mym.myds"},
-                    {"label": "Vauxhall", "value": "com.psa.mym.myvauxhll"}
+                    {"label": "Vauxhall", "value": "com.psa.mym.myvauxhall"}
                 ],
             )]),
         dbc.FormGroup(

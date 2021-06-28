@@ -61,7 +61,7 @@ config_layout = dbc.Row(dbc.Col(className="col-md-12 col-lg-2 ml-2", children=[
                     placeholder="Enter your country code",
                 ),
                 dbc.FormText(
-                    "Example: FR for FRANCE or EN for England",
+                    "Example: FR for FRANCE or GB for Great Britain...",
                     color="secondary",
                 )
             ]

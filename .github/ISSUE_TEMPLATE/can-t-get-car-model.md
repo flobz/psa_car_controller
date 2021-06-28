@@ -6,7 +6,7 @@ labels: Car_model
 assignees: ''
 
 ---
-
+ <!--- please look at https://github.com/flobz/psa_car_controller/blob/master/FAQ.md before create an issue -->
 I have a "Can't get car model" error.
 Information to add my car model to the app:
 - Brand:

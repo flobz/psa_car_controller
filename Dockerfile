@@ -1,4 +1,4 @@
-ARG PYTHON_DEP='python3 python3-wheel python3-typing-extensions python3-pandas python3-plotly python3-six python3-dateutil python3-brotli python3-pycryptodome libatlas3-base python3-cryptography python3-scipy'
+ARG PYTHON_DEP='python3 python3-wheel python3-typing-extensions python3-pandas python3-plotly python3-six python3-dateutil python3-brotli python3-pycryptodome libatlas3-base python3-cryptography python3-scipy androguard'
 
 FROM debian:buster-slim AS builder
 ARG PYTHON_DEP

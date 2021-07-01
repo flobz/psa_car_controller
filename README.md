@@ -85,16 +85,16 @@ If you have a special price during the night you can set "night price", "night h
 Hours need to be in the following format "23h12"?
 
 You can modify a price manually in the dashboard. It can be useful if you use public charge point.
-## V. Connect your home automation system:
+## V. Connection to other services:
 - [Domoticz](docs/domoticz/Domoticz.md)
 - [HomeAssistant](https://github.com/Flodu31/HomeAssistant-PeugeotIntegration)
 - Jeedom (Anyone can share the procedure ?)
+- You can send live car status to ABRP (A better Route Planner), see [this page](docs/abrp.md)
+- [Grafana](https://github.com/flobz/psa_car_controller/issues/161)
 
 ## FAQ
 If you have a problem, or a question please check if the answer isn't in the [FAQ](FAQ.md). 
 If you need information to contribute or edit this program go [here](docs/Develop.md).
-## Connect to A better Route Planner
-You can connect the app to ABRP, see [this page](docs/abrp.md)
 
 ## Donation
 If you want to thank me for my work :smile:

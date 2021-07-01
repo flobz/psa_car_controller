@@ -25,7 +25,7 @@ config_layout = dbc.Row(dbc.Col(className="col-md-12 col-lg-2 ml-2", children=[
                     {"label": "Opel", "value": "com.psa.mym.myopel"},
                     {"label": "Citroën", "value": "com.psa.mym.citroen"},
                     {"label": "DS", "value": "com.psa.mym.myds"},
-                    {"label": "Vauxhall", "value": "com.psa.mym.myvauxhll"}
+                    {"label": "Vauxhall", "value": "com.psa.mym.myvauxhall"}
                 ],
             )]),
         dbc.FormGroup(
@@ -61,7 +61,7 @@ config_layout = dbc.Row(dbc.Col(className="col-md-12 col-lg-2 ml-2", children=[
                     placeholder="Enter your country code",
                 ),
                 dbc.FormText(
-                    "Example: FR for FRANCE or GB for United Kingdom",
+                    "Example: FR for FRANCE or GB for Great Britain...",
                     color="secondary",
                 )
             ]

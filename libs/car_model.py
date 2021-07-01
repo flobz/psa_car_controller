@@ -68,5 +68,7 @@ carmodels = [
     CarModel("C5 Aircross", 10.8, 43),
     CarModel("DS7 Crossback E-Tense", 11.5, 43, reg="VR1J45GBUK.*"),
     CarModel("DS7 Crossback E-Tense 300 4x4", 11.5, 43, reg=" VR1J45GBUL.*"),
-    CarModel("508 SW Hybrid", 11.5, 45, reg=r"VR3F4DGZ.*") # VR3F4DGZTL
+    CarModel("508 SW Hybrid", 11.5, 45, reg=r"VR3F4DGZ.*"), # VR3F4DGZTL
+    CarModel("Grandland X Hybrid", 13.2, 43, reg=r"W0VZ4DGZ.*"), #W0VZ4DGZ2L
+    CarModel("Grandland X Hybrid 4x4", 13.2, 43, reg=r"W0VZ45GB.*") #W0VZ45GB3L
 ]

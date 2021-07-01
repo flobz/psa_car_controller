@@ -113,7 +113,6 @@ def firstLaunchConfig(package_name, client_email, client_password, country_code,
     psacc.connect(client_email, client_password)
     psacc.save_config(name=config_prefix + "config.json")
     res = psacc.get_vehicles()
-    print(f"\nYour vehicles: {res}")
 
     if len(res) == 0:
         Exception("No vehicle in your account is compatible with this API, you vehicle is probably too old...")
@@ -122,12 +121,9 @@ def firstLaunchConfig(package_name, client_email, client_password, country_code,
         car = psacc.vehicles_list.get_car_by_vin(vehicle["vin"])
         if car is not None and "short_label" in vehicle and car.label == "unknown":
             car.label = vehicle["short_label"].split(" ")[-1]  # remove new, nouvelle, neu word....
-            car.set_energy_capacity()
-        else:
-            print("Warning: Can't get car model for please check cars.json")
     psacc.vehicles_list.save_cars()
 
-    print(f"\nYour vehicles: {res}")
+    logger.info("\nYour vehicles: %s", res)
 
     # Charge control
     charge_controls = ChargeControls(config_prefix + "charge_config.json")

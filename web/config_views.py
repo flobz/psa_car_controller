@@ -23,7 +23,7 @@ config_layout = dbc.Row(dbc.Col(className="col-md-12 col-lg-2 ml-2", children=[
                 options=[
                     {"label": "Peugeot", "value": "com.psa.mym.mypeugeot"},
                     {"label": "Opel", "value": "com.psa.mym.myopel"},
-                    {"label": "Citroën", "value": "com.psa.mym.citroen"},
+                    {"label": "Citroën", "value": "com.psa.mym.mycitroen"},
                     {"label": "DS", "value": "com.psa.mym.myds"},
                     {"label": "Vauxhall", "value": "com.psa.mym.myvauxhall"}
                 ],

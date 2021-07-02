@@ -18,6 +18,7 @@ NEW_BATTERY_COLUMNS = [["price", "INTEGER"], ["charging_mode", "TEXT"]]
 NEW_POSITION_COLUMNS = [["level_fuel", "INTEGER"], ["altitude", "INTEGER"]]
 NEW_BATTERY_CURVE_COLUMNS = [["rate", "INTEGER"], ["autonomy", "INTEGER"]]
 
+
 def convert_sql_res(rows):
     return list(map(dict, rows))
 
@@ -47,11 +48,13 @@ class CustomSqliteConnection(sqlite3.Connection):
         self.commit()
         super().close()
 
+
 class Database:
     callback_fct: Callable[[], None] = lambda: None
     DEFAULT_DB_FILE = 'info.db'
     db_initialized = False
     __thread_lock = Lock()
+
     @staticmethod
     def convert_datetime_from_string(string):
         try:
@@ -136,10 +139,10 @@ class Database:
     @staticmethod
     def clean_battery(conn):
         # delete charging longer than 17h
-        #conn.execute("DElETE FROM battery WHERE JULIANDAY(stop_at)-JULIANDAY(start_at)>0.7;")
+        # conn.execute("DElETE FROM battery WHERE JULIANDAY(stop_at)-JULIANDAY(start_at)>0.7;")
         # delete charging not finished longer than 17h
-        #conn.execute("DELETE from battery where stop_at is NULL and JULIANDAY()-JULIANDAY(start_at)>0.7;")
-        #delete little charge
+        # conn.execute("DELETE from battery where stop_at is NULL and JULIANDAY()-JULIANDAY(start_at)>0.7;")
+        # delete little charge
         conn.execute("DELETE FROM battery WHERE start_level >= end_level-1;")
 
     @staticmethod
@@ -181,14 +184,15 @@ class Database:
     @staticmethod
     def add_altitude_to_db(conn):
         max_pos_by_req = 100
-        nb_null = conn.execute(
-            "SELECT COUNT(1) FROM position WHERE altitude IS NULL;").fetchone()[0]
+        nb_null = conn.execute("SELECT COUNT(1) FROM position WHERE altitude IS NULL "
+                               "and longitude IS NOT NULL AND latitude IS NOT NULL;").fetchone()[0]
         if nb_null > max_pos_by_req:
             logger.warning("There is %s to fetch from API, it can take some time", nb_null)
         try:
             while True:
-                res = conn.execute("SELECT DISTINCT latitude,longitude "
-                                   "FROM position WHERE altitude IS NULL LIMIT ?;", (max_pos_by_req,)).fetchall()
+                res = conn.execute("SELECT DISTINCT latitude,longitude FROM position WHERE altitude IS NULL "
+                                   "and longitude IS NOT NULL AND latitude IS NOT NULL LIMIT ?;",
+                                   (max_pos_by_req,)).fetchall()
                 nb_res = len(res)
                 if nb_res > 0:
                     logger.debug("add altitude for %s positions point", nb_null)

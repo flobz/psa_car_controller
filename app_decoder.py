@@ -2,7 +2,6 @@
 import json
 import os
 import traceback
-from urllib import request
 from os import path
 
 from androguard.core.bytecodes.apk import APK
@@ -41,11 +40,19 @@ def save_key_to_pem(pfx_data, pfx_password):
                                           encryption_algorithm=serialization.NoEncryption()))
 
 
-def firstLaunchConfig(package_name, client_email, client_password, country_code, # pylint: disable=too-many-locals
+def urlretrieve(url, path):
+    with open(path, 'wb') as f:
+        r = requests.get(url, stream=True)
+        r.raise_for_status()
+        for chunk in r.iter_content(1024):
+            f.write(chunk)
+
+
+def firstLaunchConfig(package_name, client_email, client_password, country_code,  # pylint: disable=too-many-locals
                       config_prefix=""):
-    filename = package_name.split(".")[-1]+".apk"
+    filename = package_name.split(".")[-1] + ".apk"
     if not path.exists(filename):
-        request.urlretrieve(DOWNLOAD_URL+filename, filename)
+        urlretrieve(DOWNLOAD_URL + filename, filename)
     a = APK(filename)
     package_name = a.get_package()
     resources = a.get_android_resources()  # .get_strings_resources()
@@ -79,6 +86,7 @@ def firstLaunchConfig(package_name, client_email, client_password, country_code,
             msg += res.text
         except:
             pass
+        logger.error(msg)
         raise Exception(msg)
     try:
         res2 = requests.post(
@@ -106,7 +114,6 @@ def firstLaunchConfig(package_name, client_email, client_password, country_code,
             pass
         logger.error(msg)
         Exception(msg)
-
     # Psacc
     psacc = MyPSACC(None, client_id, client_secret, REMOTE_REFRESH_TOKEN, customer_id, BRAND[package_name]["realm"],
                     country_code)

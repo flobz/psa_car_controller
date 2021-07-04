@@ -395,6 +395,7 @@ class MyPSACC:
         logger.info("ask wakeup to %s", vin)
         msg = self.mqtt_request(vin, {"action": "state"})
         logger.info(msg)
+        self.mqtt_client.publish(MQTT_REQ_TOPIC + self.__get_mqtt_customer_id() + "/VehCharge/state", msg)
         return True
 
     def lock_door(self, vin, lock: bool):
@@ -437,7 +438,7 @@ class MyPSACC:
                 f.write(config_str)
             self._config_hash = new_hash
             logger.info("save config change")
-# disconnect
+
     @staticmethod
     def load_config(name="config.json"):
         with open(name, "r") as f:

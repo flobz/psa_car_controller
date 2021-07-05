@@ -163,12 +163,15 @@ class MyPSACC:
     def __refresh_vehicle_info(self):
         if self.info_refresh_rate is not None:
             while True:
-                sleep(self.info_refresh_rate)
-                logger.debug("refresh_vehicle_info")
-                for car in self.vehicles_list:
-                    self.get_vehicle_info(car.vin)
-                for callback in self.info_callback:
-                    callback()
+                try:
+                    sleep(self.info_refresh_rate)
+                    logger.debug("refresh_vehicle_info")
+                    for car in self.vehicles_list:
+                        self.get_vehicle_info(car.vin)
+                    for callback in self.info_callback:
+                        callback()
+                except:  # pylint: disable=bare-except
+                    logger.exception("refresh_vehicle_info: ")
 
     def start_refresh_thread(self):
         if self.refresh_thread is None:
@@ -270,7 +273,7 @@ class MyPSACC:
 
     def __get_mqtt_customer_id(self):
         brand_code = self.customer_id[:2]
-        return MQTT_BRANDCODE[brand_code]+self.customer_id[2:]
+        return MQTT_BRANDCODE[brand_code] + self.customer_id[2:]
 
     # pylint: disable=unused-argument
     def __on_mqtt_connect(self, client, userdata, result_code, _):

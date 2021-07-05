@@ -1,5 +1,6 @@
 from mylogger import logger
-from psa_connectedcar import Position, Geometry, PositionProperties, Kinetic, Energy, EnergyCharging, Status
+from psa_connectedcar import Position, Geometry, PositionProperties, Kinetic, Energy, EnergyCharging, Status, \
+    VehicleOdometer
 
 
 # pylint: disable=too-many-arguments
@@ -26,6 +27,9 @@ class CarStatus(Status):
         # always put electric energy first
         if len(self._energy) == 2 and self._energy[0].type != 'Electric':
             self._energy = self._energy[::-1]
+
+        if self.timed_odometer is None:
+            self.timed_odometer = VehicleOdometer()
 
     def is_moving(self):
         try:

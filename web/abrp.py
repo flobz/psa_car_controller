@@ -1,5 +1,6 @@
 import json
 from datetime import datetime
+from json import JSONDecodeError
 
 import requests
 
@@ -40,7 +41,11 @@ class Abrp:
                 response = requests.request("POST", self.url, params=params, proxies=self.proxies,
                                             verify=self.proxies is None)
                 logger.debug(response.text)
-                return response.json()["status"] == "ok"
+                try:
+                    return response.json()["status"] == "ok"
+                except (JSONDecodeError, KeyError):
+                    logger.error("Bad response from ABRP API: %s", response.text)
+                    return False
         except (AttributeError, IndexError, ValueError):
             logger.exception("abrp:")
         return False

@@ -59,7 +59,7 @@ carmodels = [
     ElecModel("Mokka-e", 46, "opel:corsae:20:50", r"VXKUKZKX.*"),  # VXKUKZKXZM
     ElecModel("Zaphira-e", 68, "peugeot:etraveler:21:75:opel", r"VXEVZZKX.*"),  # VXEVZZKXZMZ
     ElecModel("E-C4", 46, "citroen:ec4:21:50", r"VR7BCZKX.*"),  # VR7BCZKXCM
-    ElecModel("DS3 Crossback e-tense", 46, "ds:ds3:20:50", r"VR1UJZKXZL*"),  # VR1UJZKXZL
+    ElecModel("DS3 Crossback e-tense", 46, "ds:3crossback:20:48", r"VR1UJZKXZL*"),  # VR1UJZKXZL
     CarModel("SUV 3008", 10.8, 43),
     CarModel("308", 0, 56, reg=r"VF3L35GG.*"),
     CarModel("208", 0, 44, reg=r"VR3UPHNS.*"),  # VR3UPHNSSM

@@ -26,7 +26,6 @@ The official api is documented [here](https://developer.groupe-psa.io/webapi/b2c
 
 A video in French was made by vlycop to explain how to use this application : https://youtu.be/XO7-N7G3biU 
 
-For information on configuring the psa_car_controller Docker container [see this page]
 
  ## I. Installation
 - [Installation on Linux or Windows](docs/Install.md)

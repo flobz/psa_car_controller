@@ -35,7 +35,7 @@ To fix this go to the application directory and execute this command :
 sudo chown pi: -R . 
 ```
 
-### 5. I doesn't receive SMS
+### 5. I don't receive SMS
 The SMS authentication is used to be able to remote control your car.
  If your car doesn't have this functionality you should disable remote control when you start psa-car-controller 
 by using `--remote-disable` argument.

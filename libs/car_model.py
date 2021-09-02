@@ -62,7 +62,7 @@ carmodels = [
     ElecModel("E-C4", 46, "citroen:ec4:21:50", r"VR7BCZKX.*"),  # VR7BCZKXCM
     CarModel("SUV 3008", 10.8, 43),
     CarModel("308", 0, 56, reg=r"VF3L35GG.*"),
-    CarModel("208", 0, 44, reg=r"VR3UPHNS.*"),  # VR3UPHNSSM
+    CarModel("208", 0, 44, reg=r"VR3UPHN[SE].*"),  # VR3UPHNSSM VR3UPHNEKM
     CarModel("2008", 0, 44, reg=r"VR3USHNS.*"),  # VR3USHNSKM
     CarModel("SUV 5008 II", 0, 56, reg=r"VF3MRHNS.*"),  # vf3mrhnsum
     CarModel("SUV 5008 II 2018", 0, 56, reg=r"VF3MRHNY.*"),  #  VF3MRHNYHH

@@ -159,7 +159,7 @@ def charge_now(vin, charge):
 
 @app.route('/charge_hour')
 def change_charge_hour():
-    return jsonify(CONFIG.myp.change_charge_hour(request.form['vin'], request.form['hour'], request.form['minute']))
+    return jsonify(CONFIG.myp.change_charge_hour(request.args['vin'], request.args['hour'], request.args['minute']))
 
 
 @app.route('/wakeup/<string:vin>')

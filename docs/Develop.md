@@ -10,7 +10,7 @@ pip3 install -r requirements-dev.txt```
 prospector
 ```
 ## API documentation
-The api documentation is described here : [api_spec.md](api_spec.md).
+The api documentation is described here : [api_spec.md](../api_spec.md).
 You can use all functions from the doc, for example :
 ```myp.api().get_car_last_position(myp.get_vehicle_id_with_vin("myvin"))```
 ## Analysing request

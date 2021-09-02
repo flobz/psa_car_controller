@@ -159,12 +159,17 @@ class Trips(list):
                         logger.debugv("%s mileage:%.1f level:%s level_fuel:%s",
                                       res[x]['Timestamp'], res[x]['mileage'], res[x]['level'], res[x]['level_fuel'])
                     next_el = res[x + 2]
-                    distance = end["mileage"] - start["mileage"]
-                    duration = (end["Timestamp"] - start["Timestamp"]).total_seconds() / 3600
                     try:
+                        distance = end["mileage"] - start["mileage"]
+                        duration = (end["Timestamp"] - start["Timestamp"]).total_seconds() / 3600
                         speed_average = distance / duration
+                    except TypeError:
+                        logger.exception("Bad value : ")
+                        distance = 0
+                        speed_average = 0
                     except ZeroDivisionError:
                         speed_average = 0
+
                     if TripParser.is_low_speed(speed_average, duration) or trip_parser.is_refuel(start, end, distance):
                         start = end
                         trip = Trip()

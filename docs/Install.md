@@ -24,7 +24,7 @@ We will retrieve this information:
         
 Start the app with charge control enabled :
 
-``python3 server.py -f test.json -c charge_config1.json --web-conf``
+``python3 server.py --web-conf``
 
 At the first launch you will be asked to connect and give a code that you will receive by SMS and also give your pin code (the four-digit code that your use on the android app).
 If it failed you can remove the file otp.bin and retry.

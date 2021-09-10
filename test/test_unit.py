@@ -20,7 +20,7 @@ from mylogger import my_logger
 from otp.otp import load_otp, save_otp
 from charge_control import ChargeControls
 from test.utils import DATA_DIR, record_position, latitude, longitude, date0, date1, date2, date3, record_charging, \
-    vehicule_list, get_new_test_db
+    vehicule_list, get_new_test_db, get_date
 from trip import Trips
 from libs.utils import get_temp, parse_hour
 from web.db import Database
@@ -205,6 +205,35 @@ class TestUnit(unittest.TestCase):
                                                 'long': [longitude]},
                                    'duration': 40.0,
                                    'speed_average': 28.5,
+                                   'distance': 19.0,
+                                   'mileage': 30.0,
+                                   'altitude_diff': 0,
+                                   'id': 1,
+                                   'consumption': 1.08,
+                                   'consumption_fuel_km': 10.53}])
+
+    def test_none_mileage(self):
+        get_new_test_db()
+        ElecPrice.CONFIG_FILENAME = DATA_DIR + "config.ini"
+        car = self.vehicule_list[1]
+        Database.record_position(None, car.vin, None, latitude, longitude, 22, get_date(1), 40, 30, False)
+        Database.record_position(None, car.vin, None, latitude, longitude, 22, get_date(2), 35, 29, False)
+        Database.record_position(None, car.vin, None, latitude, longitude, 22, get_date(3), 30, 28, False)
+        start = get_date(4)
+        end = get_date(6)
+        Database.record_position(None, car.vin, 11, latitude, longitude, 22, start, 40, 30, False)
+        Database.record_position(None, car.vin, 20, latitude, longitude, 22, get_date(5), 35, 29, False)
+        Database.record_position(None, car.vin, 30, latitude, longitude, 22, end, 30, 28, False)
+        trips = Trips.get_trips(self.vehicule_list)
+        res = trips[car.vin].get_trips_as_dict()
+        print(res)
+        assert compare_dict(res, [{'consumption_km': 5.684210526315789,
+                                   'start_at': start,
+                                   'consumption_by_temp': None,
+                                   'positions': {'lat': [latitude],
+                                                'long': [longitude]},
+                                   'duration': 120.0,
+                                   'speed_average': 9.5,
                                    'distance': 19.0,
                                    'mileage': 30.0,
                                    'altitude_diff': 0,

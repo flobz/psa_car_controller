@@ -48,3 +48,7 @@ def record_charging():
     Charging.record_charging(car, "InProgress", date2, 85, latitude, longitude, "FR", "slow", 20, 60)
     Charging.record_charging(car, "InProgress", date3, 90, latitude, longitude, "FR", "slow", 20, 60)
     Charging.record_charging(car, "Stopped", date4, 91, latitude, longitude, "FR", "slow", 20, 60)
+
+
+def get_date(offset):
+    return date3 + timedelta(minutes=60 * offset)

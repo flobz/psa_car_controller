@@ -6,6 +6,7 @@ import numbers
 import requests
 import reverse_geocode
 from pytz import UTC
+from requests import RequestException
 
 from mylogger import logger
 
@@ -21,15 +22,18 @@ class Ecomix:
     def get_data_france(start, end):
         start_str = start.strftime("%d/%m/%Y")
         end_str = end.strftime("%d/%m/%Y")
-        res = requests.get(
-            f"https://eco2mix.rte-france.com/curves/eco2mixWeb?type=co2&&dateDeb={start_str}"
-            f"&dateFin={end_str}&mode=NORM",
-            headers={
-                "Origin": "https://www.rte-france.com",
-                "Referer": "https://www.rte-france.com/eco2mix/les-emissions-de-co2-par-kwh-produit-en-france",
-            }
-        )
-
+        try:
+            res = requests.get(
+                f"https://eco2mix.rte-france.com/curves/eco2mixWeb?type=co2&&dateDeb={start_str}"
+                f"&dateFin={end_str}&mode=NORM",
+                headers={
+                    "Origin": "https://www.rte-france.com",
+                    "Referer": "https://www.rte-france.com/eco2mix/les-emissions-de-co2-par-kwh-produit-en-france",
+                }
+            )
+        except RequestException:
+            logger.exception("get_data_france: ")
+            return None
         etree = ElT.fromstring(res.text)
         period_start = (start.hour + int(start.minute / 30)) * 4
         period_end = (end.hour + int(end.minute / 30)) * 4

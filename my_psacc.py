@@ -164,12 +164,12 @@ class MyPSACC:
         if self.info_refresh_rate is not None:
             while True:
                 try:
-                    sleep(self.info_refresh_rate)
                     logger.debug("refresh_vehicle_info")
                     for car in self.vehicles_list:
                         self.get_vehicle_info(car.vin)
                     for callback in self.info_callback:
                         callback()
+                    sleep(self.info_refresh_rate)
                 except:  # pylint: disable=bare-except
                     logger.exception("refresh_vehicle_info: ")
 

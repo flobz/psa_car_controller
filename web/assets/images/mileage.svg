@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg
+   data-name="Layer 1"
+   viewBox="0 0 100 125"
+   x="0px"
+   y="0px"
+   version="1.1"
+   id="svg16"
+   sodipodi:docname="mileage.svg"
+   inkscape:version="1.1 (c4e8f9ed74, 2021-05-24)"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg"
+   xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+   xmlns:cc="http://creativecommons.org/ns#"
+   xmlns:dc="http://purl.org/dc/elements/1.1/">
+  <defs
+     id="defs20" />
+  <sodipodi:namedview
+     id="namedview18"
+     pagecolor="#ffffff"
+     bordercolor="#666666"
+     borderopacity="1.0"
+     inkscape:pageshadow="2"
+     inkscape:pageopacity="0.0"
+     inkscape:pagecheckerboard="0"
+     showgrid="false"
+     inkscape:zoom="7.024"
+     inkscape:cx="50.042711"
+     inkscape:cy="48.903759"
+     inkscape:window-width="1890"
+     inkscape:window-height="1051"
+     inkscape:window-x="30"
+     inkscape:window-y="0"
+     inkscape:window-maximized="1"
+     inkscape:current-layer="svg16" />
+  <title
+     id="title2">Artboard 84</title>
+  <rect
+     x="63.57"
+     y="63.57"
+     width="13.57"
+     height="6.79"
+     id="rect4" />
+  <rect
+     x="63.57"
+     y="29.64"
+     width="13.57"
+     height="6.79"
+     id="rect6" />
+  <rect
+     x="29.64"
+     y="36.43"
+     width="13.57"
+     height="20.36"
+     id="rect8" />
+  <path
+     d="M83.93,9.29H16.07A13.56,13.56,0,0,0,2.5,22.86V77.14A13.56,13.56,0,0,0,16.07,90.71H83.93A13.57,13.57,0,0,0,97.5,77.14V22.86A13.57,13.57,0,0,0,83.93,9.29ZM16.07,63.57H9.29V29.64h6.78Zm33.93,0H22.86V29.64H50Zm33.93,0V83.93H77.14V77.14H56.79V56.79H83.93Zm0-40.71V43.21H56.79V16.07h6.78v6.79H77.14V16.07h6.79Z"
+     id="path10"
+     clip-path="none" />
+  <metadata
+     id="metadata278">
+    <rdf:RDF>
+      <cc:Work
+         rdf:about="">
+        <dc:title>Artboard 84</dc:title>
+      </cc:Work>
+    </rdf:RDF>
+  </metadata>
+</svg>

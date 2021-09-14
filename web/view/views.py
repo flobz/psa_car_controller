@@ -1,12 +1,12 @@
 import json
 from typing import List
+from urllib.parse import parse_qs, urlparse
 
 import dash_bootstrap_components as dbc
-from dash.dependencies import Output, Input, MATCH, State
+from dash.dependencies import Output, Input, State
 from dash.exceptions import PreventUpdate
 import dash_core_components as dcc
 import dash_html_components as html
-import dash_daq as daq
 from flask import jsonify, request, Response as FlaskResponse
 
 import web.utils
@@ -24,13 +24,12 @@ from web.config_views import config_layout, config_otp_layout, log_layout
 from web.utils import diff_dashtable, dash_date_to_datetime
 
 # pylint: disable=invalid-name
-from web.figurefilter import FigureFilter
+from web.tools.figurefilter import FigureFilter
 from web.utils import create_card
 from libs.config import Config
+from web.view.control import get_control_tabs
 
-RESPONSE = "-response"
 EMPTY_DIV = "empty-div"
-ABRP_SWITCH = 'abrp-switch'
 CALLBACK_CREATED = False
 
 trips: Trips = Trips()
@@ -39,19 +38,32 @@ min_date = max_date = min_millis = max_millis = step = marks = cached_layout = N
 CONFIG = Config()
 
 
+def add_header(el):
+    return html.H1('My car info'), el
+
+
 @dash_app.callback(Output('page-content', 'children'),
-                   [Input('url', 'pathname')])
-def display_page(pathname):
-    pathname = pathname[len(dash_app.requests_pathname_external_prefix)-1:]
+                   [Input('url', 'pathname'),
+                    Input('url', 'search')])
+def display_page(pathname, search):
+    pathname = pathname[len(dash_app.requests_pathname_external_prefix) - 1:]
+    query_params = parse_qs(urlparse(search).query)
+    no_header = query_params.get("header", None) == ["false"]
     if pathname == "/config":
-        return config_layout
-    if pathname == "/log":
-        return log_layout()
-    if not CONFIG.is_good:
-        return dcc.Location(pathname=dash_app.requests_pathname_external_prefix + "config", id="config_redirect")
-    if pathname == "/config_otp":
-        return config_otp_layout
-    return serve_layout()
+        page = config_layout
+    elif pathname == "/log":
+        page = log_layout()
+    elif not CONFIG.is_good:
+        page = dcc.Location(pathname=dash_app.requests_pathname_external_prefix + "config", id="config_redirect")
+    elif pathname == "/config_otp":
+        page = config_otp_layout
+    elif pathname == "/control":
+        page = get_control_tabs(CONFIG)
+    else:
+        page = serve_layout()
+    if no_header:
+        return page
+    return add_header(page)
 
 
 def create_callback():  # noqa: MC0001
@@ -101,19 +113,6 @@ def create_callback():  # noqa: MC0001
             return "", False
 
         CALLBACK_CREATED = True
-
-
-@dash_app.callback(Output({'role': ABRP_SWITCH + RESPONSE, 'vin': MATCH}, 'children'),
-                   Input({'role': ABRP_SWITCH, 'vin': MATCH}, 'id'),
-                   Input({'role': ABRP_SWITCH, 'vin': MATCH}, 'value'))
-def update_abrp(div_id, value):
-    vin = div_id["vin"]
-    if value:
-        CONFIG.myp.abrp.abrp_enable_vin.add(vin)
-    else:
-        CONFIG.myp.abrp.abrp_enable_vin.discard(vin)
-    CONFIG.myp.save_config()
-    return " "
 
 
 @app.route('/get_vehicles')
@@ -281,25 +280,6 @@ def update_trips():
     return
 
 
-def __get_control_tabs():
-    tabs = []
-    for car in CONFIG.myp.vehicles_list:
-        if car.label is None:
-            label = car.vin
-        else:
-            label = car.label
-        # pylint: disable=not-callable
-        tabs.append(dbc.Tab(label=label, id="tab-" + car.vin, children=[
-            daq.ToggleSwitch(
-                id={'role': ABRP_SWITCH, 'vin': car.vin},
-                value=car.vin in CONFIG.myp.abrp.abrp_enable_vin,
-                label="Send data to ABRP"
-            ),
-            html.Div(id={'role': ABRP_SWITCH + RESPONSE, 'vin': car.vin})
-        ]))
-    return tabs
-
-
 def serve_layout():
     global cached_layout
     if cached_layout is None:
@@ -379,13 +359,16 @@ def serve_layout():
                                       )
                                       ]),
                     dbc.Tab(label="Map", tab_id="map", children=[maps]),
-                    dbc.Tab(label="Control", tab_id="control", children=dbc.Tabs(id="control-tabs",
-                                                                                 children=__get_control_tabs()))],
+                    dbc.Tab(label="Control", tab_id="control", children=html.Iframe(src="/control?header=false",
+                                                                                    style={"position": "absolute",
+                                                                                           "height": "100%",
+                                                                                           "width": "100%",
+                                                                                           "border": "none"}))
+                ],
                     id="tabs",
                     active_tab="summary",
                     persistence=True),
-                html.Div(id=EMPTY_DIV),
-                html.Div(id=EMPTY_DIV + "1")
+                html.Div(id=EMPTY_DIV)
             ])])
         cached_layout = data_div
     return cached_layout
@@ -399,4 +382,5 @@ except (IndexError, TypeError):
     logger.debug("Failed to get trips, there is probably not enough data yet:", exc_info=True)
 
 dash_app.layout = dbc.Container(fluid=True, children=[dcc.Location(id='url', refresh=False),
-                                                      html.H1('My car info'), html.Div(id='page-content')])
+                                                      html.Div(id='page-content')],
+                                style={"height": "100vh"})

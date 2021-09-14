@@ -19,6 +19,12 @@ class Abrp:
         self.abrp_enable_vin = set(abrp_enable_vin)
         self.proxies = None
 
+    def enable_abrp(self, vin, enable):
+        if enable:
+            self.abrp_enable_vin.add(vin)
+        else:
+            self.abrp_enable_vin.discard(vin)
+
     def call(self, car: Car, ext_temp: float = None):
         try:
             if self.token is None or len(self.token) == 0:

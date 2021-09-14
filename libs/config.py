@@ -51,6 +51,8 @@ class Config(metaclass=Singleton):
         self.chc: ChargeControls
         self.config_name = DEFAULT_NAME
         self.is_good: bool = False
+        self.offline = self.args.offline
+        self.remote_control = not (self.args.remote_disable or self.offline)
 
     def start_remote_control(self):
         if self.args.remote_disable:

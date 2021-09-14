@@ -106,9 +106,9 @@ config_otp_layout = dbc.Row(dbc.Col(className="col-md-12 col-lg-2 ml-2", childre
                     "It's a digit password",
                     color="secondary",
                 ),
+                dbc.Button("Submit", color="primary", id="finish-otp")
             ]
         ),
-        dbc.Button("Submit", color="primary", id="finish-otp"),
         html.Div(id="opt-result")
     ])]))
 
@@ -152,7 +152,7 @@ def connectPSA(n_clicks, app_name, email, password, countrycode):  # pylint: dis
 @dash_app.callback(
     Output("sms-demand-result", "children"),
     Input("ask-sms", "n_clicks"))
-def askCode(n_clicks):   # pylint: disable=unused-argument
+def askCode(n_clicks):  # pylint: disable=unused-argument
     ctx = callback_context
     if ctx.triggered:
         try:
@@ -162,6 +162,7 @@ def askCode(n_clicks):   # pylint: disable=unused-argument
             res = str(e)
             return dbc.Alert(res, color="danger")
     raise PreventUpdate()
+
 
 @dash_app.callback(
     Output("opt-result", "children"),
@@ -174,7 +175,9 @@ def finishOtp(n_clicks, code_pin, sms_code):  # pylint: disable=unused-argument
         try:
             otp_session = new_otp_session(smscode=sms_code, codepin=code_pin)
             config.myp.otp = otp_session
-            Config().start_remote_control()
+            config.myp.refresh_remote_token(force=True)
+            config.save_config()
+            config.start_remote_control()
             return dbc.Alert(["OTP config finish !!! ", html.A("Go to home", href=request.url_root)],
                              color="success")
         except Exception as e:

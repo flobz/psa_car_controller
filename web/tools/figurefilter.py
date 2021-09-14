@@ -51,10 +51,13 @@ class FigureFilter:
         return dash_Graph
 
     def add_table(self, src, figure):
-        table = Table(figure.id, src, figure)
-        table.date_columns = [col["id"][:-4] for col in figure.columns if col["type"] == "datetime" and
-                              col["id"].endswith("_str")]
-        self.tables.append(table)
+        try:
+            table = Table(figure.id, src, figure)
+            table.date_columns = [col["id"][:-4] for col in figure.columns if col["type"] == "datetime" and
+                                  col["id"].endswith("_str")]
+            self.tables.append(table)
+        except AttributeError:
+            logger.debug("figure isn't a table")
 
     def __get_table_date_column_id(self):
         res = {table.src: table.date_columns for table in self.tables}

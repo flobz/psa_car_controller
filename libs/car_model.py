@@ -54,6 +54,7 @@ carmodels = [
     ElecModel("e-208", 46, "peugeot:e208:20:50", r"VR3UHZKX.*"),
     ElecModel("e-2008", 46, "peugeot:e2008:20:48", r"VR3UKZKX.*"),
     ElecModel("e-Spacetourer", 46, "peugeot:etraveler:21:50:citroen", r"VF7VZZKX.*"),
+    ElecModel("e-Traveller", 46, "peugeot:etraveler:21:50", r"VF3VZZKX.*"),
     ElecModel("corsa-e", 46, "opel:corsae:20:50", r"VXKUHZKX.*"),
     ElecModel("DS3 Crossback e-tense", 46, "ds:3crossback:20:48", r"VR1UJZKX.*"), # VR1UJZKXZL
     # Use corsa in abrp because Mokka isn't available

@@ -81,21 +81,29 @@ class Config(metaclass=Singleton):
         Charging.elec_price = ElecPrice.read_config()
         if self.args.offline:
             logger.info("offline mode")
+            self.is_good = True
         else:
+            self.is_good = False
             try:
-                self.myp.refresh_token()
+                self.is_good = self.myp.refresh_token()
+                if self.is_good:
+                    logger.info(str(self.myp.get_vehicles()))
             except OAuthError:
                 if self.args.mail and self.args.password:
                     self.myp.connect(self.args.mail, self.args.password)
+                    logger.info(str(self.myp.get_vehicles()))
+                    self.is_good = True
                 else:
                     logger.error("Please reconnect by going to config web page")
-            logger.info(str(self.myp.get_vehicles()))
             if self.args.refresh:
                 self.myp.info_refresh_rate = self.args.refresh * 60
-                self.myp.start_refresh_thread()
-            self.start_remote_control()
+                if self.is_good:
+                    self.myp.start_refresh_thread()
+            if self.is_good:
+                self.start_remote_control()
+            elif not self.args.web_conf:
+                raise ConnectionError
         self.save_config()
-        self.is_good = True
         return True
 
     def save_config(self):

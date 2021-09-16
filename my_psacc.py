@@ -25,6 +25,10 @@ from libs.utils import rate_limit, parse_hour
 from web.abrp import Abrp
 from web.db import Database
 
+DELAYED_CHARGE = "delayed"
+
+IMMEDIATE_CHARGE = "immediate"
+
 PSA_CORRELATION_DATE_FORMAT = "%Y%m%d%H%M%S%f"
 PSA_DATE_FORMAT = "%Y-%m-%dT%H:%M:%SZ"
 
@@ -116,14 +120,15 @@ class MyPSACC:
     def get_app_name(self):
         return realm_info[self.realm]['app_name']
 
+    @rate_limit(6, 1800)
     def refresh_token(self):
         try:
             # pylint: disable=protected-access
             self.manager._refresh_token()
             self.save_config()
+            return True
         except RequestException as e:
             logger.error("Can't refresh token %s", e)
-            sleep(60)
 
     def api(self) -> psac.VehiclesApi:
         self.api_config.access_token = self.manager.access_token
@@ -245,16 +250,18 @@ class MyPSACC:
             if (datetime.now() - last_update).total_seconds() < MQTT_TOKEN_TTL:
                 return None
         self.refresh_token()
+        data = None
         try:
-            if self.remote_refresh_token is None:
+            if self.remote_refresh_token is not None:
+                res = self.manager.post(REMOTE_URL + self.client_id,
+                                        json={"grant_type": "refresh_token",
+                                              "refresh_token": self.remote_refresh_token},
+                                        headers=self.headers)
+                data = res.json()
+                logger.debug("refresh_remote_token: %s", data)
+            else:
                 logger.error("remote_refresh_token isn't defined")
-                return None
-            res = self.manager.post(REMOTE_URL + self.client_id,
-                                    json={"grant_type": "refresh_token", "refresh_token": self.remote_refresh_token},
-                                    headers=self.headers)
-            data = res.json()
-            logger.debug("refresh_remote_token: %s", data)
-            if "access_token" in data:
+            if data and "access_token" in data:
                 self.remote_access_token = data["access_token"]
                 self.remote_refresh_token = data["refresh_token"]
                 self.remote_token_last_update = datetime.now()
@@ -296,7 +303,7 @@ class MyPSACC:
     # pylint: disable=unused-argument
     def __on_mqtt_message(self, client, userdata, msg):
         try:
-            logger.info("mqtt msg %s %s", msg.topic, msg.payload)
+            logger.info("mqtt msg received: %s %s", msg.topic, msg.payload)
             data = json.loads(msg.payload)
             charge_info = None
             if msg.topic.startswith(MQTT_RESP_TOPIC):
@@ -367,20 +374,22 @@ class MyPSACC:
 
     def __veh_charge_request(self, vin, hour, minute, charge_type):
         msg = self.mqtt_request(vin, {"program": {"hour": hour, "minute": minute}, "type": charge_type})
-        logger.info(msg)
+        logger.info("veh_charge_request: %s", msg)
         self.mqtt_client.publish(MQTT_REQ_TOPIC + self.__get_mqtt_customer_id() + "/VehCharge", msg)
+        return msg
 
     def change_charge_hour(self, vin, hour, miinute):
-        self.__veh_charge_request(vin, hour, miinute, "delayed")
+        self.__veh_charge_request(vin, hour, miinute, DELAYED_CHARGE)
         return True
 
     def charge_now(self, vin, now):
         if now:
-            charge_type = "immediate"
+            charge_type = IMMEDIATE_CHARGE
         else:
-            charge_type = "delayed"
+            charge_type = DELAYED_CHARGE
         hour, minute = self.__get_charge_hour(vin)
-        self.__veh_charge_request(vin, hour, minute, charge_type)
+        res = self.__veh_charge_request(vin, hour, minute, charge_type)
+        logger.info("charge_now: %s", res)
         return True
 
     def horn(self, vin, count):
@@ -427,7 +436,7 @@ class MyPSACC:
                 "program4": {"day": [0, 0, 0, 0, 0, 0, 0], "hour": 34, "minute": 7, "on": 0}
             }
         msg = self.mqtt_request(vin, {"asap": value, "programs": programs})
-        logger.info(msg)
+        logger.info("preconditioning: %s", msg)
         self.mqtt_client.publish(MQTT_REQ_TOPIC + self.__get_mqtt_customer_id() + "/ThermalPrecond", msg)
         return True
 

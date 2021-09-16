@@ -359,11 +359,12 @@ def serve_layout():
                                       )
                                       ]),
                     dbc.Tab(label="Map", tab_id="map", children=[maps]),
-                    dbc.Tab(label="Control", tab_id="control", children=html.Iframe(src="/control?header=false",
-                                                                                    style={"position": "absolute",
-                                                                                           "height": "100%",
-                                                                                           "width": "100%",
-                                                                                           "border": "none"}))
+                    dbc.Tab(label="Control", tab_id="control", children=html.Iframe(
+                        src=request.url_root + "control?header=false",
+                        style={"position": "absolute",
+                               "height": "100%",
+                               "width": "100%",
+                               "border": "none"}))
                 ],
                     id="tabs",
                     active_tab="summary",

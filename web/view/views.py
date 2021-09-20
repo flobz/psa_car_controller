@@ -20,7 +20,7 @@ from web import figures
 
 from web.app import app, dash_app
 from web.db import Database
-from web.config_views import config_layout, config_otp_layout, log_layout
+from web.view.config_views import config_layout, config_otp_layout, log_layout
 from web.utils import diff_dashtable, dash_date_to_datetime
 
 # pylint: disable=invalid-name

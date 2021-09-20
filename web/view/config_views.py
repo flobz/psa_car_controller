@@ -175,8 +175,7 @@ def finishOtp(n_clicks, code_pin, sms_code):  # pylint: disable=unused-argument
         try:
             otp_session = new_otp_session(smscode=sms_code, codepin=code_pin)
             config.myp.otp = otp_session
-            config.myp.refresh_remote_token(force=True)
-            config.save_config()
+            config.myp.save_config()
             config.start_remote_control()
             return dbc.Alert(["OTP config finish !!! ", html.A("Go to home", href=request.url_root)],
                              color="success")

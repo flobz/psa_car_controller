@@ -244,32 +244,35 @@ class MyPSACC:
             sleep(60)
         return None
 
-    def refresh_remote_token(self, force=False):
-        if not force and self.remote_token_last_update is not None:
+    def _refresh_remote_token(self, force=False):
+        bad_remote_token = self.remote_refresh_token is None
+        res = None
+        if not force and not bad_remote_token and self.remote_token_last_update:
             last_update: datetime = self.remote_token_last_update
             if (datetime.now() - last_update).total_seconds() < MQTT_TOKEN_TTL:
-                return None
+                return res
         self.refresh_token()
-        data = None
         try:
-            if self.remote_refresh_token is not None:
+            if bad_remote_token:
+                logger.error("remote_refresh_token isn't defined")
+            else:
                 res = self.manager.post(REMOTE_URL + self.client_id,
                                         json={"grant_type": "refresh_token",
                                               "refresh_token": self.remote_refresh_token},
                                         headers=self.headers)
                 data = res.json()
                 logger.debug("refresh_remote_token: %s", data)
-            else:
-                logger.error("remote_refresh_token isn't defined")
-            if data and "access_token" in data:
-                self.remote_access_token = data["access_token"]
-                self.remote_refresh_token = data["refresh_token"]
-                self.remote_token_last_update = datetime.now()
-            else:
-                logger.error("can't refresh_remote_token: %s\n Create a new one", data)
-                self.remote_token_last_update = datetime.now()
+                if "access_token" in data:
+                    self.remote_access_token = data["access_token"]
+                    self.remote_refresh_token = data["refresh_token"]
+                    bad_remote_token = False
+                else:
+                    logger.error("can't refresh_remote_token: %s\n Create a new one", data)
+                    bad_remote_token = True
+            if bad_remote_token:
                 otp_code = self.get_otp_code()
                 res = self.get_remote_access_token(otp_code)
+            self.remote_token_last_update = datetime.now()
             self.mqtt_client.username_pw_set("IMA_OAUTH_ACCESS_TOKEN", self.remote_access_token)
             self.save_config()
             return res
@@ -296,7 +299,7 @@ class MyPSACC:
     def _on_mqtt_disconnect(self, client, userdata, result_code):
         logger.warning("Disconnected with result code %d", result_code)
         if result_code == 1:
-            self.refresh_remote_token(force=True)
+            self._refresh_remote_token(force=True)
         else:
             logger.warning(mqtt.error_string(result_code))
 
@@ -310,7 +313,7 @@ class MyPSACC:
                 if "return_code" not in data:
                     logger.debug("mqtt msg hasn't return code")
                 elif data["return_code"] == "400":
-                    self.refresh_remote_token(force=True)
+                    self._refresh_remote_token(force=True)
                     logger.error("retry last request, token was expired")
                 elif data["return_code"] != "0":
                     logger.error('%s : %s', data["return_code"], data.get("reason", "?"))
@@ -330,7 +333,7 @@ class MyPSACC:
         self.mqtt_client = mqtt.Client(clean_session=True, protocol=mqtt.MQTTv311)
         if environ.get("MQTT_LOG", "0") == "1":
             self.mqtt_client.enable_logger(logger=logger)
-        if self.refresh_remote_token():
+        if self._refresh_remote_token():
             self.mqtt_client.tls_set_context()
             self.mqtt_client.on_connect = self.__on_mqtt_connect
             self.mqtt_client.on_message = self.__on_mqtt_message

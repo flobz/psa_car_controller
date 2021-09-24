@@ -174,9 +174,9 @@ class MyPSACC:
                         self.get_vehicle_info(car.vin)
                     for callback in self.info_callback:
                         callback()
-                    sleep(self.info_refresh_rate)
                 except:  # pylint: disable=bare-except
                     logger.exception("refresh_vehicle_info: ")
+                sleep(self.info_refresh_rate)
 
     def start_refresh_thread(self):
         if self.refresh_thread is None:

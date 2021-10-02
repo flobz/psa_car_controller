@@ -39,3 +39,11 @@ sudo chown pi: -R .
 The SMS authentication is used to be able to remote control your car.
  If your car doesn't have this functionality you should disable remote control when you start psa-car-controller 
 by using `--remote-disable` argument.
+
+### 6. SSL error
+If you have an error more or less like this one:
+```
+[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: self signed certificate in certificate chain (_ssl.c:1056)
+```
+It's a problem on PSA server so don't open an issue, you just have to wait.
+You can look to issue about this problem [here](https://github.com/flobz/psa_car_controller/search?q=ssl&type=issues).

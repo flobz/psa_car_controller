@@ -1,4 +1,5 @@
 from copy import deepcopy
+from statistics import mean
 
 import dash_bootstrap_components as dbc
 import dash_table
@@ -159,24 +160,43 @@ def get_battery_curve_fig(row: dict, car: Car):
     start_date = dash_date_to_datetime(row["start_at"])
     stop_at = dash_date_to_datetime(row["stop_at"])
     conn = Database.get_db()
-    res = Database.get_battery_curve(conn, start_date, car.vin)
+    res = Database.get_battery_curve(conn, start_date, stop_at, car.vin)
     conn.close()
-    res.insert(0, {"level": row["start_level"], "date": start_date})
-    if row["end_level"] is not None:
-        res.append({"level": row["end_level"], "date": stop_at})
     battery_curves = []
-    speed = 0
-    start = 0
-    for end in range(1, len(res)):
-        start_level = res[start]["level"]
-        end_level = res[end]["level"]
-        diff_level = end_level-start_level
-        diff_sec = (res[end]["date"] - res[start]["date"]).total_seconds()
-        if diff_sec > 0 and diff_level > 3:
-            speed = car.get_charge_speed(diff_level, diff_sec)
-            battery_curves.append({"level": start_level, "speed": speed})
-            start = end
-    battery_curves.append({"level": row["end_level"], "speed": speed})
+    if len(res) > 0:
+        battery_capacity = res[-1]["level"] * car.battery_power / 100
+        km_by_kw = 0.8 * res[-1]["autonomy"] / battery_capacity
+        start = 0
+        speeds = []
+
+        def speed_in_kw_from_km(row):
+            try:
+                speed = row["rate"] / km_by_kw
+                if speed > 0:
+                    speeds.append(speed)
+            except (KeyError, TypeError):
+                pass
+
+        for end in range(1, len(res)):
+            start_level = res[start]["level"]
+            end_level = res[end]["level"]
+            diff_level = end_level - start_level
+            diff_sec = (res[end]["date"] - res[start]["date"]).total_seconds()
+            speed_in_kw_from_km(res[end - 1])
+            if diff_sec > 0 and diff_level > 3:
+                speed_in_kw_from_km(res[end])
+                speed = car.get_charge_speed(diff_level, diff_sec)
+                if len(speeds) > 0:
+                    speed = mean([*speeds, speed])
+                speed = round(speed * 2) / 2
+                battery_curves.append({"level": start_level, "speed": speed})
+                start = end
+                speeds = []
+        battery_curves.append({"level": row["end_level"], "speed": 0})
+    else:
+        speed = car.get_charge_speed(row["end_level"]-row["start_level"], (stop_at-start_date).total_seconds())
+        battery_curves.append({"level": row["start_level"], "speed": speed})
+        battery_curves.append({"level": row["end_level"], "speed": speed})
     fig = px.line(battery_curves, x="level", y="speed")
     fig.update_layout(xaxis_title="Battery %", yaxis_title="Charging speed in kW")
     return html.Div(Graph(figure=fig))

@@ -177,9 +177,11 @@ class Database:
         return update
 
     @staticmethod
-    def get_battery_curve(conn, start_at, vin):
-        return convert_sql_res(conn.execute("""SELECT date, level FROM battery_curve
-                                                WHERE start_at=? and VIN=?;""", (start_at, vin)).fetchall())
+    def get_battery_curve(conn, start_at, stop_at, vin):
+        return convert_sql_res(conn.execute("""SELECT date, level, rate, autonomy 
+                                                FROM battery_curve
+                                                WHERE start_at=? and date<=? and VIN=?;""",
+                                            (start_at, stop_at, vin)).fetchall())
 
     @staticmethod
     def add_altitude_to_db(conn):

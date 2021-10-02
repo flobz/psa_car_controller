@@ -50,7 +50,7 @@ class Config(metaclass=Singleton):
         self.myp: MyPSACC
         self.chc: ChargeControls
         self.config_name = DEFAULT_NAME
-        self.is_good: bool = False
+        self.is_good: bool = True
         self.offline = self.args.offline
         self.remote_control = not (self.args.remote_disable or self.offline)
 

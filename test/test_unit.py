@@ -20,7 +20,7 @@ from mylogger import my_logger
 from otp.otp import load_otp, save_otp
 from charge_control import ChargeControls
 from test.utils import DATA_DIR, record_position, latitude, longitude, date0, date1, date2, date3, record_charging, \
-    vehicule_list, get_new_test_db, get_date
+    vehicule_list, get_new_test_db, get_date, date4
 from trip import Trips
 from libs.utils import get_temp, parse_hour
 from web.db import Database
@@ -106,7 +106,7 @@ class TestUnit(unittest.TestCase):
     def test_battery_curve(self):
         get_new_test_db()
         record_charging()
-        res = Database.get_battery_curve(Database.get_db(), date0, self.vehicule_list[0].vin)
+        res = Database.get_battery_curve(Database.get_db(), date0, date4, self.vehicule_list[0].vin)
         assert len(res) == 3
 
     def test_sdk(self):

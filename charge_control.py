@@ -69,7 +69,7 @@ class ChargeControl:
             status = vehicle_status.get_energy('Electric').charging.status
             level = vehicle_status.get_energy('Electric').level
             logger.info("charging status of %s is %s, battery level: %d", self.vin, status, level)
-            if status == "InProgress":
+            if status == "InProgress" and self.percentage_threshold < 100:
                 self.force_update()
                 if level >= self.percentage_threshold and self.retry_count < 2:
                     logger.info("Charge threshold is reached, stop the charge")
@@ -92,7 +92,7 @@ class ChargeControl:
                 self.retry_count = 0
         except (AttributeError, ValueError):
             logger.exception("Probably can't retrieve all information from API:")
-        except: # pylint: disable=bare-except
+        except:  # pylint: disable=bare-except
             logger.exception("Charge control:")
 
     def get_dict(self):

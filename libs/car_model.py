@@ -28,18 +28,18 @@ class CarModel:
     @staticmethod
     def find_model_by_vin(vin):
         if vin != "vin":
-            for carmodel in carmodels:
-                if carmodel.match(vin):
-                    return carmodel
+            for car_model in car_models:
+                if car_model.match(vin):
+                    return car_model
             logger.warning("Can't get car model, please report an issue on github with your car model"
                            " and first ten letter of your VIN : %s", vin[:10])
         return CarModel("unknown", DEFAULT_BATTERY_POWER, DEFAULT_FUEL_CAPACITY)
 
     @staticmethod
     def find_model_by_name(name):
-        for carmodel in carmodels:
-            if carmodel.name == name:
-                return carmodel
+        for car_model in car_models:
+            if car_model.name == name:
+                return car_model
         return None
 
 
@@ -50,15 +50,14 @@ class ElecModel(CarModel):
         super().__init__(name, battery_power, 0, abrp_name, reg, max_elec_consumption, 0)
 
 
-carmodels = [
+car_models = [
     ElecModel("e-208", 46, "peugeot:e208:20:50", r"VR3UHZKX.*"),
     ElecModel("e-2008", 46, "peugeot:e2008:20:48", r"VR3UKZKX.*"),
     ElecModel("e-Spacetourer", 46, "peugeot:etraveler:21:50:citroen", r"VF7VZZKX.*"),
     ElecModel("e-Traveller", 46, "peugeot:etraveler:21:50", r"VF3VZZKX.*"),
     ElecModel("corsa-e", 46, "opel:corsae:20:50", r"VXKUHZKX.*"),
-    ElecModel("DS3 Crossback e-tense", 46, "ds:3crossback:20:48", r"VR1UJZKX.*"), # VR1UJZKXZL
-    # Use corsa in abrp because Mokka isn't available
-    ElecModel("Mokka-e", 46, "opel:corsae:20:50", r"VXKUKZKX.*"),  # VXKUKZKXZM
+    ElecModel("DS3 Crossback e-tense", 46, "ds:3crossback:20:48", r"VR1UJZKX.*"),  # VR1UJZKXZL
+    ElecModel("Mokka-e", 46, "opel:mokkae:20:48", r"VXKUKZKX.*"),  # VXKUKZKXZM
     ElecModel("Zaphira-e", 68, "peugeot:etraveler:21:75:opel", r"VXEVZZKX.*"),  # VXEVZZKXZMZ
     ElecModel("E-C4", 46, "citroen:ec4:21:50", r"VR7BCZKX.*"),  # VR7BCZKXCM
     CarModel("SUV 3008", 10.8, 43),
@@ -66,12 +65,12 @@ carmodels = [
     CarModel("208", 0, 44, reg=r"VR3UPHN[SE].*"),  # VR3UPHNSSM VR3UPHNEKM
     CarModel("2008", 0, 44, reg=r"VR3USHNS.*"),  # VR3USHNSKM
     CarModel("SUV 5008 II", 0, 56, reg=r"VF3MRHNS.*"),  # vf3mrhnsum
-    CarModel("SUV 5008 II 2018", 0, 56, reg=r"VF3MRHNY.*"),  #  VF3MRHNYHH
-    CarModel("C5 Aircross", 10.8, 43),
+    CarModel("SUV 5008 II 2018", 0, 56, reg=r"VF3MRHNY.*"),  # VF3MRHNYHH
+    CarModel("C5 Aircross Hybrid", 13.2, 43, reg=r"VR7A4DGZ.*"),  # VR7A4DGZSM
     CarModel("DS7 Crossback E-Tense", 11.5, 43, reg="VR1J45GBUK.*"),
-    CarModel("DS7 Crossback E-Tense 300 4x4", 11.5, 43, reg=" VR1J45GBUL.*"),
-    CarModel("508 SW Hybrid", 11.5, 45, reg=r"VR3F4DGZ.*"), # VR3F4DGZTL
-    CarModel("508 Hybrid", 11.5, 43, reg=r"VR3F3DGZ.*"), # VR3F3DGZTM
-    CarModel("Grandland X Hybrid", 13.2, 43, reg=r"W0VZ4DGZ.*"), #W0VZ4DGZ2L
-    CarModel("Grandland X Hybrid 4x4", 13.2, 43, reg=r"W0VZ45GB.*") #W0VZ45GB3L
+    CarModel("DS7 Crossback E-Tense 300 4x4", 11.5, 43, reg="VR1J45GBUL.*"),
+    CarModel("508 SW Hybrid", 11.5, 45, reg=r"VR3F4DGZ.*"),  # VR3F4DGZTL
+    CarModel("508 Hybrid", 11.5, 43, reg=r"VR3F3DGZ.*"),  # VR3F3DGZTM
+    CarModel("Grandland X Hybrid", 13.2, 43, reg=r"W0VZ4DGZ.*"),  # W0VZ4DGZ2L
+    CarModel("Grandland X Hybrid 4x4", 13.2, 43, reg=r"W0VZ45GB.*")  # W0VZ45GB3L
 ]

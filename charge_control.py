@@ -26,6 +26,7 @@ class ChargeControl:
         self.set_stop_hour(stop_hour)
         self.psacc = psacc
         self.retry_count = 0
+        self.wakeup_timeout = 10
 
     def set_stop_hour(self, stop_hour):
         if stop_hour is None or stop_hour == [0, 0]:
@@ -56,10 +57,14 @@ class ChargeControl:
         self.retry_count = 0
         return True
 
-    def force_update(self):
+    def force_update(self, quick_refresh):
         # force update if the car doesn't send info during 10 minutes
         last_update = self.psacc.vehicles_list.get_car_by_vin(self.vin).get_status().get_energy('Electric').updated_at
-        if (datetime.utcnow().replace(tzinfo=pytz.UTC) - last_update).total_seconds() > 60 * 10:
+        if quick_refresh:
+            wakeup_timeout = self.wakeup_timeout/2
+        else:
+            wakeup_timeout = self.wakeup_timeout
+        if (datetime.utcnow().replace(tzinfo=pytz.UTC) - last_update).total_seconds() > 60 * wakeup_timeout:
             self.psacc.wakeup(self.vin)
 
     def process(self):
@@ -70,7 +75,9 @@ class ChargeControl:
             level = vehicle_status.get_energy('Electric').level
             logger.info("charging status of %s is %s, battery level: %d", self.vin, status, level)
             if status == "InProgress" and self.percentage_threshold < 100:
-                self.force_update()
+                charging_mode = vehicle_status.get_energy('Electric').charging.charging_mode
+                quick_refresh = isinstance(charging_mode, str) and charging_mode == "Quick"
+                self.force_update(quick_refresh)
                 if level >= self.percentage_threshold and self.retry_count < 2:
                     logger.info("Charge threshold is reached, stop the charge")
                     self.control_charge_with_ack(False)

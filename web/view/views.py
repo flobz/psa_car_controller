@@ -20,7 +20,7 @@ from web import figures
 
 from web.app import app, dash_app
 from web.db import Database
-from web.view.config_views import config_layout, config_otp_layout, log_layout
+from web.view.config_views import login_config_layout, config_otp_layout, log_layout, config_layout
 from web.utils import diff_dashtable, dash_date_to_datetime
 
 # pylint: disable=invalid-name
@@ -39,7 +39,11 @@ CONFIG = Config()
 
 
 def add_header(el):
-    return html.H1('My car info'), el
+    return dbc.Row([dbc.Col(dcc.Link(html.H1('My car info'), href="/", style={"text-decoration": "none"})),
+                    dbc.Col(dcc.Link(html.Img(src="assets/images/settings.svg", width="30veh"),
+                                     href="/config",
+                                     className="float-right"))],
+                   className="justify-content-between"), el
 
 
 @dash_app.callback(Output('page-content', 'children'),
@@ -51,10 +55,12 @@ def display_page(pathname, search):
     no_header = query_params.get("header", None) == ["false"]
     if pathname == "/config":
         page = config_layout
+    elif pathname == "/config_login":
+        page = login_config_layout
     elif pathname == "/log":
         page = log_layout()
     elif not CONFIG.is_good:
-        page = dcc.Location(pathname=dash_app.requests_pathname_external_prefix + "config", id="config_redirect")
+        page = dcc.Location(pathname=dash_app.requests_pathname_external_prefix + "config_login", id="config_redirect")
     elif pathname == "/config_otp":
         page = config_otp_layout
     elif pathname == "/control":

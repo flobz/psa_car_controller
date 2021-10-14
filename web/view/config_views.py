@@ -13,7 +13,7 @@ import dash_core_components as dcc
 import dash_html_components as html
 
 config = Config()
-config_layout = dbc.Row(dbc.Col(className="col-md-12 col-lg-2 ml-2", children=[
+login_config_layout = dbc.Row(dbc.Col(md=12, lg=2, children=[
     html.H2('Config'),
     dbc.Form([
         dbc.FormGroup([
@@ -116,15 +116,22 @@ config_otp_layout = dbc.Row(dbc.Col(className="col-md-12 col-lg-2 ml-2", childre
 def log_layout():
     with open(LOG_FILE, "r") as f:
         log_text = f.read()
-    return html.H3(children=["Log:", dbc.Textarea(
-        valid=True,
-        bs_size="sm",
-        className="mt-3",
-        style={"height": "80vh"},
-        placeholder="Log",
-        contentEditable=False,
-        value=log_text
-    )])
+    return html.H3(children=["Log:", dbc.Container(
+        fluid=True,
+        style={"height": "80vh",
+               "overflow": "auto",
+               "display": "flex",
+               "flex-direction": "column-reverse",
+               "white-space": "pre-line"},
+        children=log_text,
+        className="m-3 bg-light h5"),
+                             html.Div(id="empty-div")])
+
+
+config_layout = dbc.Tabs([
+    dbc.Tab([log_layout()], label="Log"),
+    dbc.Tab([login_config_layout], label="User config"),
+    dbc.Tab([config_otp_layout], label="OTP config")])
 
 
 @dash_app.callback(
@@ -146,7 +153,6 @@ def connectPSA(n_clicks, app_name, email, password, countrycode):  # pylint: dis
             return dbc.Alert(res, color="danger")
     else:
         return ""
-    raise PreventUpdate()
 
 
 @dash_app.callback(

@@ -198,7 +198,7 @@ class TestUnit(unittest.TestCase):
         Database.record_position(None, car.vin, 30, latitude, longitude, 22, date2, 30, 28, False)
         trips = Trips.get_trips(self.vehicule_list)
         res = trips[car.vin].get_trips_as_dict()
-        assert compare_dict(res, [{'consumption_km': 5.684210526315789,
+        assert compare_dict(res, [{'consumption_km': 6.947368421052632,
                                    'start_at': date0,
                                    'consumption_by_temp': None,
                                    'positions': {'lat': [latitude],
@@ -209,7 +209,7 @@ class TestUnit(unittest.TestCase):
                                    'mileage': 30.0,
                                    'altitude_diff': 0,
                                    'id': 1,
-                                   'consumption': 1.08,
+                                   'consumption': 1.32,
                                    'consumption_fuel_km': 10.53}])
 
     def test_none_mileage(self):
@@ -227,7 +227,7 @@ class TestUnit(unittest.TestCase):
         trips = Trips.get_trips(self.vehicule_list)
         res = trips[car.vin].get_trips_as_dict()
         print(res)
-        assert compare_dict(res, [{'consumption_km': 5.684210526315789,
+        assert compare_dict(res, [{'consumption_km': 6.947368421052632,
                                    'start_at': start,
                                    'consumption_by_temp': None,
                                    'positions': {'lat': [latitude],
@@ -238,7 +238,7 @@ class TestUnit(unittest.TestCase):
                                    'mileage': 30.0,
                                    'altitude_diff': 0,
                                    'id': 1,
-                                   'consumption': 1.08,
+                                   'consumption': 1.32,
                                    'consumption_fuel_km': 10.53}])
 
     def test_db_callback(self):

@@ -20,7 +20,7 @@ date4 = date3 + timedelta(minutes=1)
 
 vehicule_list = Cars()
 vehicule_list.extend(
-    [Car("VR3UHZKX", "vid", "Peugeot"), Car("VXXXXX", "XXXX", "Peugeot", label="SUV 3008")])
+    [Car("VR3UHZKX", "vid", "Peugeot"), Car("VXXXXX", "XXXX", "Peugeot", label="SUV 3008 Hybrid 225")])
 car = vehicule_list[0]
 DB_DIR = DATA_DIR + "tmp.db"
 

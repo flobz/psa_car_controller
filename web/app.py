@@ -53,7 +53,10 @@ def config_flask(title, base_path, debug: bool, host, port, reloader=False,  # p
     try:
         lang = locale.getlocale()[0].split("_")[0]
         locale.setlocale(locale.LC_TIME, ".".join(locale.getlocale()))  # make sure LC_TIME is set
-        locale_url = [f"https://cdn.plot.ly/plotly-locale-{lang}-latest.js"]
+        if lang != "en":
+            locale_url = [f"https://cdn.plot.ly/plotly-locale-{lang}-latest.js"]
+        else:
+            locale_url = None
     except (IndexError, locale.Error):
         locale_url = None
         logger.warning("Can't get language")

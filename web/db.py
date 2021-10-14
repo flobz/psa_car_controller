@@ -79,7 +79,8 @@ class Database:
         if sys.version_info < (3, 7):
             logger.warning("Can't do database backup, please upgrade to python 3.7")
         else:
-            back_conn = sqlite3.connect(f"info_backup_{datetime.now()}.db")
+            filename=f"info_backup_{datetime.now()}.db".replace(":", "_")
+            back_conn = sqlite3.connect(filename)
             conn.backup(back_conn)
             back_conn.close()
 

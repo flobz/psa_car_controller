@@ -1,8 +1,4 @@
 # Installation
-We need to get credentials from the android app.
-We will retrieve this information:
- - client-id and client-secret  for the api
- - some url to login
 
 1.1 Download the app on your computer. 
 

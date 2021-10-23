@@ -3,7 +3,8 @@ from logging import DEBUG
 
 from dash._utils import create_callback_id
 from dash.dependencies import Output, Input
-from dash_core_components import Store
+from web.tools.import_dash_core import dcc
+
 from mylogger import logger
 
 
@@ -135,5 +136,5 @@ class FigureFilter:
         return False
 
     def get_store(self):
-        return [Store(id='clientside-figure-store', data=self.__get_figures()),
-                Store(id='clientside-data-store', data=self.src)]
+        return [dcc.Store(id='clientside-figure-store', data=self.__get_figures()),
+                dcc.Store(id='clientside-data-store', data=self.src)]

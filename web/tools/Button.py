@@ -1,7 +1,7 @@
 import dash_bootstrap_components as dbc
 from dash._utils import create_callback_id
 from dash.dependencies import Output, Input
-import dash_html_components as html
+from web.tools.import_dash_html import html
 
 from web.app import dash_app
 

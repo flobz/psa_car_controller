@@ -5,8 +5,6 @@ from urllib.parse import parse_qs, urlparse
 import dash_bootstrap_components as dbc
 from dash.dependencies import Output, Input, State
 from dash.exceptions import PreventUpdate
-import dash_core_components as dcc
-import dash_html_components as html
 from flask import jsonify, request, Response as FlaskResponse
 
 import web.utils
@@ -25,6 +23,8 @@ from web.utils import diff_dashtable, dash_date_to_datetime
 
 # pylint: disable=invalid-name
 from web.tools.figurefilter import FigureFilter
+from web.tools.import_dash_html import html
+from web.tools.import_dash_core import dcc
 from web.utils import create_card
 from libs.config import Config
 from web.view.control import get_control_tabs

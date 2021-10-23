@@ -1,6 +1,6 @@
 import dash_bootstrap_components as dbc
 import dash_daq as daq
-import dash_html_components as html
+from web.tools.import_dash_html import html
 from dash.dependencies import Input
 
 from web.app import dash_app

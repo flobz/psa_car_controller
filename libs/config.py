@@ -94,6 +94,7 @@ class Config(metaclass=Singleton):
                     logger.info(str(self.myp.get_vehicles()))
                     self.is_good = True
                 else:
+                    self.is_good = False
                     logger.error("Please reconnect by going to config web page")
             if self.args.refresh:
                 self.myp.info_refresh_rate = self.args.refresh * 60

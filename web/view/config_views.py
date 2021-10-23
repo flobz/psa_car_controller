@@ -9,8 +9,8 @@ from otp.otp import new_otp_session
 from web.app import dash_app
 import dash_bootstrap_components as dbc
 from dash.dependencies import Output, Input, State
-import dash_core_components as dcc
-import dash_html_components as html
+from web.tools.import_dash_core import dcc
+from web.tools.import_dash_html import html
 
 config = Config()
 login_config_layout = dbc.Row(dbc.Col(md=12, lg=2, children=[
@@ -147,6 +147,7 @@ def connectPSA(n_clicks, app_name, email, password, countrycode):  # pylint: dis
         try:
             res = firstLaunchConfig(app_name, email, password, countrycode)
             config.load_app()
+            config.start_remote_control()
             return dbc.Alert([res, html.A(" Go to otp config", href=request.url_root + "config_otp")], color="success")
         except Exception as e:
             res = str(e)

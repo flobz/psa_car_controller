@@ -3,11 +3,11 @@ from statistics import mean
 
 import dash_bootstrap_components as dbc
 import dash_table
-from dash_core_components import Graph
 from dash_table.Format import Format, Scheme, Symbol
 import plotly.express as px
 import plotly.graph_objects as go
-import dash_html_components as html
+from web.tools.import_dash_html import html
+from web.tools.import_dash_core import dcc
 
 from libs.car import Car
 from libs.elec_price import ElecPrice
@@ -199,7 +199,7 @@ def get_battery_curve_fig(row: dict, car: Car):
         battery_curves.append({"level": row["end_level"], "speed": speed})
     fig = px.line(battery_curves, x="level", y="speed")
     fig.update_layout(xaxis_title="Battery %", yaxis_title="Charging speed in kW")
-    return html.Div(Graph(figure=fig))
+    return html.Div(dcc.Graph(figure=fig))
 
 
 def get_altitude_fig(trip: Trip):
@@ -212,4 +212,4 @@ def get_altitude_fig(trip: Trip):
     fig = px.line(res, x=0, y=1)
     fig.update_layout(xaxis_title="Distance km", yaxis_title="Altitude m")
     conn.close()
-    return html.Div(Graph(figure=fig))
+    return html.Div(dcc.Graph(figure=fig))

@@ -20,7 +20,7 @@ class TestRequirements:
             try:
                 pkg_resources.require(requirement)
             except pkg_resources.VersionConflict:
-                logger.error("You need to install or update some dependencies: pip install -U %s", requirement)
+                logger.error("You need to install or update some dependencies: pip3 install -U %s", requirement)
                 missing_requirement=True
         if missing_requirement:
             sys.exit(10)

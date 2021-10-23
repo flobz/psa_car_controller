@@ -3,10 +3,10 @@ from statistics import mean
 
 import dash_bootstrap_components as dbc
 from dash import html
-from dash.dash_table import Format, DataTable
+from dash.dash_table import DataTable
 import plotly.express as px
 import plotly.graph_objects as go
-from dash.dash_table.Format import Scheme, Symbol
+from dash.dash_table.Format import Scheme, Symbol, Format
 from dash.dcc import Graph
 
 from libs.car import Car

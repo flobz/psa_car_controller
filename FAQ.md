@@ -6,7 +6,7 @@ If the car isn't in the list we need to add it, to do so you have two options:
 - If you have the skills :
     
   You can add your car to the list yourself to do so look at [this example](https://github.com/flobz/psa_car_controller/pull/112/commits/e7304ef8f4e4a4498f202a7a4a7bbe451fbfe977).
-You will need the abrp name of the car, to get it go [here](https://api.iternio.com/1/tlm/get_carmodels_list?api_key=32b2162f-9599-4647-8139-66e9f9528370). 
+You will need the VIN of your vehicle and the car abrp name, to get it go [here](https://api.iternio.com/1/tlm/get_carmodels_list?api_key=32b2162f-9599-4647-8139-66e9f9528370). 
   Don't forget to do a pull request with your changes.
 
 

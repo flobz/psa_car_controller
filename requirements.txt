@@ -1,7 +1,7 @@
 paho-mqtt>=1.5.0
 dash>=2
 dash_daq
-plotly>=4
+plotly>=5
 cryptography>=2.6
 Werkzeug>=1.0.0
 pandas
@@ -22,3 +22,4 @@ certifi >= 14.05.14
 six >= 1.10
 python_dateutil >= 2.5.3
 urllib3 >= 1.15.1
+

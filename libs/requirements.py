@@ -1,10 +1,11 @@
 import sys
-import traceback
 
 import pkg_resources
 from pathlib import Path
 
 from mylogger import logger
+
+
 class TestRequirements:
     """Test availability of required packages."""
 
@@ -19,9 +20,8 @@ class TestRequirements:
             requirement = str(requirement)
             try:
                 pkg_resources.require(requirement)
-            except pkg_resources.VersionConflict:
-                logger.debug(traceback.format_exc())
-                logger.error("You need to install or update some dependencies: pip3 install -U %s", requirement)
-                missing_requirement=True
+            except (pkg_resources.VersionConflict, pkg_resources.DistributionNotFound) as ex:
+                logger.error("%s\nYou need to install or update %s: pip3 install -U %s", ex, requirement, requirement)
+                missing_requirement = True
         if missing_requirement:
             sys.exit(10)

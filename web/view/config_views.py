@@ -11,33 +11,30 @@ import dash_bootstrap_components as dbc
 from dash.dependencies import Output, Input, State
 
 config = Config()
-login_config_layout = dbc.Row(dbc.Col(md=12, lg=2, style={"ml": 2}, children=[
-    html.H2('Config'),
-    dbc.Form([
-        dbc.Row([
-            dbc.Label("Car Brand", html_for="psa-app"),
-            dcc.Dropdown(
-                id="psa-app",
-                options=[
-                    {"label": "Peugeot", "value": "com.psa.mym.mypeugeot"},
-                    {"label": "Opel", "value": "com.psa.mym.myopel"},
-                    {"label": "Citroën", "value": "com.psa.mym.mycitroen"},
-                    {"label": "DS", "value": "com.psa.mym.myds"},
-                    {"label": "Vauxhall", "value": "com.psa.mym.myvauxhall"}
-                ],
-            )]),
-        dbc.Row(
-            [
+login_config_layout = dbc.Row(dbc.Col(md=12, lg=2, className="m-3", children=[
+    dbc.Row(html.H2('Config')),
+    dbc.Row(className="ms-2", children=[
+        dbc.Form([
+            html.Div([
+                dbc.Label("Car Brand", html_for="psa-app"),
+                dcc.Dropdown(
+                    id="psa-app",
+                    options=[
+                        {"label": "Peugeot", "value": "com.psa.mym.mypeugeot"},
+                        {"label": "Opel", "value": "com.psa.mym.myopel"},
+                        {"label": "Citroën", "value": "com.psa.mym.mycitroen"},
+                        {"label": "DS", "value": "com.psa.mym.myds"},
+                        {"label": "Vauxhall", "value": "com.psa.mym.myvauxhall"}
+                    ],
+                )]),
+            html.Div([
                 dbc.Label("Email", html_for="psa-email"),
                 dbc.Input(type="email", id="psa-email", placeholder="Enter email"),
                 dbc.FormText(
                     "PSA account email",
                     color="secondary",
-                ),
-            ]
-        ),
-        dbc.Row(
-            [
+                )]),
+            html.Div([
                 dbc.Label("Password", html_for="psa-password"),
                 dbc.Input(
                     type="password",
@@ -47,11 +44,8 @@ login_config_layout = dbc.Row(dbc.Col(md=12, lg=2, style={"ml": 2}, children=[
                 dbc.FormText(
                     "PSA account password",
                     color="secondary",
-                ),
-            ]
-        ),
-        dbc.Row(
-            [
+                )]),
+            html.Div([
                 dbc.Label("Country code", html_for="countrycode"),
                 dbc.Input(
                     type="text",
@@ -61,60 +55,48 @@ login_config_layout = dbc.Row(dbc.Col(md=12, lg=2, style={"ml": 2}, children=[
                 dbc.FormText(
                     "Example: FR for FRANCE or GB for Great Britain...",
                     color="secondary",
-                )
-            ]
-        ),
-        dbc.Row([
-            dbc.Button("Submit", color="primary", id="submit-form"),
-            dbc.FormText(
-                "After submit be patient it can take some time...",
-                color="secondary",
-            ),
+                )]),
+            dbc.Row(dbc.Button("Submit", color="primary", id="submit-form")),
+            dbc.Row(
+                dbc.FormText(
+                    "After submit be patient it can take some time...",
+                    color="secondary")),
             dcc.Loading(
                 id="loading-2",
                 children=[html.Div([html.Div(id="form_result")])],
                 type="circle",
-            )]
-        ),
+            ),
+        ])
     ])]))
 
-config_otp_layout = dbc.Row(dbc.Col(className="col-md-12 col-lg-2", style={"ml": 2}, children=[
-    html.H2('Config OTP'),
-    dbc.Form([
-        dbc.Row([
-            dbc.Label("Click to receive a code by SMS", html_for="ask-sms"),
-            dbc.Button("Send SMS", color="info", id="ask-sms"),
-            html.Div(id="sms-demand-result", className="mt-2")
-        ]),
-        dbc.Row(
-            [
-                dbc.Label("Write the code you just received by SMS", html_for="psa-email"),
-                dbc.Input(type="text", id="psa-code", placeholder="Enter code"),
-            ]
+config_otp_layout = dbc.Row(dbc.Col(className="col-md-12 col-lg-2 m-3", children=[
+    dbc.Row(html.H2('Config OTP')),
+    dbc.Form(className="ms-2", children=[
+        dbc.Label("Click to receive a code by SMS", html_for="ask-sms"),
+        dbc.Button("Send SMS", color="info", id="ask-sms"),
+        html.Div(id="sms-demand-result", className="mt-2"),
+        dbc.Label("Write the code you just received by SMS", html_for="psa-email"),
+        dbc.Input(type="text", id="psa-code", placeholder="Enter code"),
+        dbc.Label("Enter your PIN code", html_for="psa-pin"),
+        dbc.Input(
+            type="password",
+            id="psa-pin",
+            placeholder="Enter codepin",
         ),
-        dbc.Row(
-            [
-                dbc.Label("Enter your code PIN", html_for="psa-pin"),
-                dbc.Input(
-                    type="password",
-                    id="psa-pin",
-                    placeholder="Enter codepin",
-                ),
-                dbc.FormText(
-                    "It's a digit password",
-                    color="secondary",
-                ),
-                dbc.Button("Submit", color="primary", id="finish-otp")
-            ]
+        dbc.FormText(
+            "It's a digit password",
+            color="secondary",
         ),
-        html.Div(id="opt-result")
+        html.Div([
+            dbc.Button("Submit", color="primary", id="finish-otp"),
+            html.Div(id="opt-result")]),
     ])]))
 
 
 def log_layout():
     with open(LOG_FILE, "r") as f:
         log_text = f.read()
-    return html.H3(children=["Log:", dbc.Container(
+    return html.H3(className="m-2", children=["Log:", dbc.Container(
         fluid=True,
         style={"height": "80vh",
                "overflow": "auto",
@@ -123,7 +105,7 @@ def log_layout():
                "white-space": "pre-line"},
         children=log_text,
         className="m-3 bg-light h5"),
-                             html.Div(id="empty-div")])
+                                              html.Div(id="empty-div")])
 
 
 config_layout = dbc.Tabs([

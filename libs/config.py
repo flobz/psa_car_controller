@@ -57,7 +57,7 @@ class Config(metaclass=Singleton):
     def start_remote_control(self):
         if self.args.remote_disable:
             logger.info("mqtt disabled")
-        elif not self.args.web_conf or path.exists(OTP_CONFIG_NAME):
+        elif not self.args.web_conf or path.isfile(OTP_CONFIG_NAME):
             if self.myp.mqtt_client is not None:
                 self.myp.mqtt_client.disconnect()
             self.myp.start_mqtt()
@@ -70,9 +70,10 @@ class Config(metaclass=Singleton):
         my_logger(handler_level=int(self.args.debug))
         if self.args.config:
             self.config_name = self.args.config
-        if path.exists(self.config_name):
+        if path.isfile(self.config_name):
             self.myp = MyPSACC.load_config(name=self.config_name)
         elif self.args.web_conf:
+            self.is_good = False
             return False
         else:
             raise FileNotFoundError(self.config_name)

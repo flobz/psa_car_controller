@@ -2,12 +2,12 @@ from copy import deepcopy
 from statistics import mean
 
 import dash_bootstrap_components as dbc
-import dash_table
-from dash_table.Format import Format, Scheme, Symbol
+from dash import html
+from dash.dash_table import Format, DataTable
 import plotly.express as px
 import plotly.graph_objects as go
-from web.tools.import_dash_html import html
-from web.tools.import_dash_core import dcc
+from dash.dash_table.Format import Scheme, Symbol
+from dash.dcc import Graph
 
 from libs.car import Car
 from libs.elec_price import ElecPrice
@@ -69,7 +69,7 @@ def get_figures(car: Car):
         style_cell_conditional.append({'if': {'column_id': 'consumption_fuel_km', }, 'display': 'None', })
     if car.is_thermal():
         style_cell_conditional.append({'if': {'column_id': 'consumption_km', }, 'display': 'None', })
-    table_fig = dash_table.DataTable(
+    table_fig = DataTable(
         id='trips-table',
         sort_action='custom',
         sort_by=[{'column_id': 'id', 'direction': 'desc'}],
@@ -116,7 +116,7 @@ def get_figures(car: Car):
     consumption_fig_by_speed.update_layout(xaxis_title="average Speed km/h", yaxis_title="Consumption kWh/100Km")
 
     # battery_table
-    battery_table = dash_table.DataTable(
+    battery_table = DataTable(
         id='battery-table',
         sort_action='custom',
         sort_by=[{'column_id': 'start_at_str', 'direction': 'desc'}],
@@ -199,7 +199,7 @@ def get_battery_curve_fig(row: dict, car: Car):
         battery_curves.append({"level": row["end_level"], "speed": speed})
     fig = px.line(battery_curves, x="level", y="speed")
     fig.update_layout(xaxis_title="Battery %", yaxis_title="Charging speed in kW")
-    return html.Div(dcc.Graph(figure=fig))
+    return html.Div(Graph(figure=fig))
 
 
 def get_altitude_fig(trip: Trip):
@@ -212,4 +212,4 @@ def get_altitude_fig(trip: Trip):
     fig = px.line(res, x=0, y=1)
     fig.update_layout(xaxis_title="Distance km", yaxis_title="Altitude m")
     conn.close()
-    return html.Div(dcc.Graph(figure=fig))
+    return html.Div(Graph(figure=fig))

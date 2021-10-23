@@ -1,9 +1,9 @@
 import json
 from logging import DEBUG
 
+from dash import dcc
 from dash._utils import create_callback_id
 from dash.dependencies import Output, Input
-from web.tools.import_dash_core import dcc
 
 from mylogger import logger
 

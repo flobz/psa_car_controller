@@ -1,5 +1,5 @@
 import dash_bootstrap_components as dbc
-from web.tools.import_dash_html import html
+from dash import html
 
 from mylogger import logger
 from web.tools.Button import Button

@@ -1,4 +1,4 @@
-from dash import callback_context
+from dash import callback_context, html, dcc
 from dash.exceptions import PreventUpdate
 from flask import request
 
@@ -9,14 +9,12 @@ from otp.otp import new_otp_session
 from web.app import dash_app
 import dash_bootstrap_components as dbc
 from dash.dependencies import Output, Input, State
-from web.tools.import_dash_core import dcc
-from web.tools.import_dash_html import html
 
 config = Config()
-login_config_layout = dbc.Row(dbc.Col(md=12, lg=2, children=[
+login_config_layout = dbc.Row(dbc.Col(md=12, lg=2, style={"ml": 2}, children=[
     html.H2('Config'),
     dbc.Form([
-        dbc.FormGroup([
+        dbc.Row([
             dbc.Label("Car Brand", html_for="psa-app"),
             dcc.Dropdown(
                 id="psa-app",
@@ -28,7 +26,7 @@ login_config_layout = dbc.Row(dbc.Col(md=12, lg=2, children=[
                     {"label": "Vauxhall", "value": "com.psa.mym.myvauxhall"}
                 ],
             )]),
-        dbc.FormGroup(
+        dbc.Row(
             [
                 dbc.Label("Email", html_for="psa-email"),
                 dbc.Input(type="email", id="psa-email", placeholder="Enter email"),
@@ -38,7 +36,7 @@ login_config_layout = dbc.Row(dbc.Col(md=12, lg=2, children=[
                 ),
             ]
         ),
-        dbc.FormGroup(
+        dbc.Row(
             [
                 dbc.Label("Password", html_for="psa-password"),
                 dbc.Input(
@@ -52,7 +50,7 @@ login_config_layout = dbc.Row(dbc.Col(md=12, lg=2, children=[
                 ),
             ]
         ),
-        dbc.FormGroup(
+        dbc.Row(
             [
                 dbc.Label("Country code", html_for="countrycode"),
                 dbc.Input(
@@ -66,7 +64,7 @@ login_config_layout = dbc.Row(dbc.Col(md=12, lg=2, children=[
                 )
             ]
         ),
-        dbc.FormGroup([
+        dbc.Row([
             dbc.Button("Submit", color="primary", id="submit-form"),
             dbc.FormText(
                 "After submit be patient it can take some time...",
@@ -80,21 +78,21 @@ login_config_layout = dbc.Row(dbc.Col(md=12, lg=2, children=[
         ),
     ])]))
 
-config_otp_layout = dbc.Row(dbc.Col(className="col-md-12 col-lg-2 ml-2", children=[
+config_otp_layout = dbc.Row(dbc.Col(className="col-md-12 col-lg-2", style={"ml": 2}, children=[
     html.H2('Config OTP'),
     dbc.Form([
-        dbc.FormGroup([
+        dbc.Row([
             dbc.Label("Click to receive a code by SMS", html_for="ask-sms"),
             dbc.Button("Send SMS", color="info", id="ask-sms"),
             html.Div(id="sms-demand-result", className="mt-2")
         ]),
-        dbc.FormGroup(
+        dbc.Row(
             [
                 dbc.Label("Write the code you just received by SMS", html_for="psa-email"),
                 dbc.Input(type="text", id="psa-code", placeholder="Enter code"),
             ]
         ),
-        dbc.FormGroup(
+        dbc.Row(
             [
                 dbc.Label("Enter your code PIN", html_for="psa-pin"),
                 dbc.Input(

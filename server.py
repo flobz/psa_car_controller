@@ -1,14 +1,16 @@
 #!/usr/bin/env python3
 # pylint: disable=wrong-import-position
+import os
 import sys
 from threading import Thread
 
 from libs.requirements import TestRequirements
 
+DIR = os.path.dirname(os.path.realpath(__file__))
 if sys.version_info < (3, 6):
     raise RuntimeError("This application requires Python 3.6+")
 
-TestRequirements("requirements.txt").test_requirements()
+TestRequirements(DIR + "/requirements.txt").test_requirements()
 
 import web.app
 from libs.config import Config

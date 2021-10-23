@@ -1,4 +1,5 @@
 import sys
+import traceback
 
 import pkg_resources
 from pathlib import Path
@@ -12,7 +13,6 @@ class TestRequirements:
 
     def test_requirements(self):
         """Test that each required package is available."""
-        # Ref: https://stackoverflow.com/a/45474387/
         requirements = pkg_resources.parse_requirements(self.requirement_path.open())
         missing_requirement = False
         for requirement in requirements:
@@ -20,6 +20,7 @@ class TestRequirements:
             try:
                 pkg_resources.require(requirement)
             except pkg_resources.VersionConflict:
+                logger.debug(traceback.format_exc())
                 logger.error("You need to install or update some dependencies: pip3 install -U %s", requirement)
                 missing_requirement=True
         if missing_requirement:

@@ -19,7 +19,7 @@ from web import figures
 
 from web.app import app, dash_app
 from web.db import Database
-from web.view.config_views import login_config_layout, config_otp_layout, log_layout, config_layout
+from web.view.config_views import log_layout, config_layout
 from web.utils import diff_dashtable, dash_date_to_datetime
 
 # pylint: disable=invalid-name
@@ -52,15 +52,15 @@ def display_page(pathname, search):
     query_params = parse_qs(urlparse(search).query)
     no_header = query_params.get("header", None) == ["false"]
     if pathname == "/config":
-        page = config_layout
+        page = config_layout()
     elif pathname == "/config_login":
-        page = login_config_layout
+        page = config_layout("login")
     elif pathname == "/log":
         page = log_layout()
     elif not CONFIG.is_good:
         page = dcc.Location(pathname=dash_app.requests_pathname_external_prefix + "config_login", id="config_redirect")
     elif pathname == "/config_otp":
-        page = config_otp_layout
+        page = config_layout("otp")
     elif pathname == "/control":
         page = get_control_tabs(CONFIG)
     else:

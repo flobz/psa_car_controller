@@ -108,10 +108,11 @@ def log_layout():
                                               html.Div(id="empty-div")])
 
 
-config_layout = dbc.Tabs([
-    dbc.Tab([log_layout()], label="Log"),
-    dbc.Tab([login_config_layout], label="User config"),
-    dbc.Tab([config_otp_layout], label="OTP config")])
+def config_layout(activeTabs="log"):
+    return dbc.Tabs(active_tab=activeTabs, children=[
+        dbc.Tab([log_layout()], label="Log", tab_id="log"),
+        dbc.Tab([login_config_layout], label="User config", tab_id="login"),
+        dbc.Tab([config_otp_layout], label="OTP config", tab_id="otp")])
 
 
 @dash_app.callback(

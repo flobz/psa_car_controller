@@ -64,6 +64,7 @@ car_models = [
     CarModel("308", 0, 56, reg=r"VF3L35GG.*"),
     CarModel("208", 0, 44, reg=r"VR3UPHN[SE].*"),  # VR3UPHNSSM VR3UPHNEKM
     CarModel("2008", 0, 44, reg=r"VR3USHNS.*"),  # VR3USHNSKM
+    CarModel("2008 II", 0, 45, reg=r"VR3USHNK.*"),  # VR3USHNKKL
     CarModel("SUV 5008 II", 0, 56, reg=r"VF3MRHNS.*"),  # vf3mrhnsum
     CarModel("SUV 5008 II 2018", 0, 56, reg=r"VF3MRHNY.*"),  # VF3MRHNYHH
     CarModel("C5 Aircross Hybrid", 13.2, 43, reg=r"VR7A4DGZ.*"),  # VR7A4DGZSM

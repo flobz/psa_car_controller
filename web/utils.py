@@ -1,7 +1,7 @@
 from datetime import datetime, timedelta
 
 import dash_bootstrap_components as dbc
-import dash_html_components as html
+from dash import html
 from dash.development.base_component import Component
 from pandas import DataFrame
 from pytz import UTC

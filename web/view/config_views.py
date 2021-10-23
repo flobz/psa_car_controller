@@ -1,4 +1,4 @@
-from dash import callback_context
+from dash import callback_context, html, dcc
 from dash.exceptions import PreventUpdate
 from flask import request
 
@@ -9,37 +9,32 @@ from otp.otp import new_otp_session
 from web.app import dash_app
 import dash_bootstrap_components as dbc
 from dash.dependencies import Output, Input, State
-import dash_core_components as dcc
-import dash_html_components as html
 
 config = Config()
-login_config_layout = dbc.Row(dbc.Col(md=12, lg=2, children=[
-    html.H2('Config'),
-    dbc.Form([
-        dbc.FormGroup([
-            dbc.Label("Car Brand", html_for="psa-app"),
-            dcc.Dropdown(
-                id="psa-app",
-                options=[
-                    {"label": "Peugeot", "value": "com.psa.mym.mypeugeot"},
-                    {"label": "Opel", "value": "com.psa.mym.myopel"},
-                    {"label": "Citroën", "value": "com.psa.mym.mycitroen"},
-                    {"label": "DS", "value": "com.psa.mym.myds"},
-                    {"label": "Vauxhall", "value": "com.psa.mym.myvauxhall"}
-                ],
-            )]),
-        dbc.FormGroup(
-            [
+login_config_layout = dbc.Row(dbc.Col(md=12, lg=2, className="m-3", children=[
+    dbc.Row(html.H2('Config')),
+    dbc.Row(className="ms-2", children=[
+        dbc.Form([
+            html.Div([
+                dbc.Label("Car Brand", html_for="psa-app"),
+                dcc.Dropdown(
+                    id="psa-app",
+                    options=[
+                        {"label": "Peugeot", "value": "com.psa.mym.mypeugeot"},
+                        {"label": "Opel", "value": "com.psa.mym.myopel"},
+                        {"label": "Citroën", "value": "com.psa.mym.mycitroen"},
+                        {"label": "DS", "value": "com.psa.mym.myds"},
+                        {"label": "Vauxhall", "value": "com.psa.mym.myvauxhall"}
+                    ],
+                )]),
+            html.Div([
                 dbc.Label("Email", html_for="psa-email"),
                 dbc.Input(type="email", id="psa-email", placeholder="Enter email"),
                 dbc.FormText(
                     "PSA account email",
                     color="secondary",
-                ),
-            ]
-        ),
-        dbc.FormGroup(
-            [
+                )]),
+            html.Div([
                 dbc.Label("Password", html_for="psa-password"),
                 dbc.Input(
                     type="password",
@@ -49,11 +44,8 @@ login_config_layout = dbc.Row(dbc.Col(md=12, lg=2, children=[
                 dbc.FormText(
                     "PSA account password",
                     color="secondary",
-                ),
-            ]
-        ),
-        dbc.FormGroup(
-            [
+                )]),
+            html.Div([
                 dbc.Label("Country code", html_for="countrycode"),
                 dbc.Input(
                     type="text",
@@ -63,60 +55,48 @@ login_config_layout = dbc.Row(dbc.Col(md=12, lg=2, children=[
                 dbc.FormText(
                     "Example: FR for FRANCE or GB for Great Britain...",
                     color="secondary",
-                )
-            ]
-        ),
-        dbc.FormGroup([
-            dbc.Button("Submit", color="primary", id="submit-form"),
-            dbc.FormText(
-                "After submit be patient it can take some time...",
-                color="secondary",
-            ),
+                )]),
+            dbc.Row(dbc.Button("Submit", color="primary", id="submit-form")),
+            dbc.Row(
+                dbc.FormText(
+                    "After submit be patient it can take some time...",
+                    color="secondary")),
             dcc.Loading(
                 id="loading-2",
                 children=[html.Div([html.Div(id="form_result")])],
                 type="circle",
-            )]
-        ),
+            ),
+        ])
     ])]))
 
-config_otp_layout = dbc.Row(dbc.Col(className="col-md-12 col-lg-2 ml-2", children=[
-    html.H2('Config OTP'),
-    dbc.Form([
-        dbc.FormGroup([
-            dbc.Label("Click to receive a code by SMS", html_for="ask-sms"),
-            dbc.Button("Send SMS", color="info", id="ask-sms"),
-            html.Div(id="sms-demand-result", className="mt-2")
-        ]),
-        dbc.FormGroup(
-            [
-                dbc.Label("Write the code you just received by SMS", html_for="psa-email"),
-                dbc.Input(type="text", id="psa-code", placeholder="Enter code"),
-            ]
+config_otp_layout = dbc.Row(dbc.Col(className="col-md-12 col-lg-2 m-3", children=[
+    dbc.Row(html.H2('Config OTP')),
+    dbc.Form(className="ms-2", children=[
+        dbc.Label("Click to receive a code by SMS", html_for="ask-sms"),
+        dbc.Button("Send SMS", color="info", id="ask-sms"),
+        html.Div(id="sms-demand-result", className="mt-2"),
+        dbc.Label("Write the code you just received by SMS", html_for="psa-email"),
+        dbc.Input(type="text", id="psa-code", placeholder="Enter code"),
+        dbc.Label("Enter your PIN code", html_for="psa-pin"),
+        dbc.Input(
+            type="password",
+            id="psa-pin",
+            placeholder="Enter codepin",
         ),
-        dbc.FormGroup(
-            [
-                dbc.Label("Enter your code PIN", html_for="psa-pin"),
-                dbc.Input(
-                    type="password",
-                    id="psa-pin",
-                    placeholder="Enter codepin",
-                ),
-                dbc.FormText(
-                    "It's a digit password",
-                    color="secondary",
-                ),
-                dbc.Button("Submit", color="primary", id="finish-otp")
-            ]
+        dbc.FormText(
+            "It's a digit password",
+            color="secondary",
         ),
-        html.Div(id="opt-result")
+        html.Div([
+            dbc.Button("Submit", color="primary", id="finish-otp"),
+            html.Div(id="opt-result")]),
     ])]))
 
 
 def log_layout():
     with open(LOG_FILE, "r") as f:
         log_text = f.read()
-    return html.H3(children=["Log:", dbc.Container(
+    return html.H3(className="m-2", children=["Log:", dbc.Container(
         fluid=True,
         style={"height": "80vh",
                "overflow": "auto",
@@ -125,13 +105,14 @@ def log_layout():
                "white-space": "pre-line"},
         children=log_text,
         className="m-3 bg-light h5"),
-                             html.Div(id="empty-div")])
+                                              html.Div(id="empty-div")])
 
 
-config_layout = dbc.Tabs([
-    dbc.Tab([log_layout()], label="Log"),
-    dbc.Tab([login_config_layout], label="User config"),
-    dbc.Tab([config_otp_layout], label="OTP config")])
+def config_layout(activeTabs="log"):
+    return dbc.Tabs(active_tab=activeTabs, children=[
+        dbc.Tab([log_layout()], label="Log", tab_id="log"),
+        dbc.Tab([login_config_layout], label="User config", tab_id="login"),
+        dbc.Tab([config_otp_layout], label="OTP config", tab_id="otp")])
 
 
 @dash_app.callback(
@@ -147,6 +128,7 @@ def connectPSA(n_clicks, app_name, email, password, countrycode):  # pylint: dis
         try:
             res = firstLaunchConfig(app_name, email, password, countrycode)
             config.load_app()
+            config.start_remote_control()
             return dbc.Alert([res, html.A(" Go to otp config", href=request.url_root + "config_otp")], color="success")
         except Exception as e:
             res = str(e)

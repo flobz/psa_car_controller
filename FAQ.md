@@ -45,5 +45,5 @@ If you have an error more or less like this one:
 ```
 [SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: self signed certificate in certificate chain (_ssl.c:1056)
 ```
-It's a problem on PSA server so don't open an issue, you just have to wait.
+It's a problem on PSA server so don't open an issue, you can retry a second time and if it still doesn't work you just have to wait.
 You can look to issue about this problem [here](https://github.com/flobz/psa_car_controller/search?q=ssl&type=issues).

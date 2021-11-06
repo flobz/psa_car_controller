@@ -405,7 +405,7 @@ class MyPSACC:
         logger.info(msg)
         self.mqtt_client.publish(MQTT_REQ_TOPIC + self.__get_mqtt_customer_id() + "/Lights", msg)
 
-    @rate_limit(3, 60 * 20)
+    @rate_limit(6, 60 * 20)
     def wakeup(self, vin):
         logger.info("ask wakeup to %s", vin)
         msg = self.mqtt_request(vin, {"action": "state"})

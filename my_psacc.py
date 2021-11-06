@@ -13,6 +13,7 @@ from requests.exceptions import RequestException
 from urllib3.exceptions import InvalidHeader
 
 import psa_connectedcar as psac
+from charge_control import INPROGRESS
 from libs.car import Cars, Car
 from libs.charging import Charging
 from libs.oauth import OpenIdCredentialManager, Oauth2PSACCApiConfig, OauthAPIClient
@@ -320,13 +321,18 @@ class MyPSACC:
             elif msg.topic.startswith(MQTT_EVENT_TOPIC):
                 charge_info = data["charging_state"]
                 self.precond_programs[data["vin"]] = data["precond_state"]["programs"]
-            if charge_info is not None and charge_info['remaining_time'] != 0 and charge_info['rate'] == 0:
-                # fix a psa server bug where charge beginning without status api being properly updated
-                logger.warning("charge begin but API isn't updated")
-                sleep(60)
-                self.wakeup(data["vin"])
+            if charge_info is not None and charge_info['remaining_time'] != 0:
+                try:
+                    car = self.vehicles_list.get_car_by_vin(vin=msg.topic.split("/")[-1])
+                    if car and car.status.get_energy('Electric').charging.status != INPROGRESS:
+                        # fix a psa server bug where charge beginning without status api being properly updated
+                        logger.warning("charge begin but API isn't updated")
+                        sleep(60)
+                        self.wakeup(data["vin"])
+                except (IndexError, AttributeError):
+                    logger.exception("on_mqtt_message:")
         except KeyError:
-            logger.exception("mqtt message:")
+            logger.exception("on_mqtt_message:")
 
     def start_mqtt(self):
         self.load_otp()

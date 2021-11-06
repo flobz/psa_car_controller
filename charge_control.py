@@ -7,14 +7,9 @@ from time import sleep
 
 import pytz
 
+from libs.psa_constants import DISCONNECTED, INPROGRESS, FINISHED
 from my_psacc import MyPSACC
 from mylogger import logger
-
-DISCONNECTED = "Disconnected"
-INPROGRESS = "InProgress"
-FAILURE = "Failure"
-STOPPED = "Stopped"
-FINISHED = "Finished"
 
 
 class ChargeControl:

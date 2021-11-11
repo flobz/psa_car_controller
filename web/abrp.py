@@ -14,7 +14,7 @@ class Abrp:
 
     def __init__(self, token: str = "", abrp_enable_vin=None):
         if abrp_enable_vin is None:
-            abrp_enable_vin = list()
+            abrp_enable_vin = []
         self.token = token
         self.abrp_enable_vin = set(abrp_enable_vin)
         self.proxies = None

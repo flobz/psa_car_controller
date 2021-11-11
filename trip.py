@@ -11,7 +11,6 @@ from web.db import Database
 
 
 class Points:
-    # pylint: disable= too-few-public-methods
     def __init__(self, latitude, longitude):
         self.latitude = latitude
         self.longitude = longitude
@@ -21,7 +20,6 @@ class Points:
 
 
 class Trip:
-    # pylint: disable= too-many-instance-attributes
     def __init__(self):
         self.start_at = None
         self.end_at = None
@@ -58,7 +56,7 @@ class Trip:
         try:
             self.consumption_km = 100 * self.consumption / self.distance  # kw/100 km
         except TypeError:
-            raise ValueError("Distance not set")
+            raise ValueError("Distance not set") from TypeError
         return self.consumption_km
 
     def set_fuel_consumption(self, consumption) -> float:
@@ -135,8 +133,8 @@ class Trips(list):
         logger.debugv("trip discarded")
         return False
 
-    @staticmethod  # noqa: MC0001
-    def get_trips(vehicles_list: Cars) -> Dict[str, "Trips"]:
+    @staticmethod
+    def get_trips(vehicles_list: Cars) -> Dict[str, "Trips"]:   # noqa: MC0001
         # pylint: disable=too-many-locals,too-many-statements,too-many-nested-blocks,too-many-branches
         conn = Database.get_db()
         vehicles = conn.execute("SELECT DISTINCT vin FROM position;").fetchall()

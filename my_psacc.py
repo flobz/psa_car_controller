@@ -46,7 +46,6 @@ def gen_correlation_id(date):
     return correlation_id
 
 
-# pylint: disable=too-many-instance-attributes,too-many-public-methods
 class MyPSACC:
     def connect(self, user, password):
         self.manager.init_with_user_credentials_realm(user, password, self.realm)
@@ -101,13 +100,10 @@ class MyPSACC:
 
     @rate_limit(6, 1800)
     def refresh_token(self):
-        try:
-            # pylint: disable=protected-access
-            self.manager._refresh_token()
-            self.save_config()
-            return True
-        except RequestException as e:
-            logger.error("Can't refresh token %s", e)
+        # pylint: disable=protected-access
+        self.manager._refresh_token()
+        self.save_config()
+        return True
 
     def api(self) -> psac.VehiclesApi:
         self.api_config.access_token = self.manager.access_token
@@ -443,7 +439,7 @@ class MyPSACC:
 
     @staticmethod
     def load_config(name="config.json"):
-        with open(name, "r") as f:
+        with open(name, "r", encoding="utf-8") as f:
             config_str = f.read()
             config = dict(**json.loads(config_str))
             if "country_code" not in config:
@@ -493,10 +489,9 @@ class MyPSACC:
             yield key, value
 
 
-# pylint: disable=arguments-differ
 class MyPeugeotEncoder(JSONEncoder):
 
-    def default(self, mp: MyPSACC):
+    def default(self, mp: MyPSACC):  # pylint: disable=arguments-renamed
         data = dict(mp)
         mpd = {"proxies": data["_proxies"], "refresh_token": mp.manager.refresh_token,
                "client_secret": mp.service_information.client_secret, "abrp": dict(mp.abrp)}

@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-# pylint: disable=wrong-import-position
 import os
 import sys
 from threading import Thread
@@ -12,6 +11,7 @@ if sys.version_info < (3, 6):
 
 TestRequirements(DIR + "/requirements.txt").test_requirements()
 
+# pylint: disable=wrong-import-position
 import web.app
 from libs.config import Config
 from mylogger import logger

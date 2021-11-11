@@ -161,7 +161,7 @@ def finishOtp(n_clicks, code_pin, sms_code):  # pylint: disable=unused-argument
     ctx = callback_context
     if ctx.triggered:
         try:
-            otp_session = new_otp_session(smscode=sms_code, codepin=code_pin)
+            otp_session = new_otp_session(sms_code, code_pin, config.myp.otp)
             config.myp.otp = otp_session
             config.myp.save_config()
             config.start_remote_control()

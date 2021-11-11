@@ -16,7 +16,7 @@ from . import oaep
 from .load import IWData
 
 
-# pylint: disable=too-many-instance-attributes,invalid-name
+# pylint: disable=invalid-name
 CONFIG_NAME = "otp.bin"
 
 
@@ -327,17 +327,13 @@ def load_otp(filename=CONFIG_NAME):
     return None
 
 
-def new_otp_session(old_otp_session: Otp = None, smscode=None, codepin=None):
+def new_otp_session(smscode, codepin, old_otp_session: Otp = None, ):
     if old_otp_session is None:
         otp = Otp("bb8e981582b0f31353108fb020bead1c")
     else:
         otp = Otp("bb8e981582b0f31353108fb020bead1c", device_id=old_otp_session.device_id)
-    if smscode is None:
-        otp.smsCode = input("What is the code you just received by SMS ?")
-        otp.codepin = input("What is your app pin code ?")
-    else:
-        otp.smsCode = smscode
-        otp.codepin = codepin
+    otp.smsCode = smscode
+    otp.codepin = codepin
     otp.activation_start()
     otp.activation_finalyze()
     save_otp(otp)

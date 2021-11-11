@@ -18,8 +18,8 @@ from libs.charging import Charging
 from libs.oauth import OpenIdCredentialManager, Oauth2PSACCApiConfig, OauthAPIClient
 from ecomix import Ecomix
 from libs.psa_constants import DELAYED_CHARGE, IMMEDIATE_CHARGE, PSA_CORRELATION_DATE_FORMAT, PSA_DATE_FORMAT, \
-    realm_info, MQTT_BRANDCODE, INPROGRESS
-from otp.otp import load_otp, new_otp_session, save_otp, ConfigException, Otp
+    realm_info, MQTT_BRANDCODE, INPROGRESS, DEFAULT_PRECONDITIONING_PROGRAM
+from otp.otp import load_otp, save_otp, ConfigException, Otp
 from psa_connectedcar.rest import ApiException
 from mylogger import logger
 
@@ -180,9 +180,10 @@ class MyPSACC:
     def load_otp(self, force_new=False):
         otp_session = load_otp()
         if otp_session is None or force_new:
-            self.get_sms_otp_code()
-            otp_session = new_otp_session(otp_session)
+            logger.error("Please redo otp config")
+            return False
         self.otp = otp_session
+        return True
 
     def get_sms_otp_code(self):
         res = self.manager.post(
@@ -200,6 +201,7 @@ class MyPSACC:
         try:
             otp_code = self.otp.get_otp_code()
         except ConfigException:
+            logger.exception("get_otp_code:")
             self.load_otp(force_new=True)
             otp_code = self.otp.get_otp_code()
         save_otp(self.otp)
@@ -309,18 +311,18 @@ class MyPSACC:
             logger.exception("on_mqtt_message:")
 
     def start_mqtt(self):
-        self.load_otp()
         self.mqtt_client = mqtt.Client(clean_session=True, protocol=mqtt.MQTTv311)
-        if environ.get("MQTT_LOG", "0") == "1":
-            self.mqtt_client.enable_logger(logger=logger)
-        if self._refresh_remote_token():
-            self.mqtt_client.tls_set_context()
-            self.mqtt_client.on_connect = self.__on_mqtt_connect
-            self.mqtt_client.on_message = self.__on_mqtt_message
-            self.mqtt_client.on_disconnect = self._on_mqtt_disconnect
-            self.mqtt_client.connect(MQTT_SERVER, 8885, 60)
-            self.mqtt_client.loop_start()
-            self.__keep_mqtt()
+        if self.load_otp():
+            if environ.get("MQTT_LOG", "0") == "1":
+                self.mqtt_client.enable_logger(logger=logger)
+            if self._refresh_remote_token():
+                self.mqtt_client.tls_set_context()
+                self.mqtt_client.on_connect = self.__on_mqtt_connect
+                self.mqtt_client.on_message = self.__on_mqtt_message
+                self.mqtt_client.on_disconnect = self._on_mqtt_disconnect
+                self.mqtt_client.connect(MQTT_SERVER, 8885, 60)
+                self.mqtt_client.loop_start()
+                self.__keep_mqtt()
         return self.mqtt_client.is_connected()
 
     def __keep_mqtt(self):  # avoid token expiration
@@ -415,12 +417,7 @@ class MyPSACC:
         if vin in self.precond_programs:
             programs = self.precond_programs[vin]
         else:
-            programs = {
-                "program1": {"day": [0, 0, 0, 0, 0, 0, 0], "hour": 34, "minute": 7, "on": 0},
-                "program2": {"day": [0, 0, 0, 0, 0, 0, 0], "hour": 34, "minute": 7, "on": 0},
-                "program3": {"day": [0, 0, 0, 0, 0, 0, 0], "hour": 34, "minute": 7, "on": 0},
-                "program4": {"day": [0, 0, 0, 0, 0, 0, 0], "hour": 34, "minute": 7, "on": 0}
-            }
+            programs = DEFAULT_PRECONDITIONING_PROGRAM
         msg = self.mqtt_request(vin, {"asap": value, "programs": programs})
         logger.info("preconditioning: %s", msg)
         self.mqtt_client.publish(MQTT_REQ_TOPIC + self.__get_mqtt_customer_id() + "/ThermalPrecond", msg)

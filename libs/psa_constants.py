@@ -21,3 +21,10 @@ INPROGRESS = "InProgress"
 FAILURE = "Failure"
 STOPPED = "Stopped"
 FINISHED = "Finished"
+
+DEFAULT_PRECONDITIONING_PROGRAM = {
+    "program1": {"day": [0, 0, 0, 0, 0, 0, 0], "hour": 34, "minute": 7, "on": 0},
+    "program2": {"day": [0, 0, 0, 0, 0, 0, 0], "hour": 34, "minute": 7, "on": 0},
+    "program3": {"day": [0, 0, 0, 0, 0, 0, 0], "hour": 34, "minute": 7, "on": 0},
+    "program4": {"day": [0, 0, 0, 0, 0, 0, 0], "hour": 34, "minute": 7, "on": 0}
+}

@@ -22,7 +22,7 @@ from charge_control import ChargeControls
 from test.utils import DATA_DIR, record_position, latitude, longitude, date0, date1, date2, date3, record_charging, \
     vehicule_list, get_new_test_db, get_date, date4
 from trip import Trips
-from libs.utils import get_temp, parse_hour
+from libs.utils import get_temp, parse_hour, rate_limit, RateLimitException
 from web.db import Database
 from web.figures import get_figures, get_battery_curve_fig, get_altitude_fig
 from deepdiff import DeepDiff
@@ -252,6 +252,18 @@ class TestUnit(unittest.TestCase):
     def test_parse_hour(self):
         expected_res = [[2, 0, 0], [3, 14, 0], [0, 0, 2], [0, 30, 0]]
         assert expected_res == [parse_hour(h) for h in ["PT2H", "PT3H14", "PT2S", "PT30M"]]
+
+    def test_rate_limit(self):
+        @rate_limit(2, 10)
+        def test_fct():
+            pass
+        test_fct()
+        test_fct()
+        try:
+            test_fct()
+            raise Exception("It should have raise RateLimitException")
+        except RateLimitException:
+            pass
 
 
 if __name__ == '__main__':

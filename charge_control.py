@@ -8,6 +8,7 @@ from time import sleep
 import pytz
 
 from libs.psa_constants import DISCONNECTED, INPROGRESS, FINISHED
+from libs.utils import RateLimitException
 from my_psacc import MyPSACC
 from mylogger import logger
 
@@ -60,7 +61,10 @@ class ChargeControl:
         else:
             wakeup_timeout = self.wakeup_timeout
         if (datetime.utcnow().replace(tzinfo=pytz.UTC) - last_update).total_seconds() > 60 * wakeup_timeout:
-            self.psacc.wakeup(self.vin)
+            try:
+                self.psacc.wakeup(self.vin)
+            except RateLimitException:
+                logger.exception("force_update:")
 
     def process(self):
         now = datetime.now()

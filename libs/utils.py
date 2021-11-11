@@ -26,19 +26,25 @@ def get_temp(latitude: str, longitude: str, api_key: str) -> float:
     return None
 
 
+class RateLimitException(Exception):
+    pass
+
+
 def rate_limit(limit, every):
     def limit_decorator(func):
         semaphore = Semaphore(limit)
 
         @wraps(func)
         def wrapper(*args, **kwargs):
-            semaphore.acquire()
-            try:
-                return func(*args, **kwargs)
-            finally:  # don't catch but ensure semaphore release
-                timer = Timer(every, semaphore.release)
-                timer.setDaemon(True)  # allows the timer to be canceled on exit
-                timer.start()
+            if semaphore.acquire(blocking=False):
+                try:
+                    return func(*args, **kwargs)
+                finally:  # don't catch but ensure semaphore release
+                    timer = Timer(every, semaphore.release)
+                    timer.setDaemon(True)  # allows the timer to be canceled on exit
+                    timer.start()
+            else:
+                raise RateLimitException
 
         return wrapper
 

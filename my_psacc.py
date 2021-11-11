@@ -23,7 +23,7 @@ from otp.otp import load_otp, new_otp_session, save_otp, ConfigException, Otp
 from psa_connectedcar.rest import ApiException
 from mylogger import logger
 
-from libs.utils import rate_limit, parse_hour
+from libs.utils import rate_limit, parse_hour, RateLimitException
 from web.abrp import Abrp
 from web.db import Database
 
@@ -230,8 +230,8 @@ class MyPSACC:
             last_update: datetime = self.remote_token_last_update
             if (datetime.now() - last_update).total_seconds() < MQTT_TOKEN_TTL:
                 return res
-        self.refresh_token()
         try:
+            self.refresh_token()
             if bad_remote_token:
                 logger.error("remote_refresh_token isn't defined")
             else:
@@ -255,8 +255,8 @@ class MyPSACC:
             self.mqtt_client.username_pw_set("IMA_OAUTH_ACCESS_TOKEN", self.remote_access_token)
             self.save_config()
             return res
-        except RequestException as e:
-            logger.error("Can't refresh remote token %s", e)
+        except (RequestException, RateLimitException) as e:
+            logger.exception("Can't refresh remote token %s", e)
             sleep(60)
             return None
 
@@ -307,7 +307,7 @@ class MyPSACC:
                         logger.warning("charge begin but API isn't updated")
                         sleep(60)
                         self.wakeup(data["vin"])
-                except (IndexError, AttributeError):
+                except (IndexError, AttributeError, RateLimitException):
                     logger.exception("on_mqtt_message:")
         except KeyError:
             logger.exception("on_mqtt_message:")
@@ -330,7 +330,10 @@ class MyPSACC:
     def __keep_mqtt(self):  # avoid token expiration
         timeout = 3600 * 24  # 1 day
         if len(self.vehicles_list) > 0:
-            self.wakeup(self.vehicles_list[0].vin)
+            try:
+                self.wakeup(self.vehicles_list[0].vin)
+            except RateLimitException:
+                logger.exception("__keep_mqtt")
         t = threading.Timer(timeout, self.__keep_mqtt)
         t.setDaemon(True)
         t.start()

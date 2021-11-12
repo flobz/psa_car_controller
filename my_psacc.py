@@ -337,7 +337,6 @@ class MyPSACC:
         t.start()
 
     def mqtt_request(self, vin, req_parameters):
-        self.refresh_token()
         date = datetime.utcnow()
         date_str = date.strftime(PSA_DATE_FORMAT)
         data = {"access_token": self.remote_access_token, "customer_id": self.__get_mqtt_customer_id(),

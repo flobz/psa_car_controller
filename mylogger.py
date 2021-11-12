@@ -26,21 +26,18 @@ class CustomLogger(logging.Logger):
 
 
 logging.setLoggerClass(CustomLogger)
-# pylint: disable=invalid-name
 logger = logging.getLogger("log")
 
-file_handler: RotatingFileHandler = None
+file_handler = RotatingFileHandler(LOG_FILE, 'a', 1000000, 1, encoding='utf8')
+formatter = logging.Formatter('%(asctime)s :: %(levelname)s :: %(message)s')
+stream_handler = logging.StreamHandler()
 
 
-def my_logger(file=LOG_FILE, handler_level=logging.INFO):
-    global file_handler
+def my_logger(handler_level=logging.INFO):
     logger.setLevel(handler_level)
-    formatter = logging.Formatter('%(asctime)s :: %(levelname)s :: %(message)s')
-    file_handler = RotatingFileHandler(file, 'a', 1000000, 1, encoding='utf8')
     file_handler.setLevel(handler_level)
     file_handler.setFormatter(formatter)
     logger.addHandler(file_handler)
-    stream_handler = logging.StreamHandler()
     stream_handler.setLevel(handler_level)
     stream_handler.setFormatter(formatter)
     logger.addHandler(stream_handler)

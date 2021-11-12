@@ -60,18 +60,19 @@ car_models = [
     ElecModel("Mokka-e", 46, "opel:mokkae:20:48", r"VXKUKZKX.*"),  # VXKUKZKXZM
     ElecModel("Zaphira-e", 68, "peugeot:etraveler:21:75:opel", r"VXEVZZKX.*"),  # VXEVZZKXZMZ
     ElecModel("E-C4", 46, "citroen:ec4:21:50", r"VR7BCZKX.*"),  # VR7BCZKXCM
-    CarModel("SUV 3008 Hybrid 225", 13.2, 43, reg=r"VF3M4DGZ.*"), #VF3M4DGZUMS
+    CarModel("SUV 3008 Hybrid 225", 13.2, 43, reg=r"VF3M4DGZ.*"),  # VF3M4DGZUMS
     CarModel("308", 0, 56, reg=r"VF3L35GG.*"),
     CarModel("208", 0, 44, reg=r"VR3UPHN[SE].*"),  # VR3UPHNSSM VR3UPHNEKM
     CarModel("2008", 0, 44, reg=r"VR3USHNS.*"),  # VR3USHNSKM
     CarModel("2008 II", 0, 45, reg=r"VR3USHNK.*"),  # VR3USHNKKL
     CarModel("SUV 5008 II", 0, 56, reg=r"VF3MRHNS.*"),  # vf3mrhnsum
     CarModel("SUV 5008 II 2018", 0, 56, reg=r"VF3MRHNY.*"),  # VF3MRHNYHH
+    CarModel("N5008 GT-LINE 1.6L", 0, 60, reg=r"VF3MCBHZ.*"),  # VF3MCBHZWJ
     CarModel("C5 Aircross Hybrid", 13.2, 43, reg=r"VR7A4DGZ.*"),  # VR7A4DGZSM
-    CarModel("DS7 Crossback E-Tense", 11.5, 43, reg="VR1J45GBUK.*"),
-    CarModel("DS7 Crossback E-Tense 300 4x4", 11.5, 43, reg="VR1J45GBUL.*"),
+    CarModel("DS7 Crossback E-Tense 300 4x4", 11.5, 43, reg="VR1J45GB.*"),  # VR1J45GBUM VR1J45GBUL VR1J45GBUK
     CarModel("508 SW Hybrid", 11.5, 45, reg=r"VR3F4DGZ.*"),  # VR3F4DGZTL
     CarModel("508 Hybrid", 11.5, 43, reg=r"VR3F3DGZ.*"),  # VR3F3DGZTM
+    CarModel("508 SW 2.0 HDI 163CV", 0, 72, reg=r"VF38ERHH.*"),  # VF38ERHH
     CarModel("Grandland X Hybrid", 13.2, 43, reg=r"W0VZ4DGZ.*"),  # W0VZ4DGZ2L
     CarModel("Grandland X Hybrid 4x4", 13.2, 43, reg=r"W0VZ45GB.*")  # W0VZ45GB3L
 ]

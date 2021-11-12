@@ -100,10 +100,14 @@ class MyPSACC:
 
     @rate_limit(6, 1800)
     def refresh_token(self):
-        # pylint: disable=protected-access
-        self.manager._refresh_token()
-        self.save_config()
-        return True
+        try:
+            # pylint: disable=protected-access
+            self.manager._refresh_token()
+            self.save_config()
+            return True
+        except RequestException as e:
+            logger.error("Can't refresh token %s", e)
+        return False
 
     def api(self) -> psac.VehiclesApi:
         self.api_config.access_token = self.manager.access_token

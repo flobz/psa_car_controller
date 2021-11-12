@@ -39,9 +39,10 @@ CONFIG = Config()
 
 
 def add_header(el):
-    return dbc.Row([dbc.Col(dcc.Link(html.H1('My car info'), href="/", style={"text-decoration": "none"})),
+    return dbc.Row([dbc.Col(dcc.Link(html.H1('My car info'), href=dash_app.requests_pathname_external_prefix,
+                                     style={"text-decoration": "none"})),
                     dbc.Col(dcc.Link(html.Img(src="assets/images/settings.svg", width="30veh"),
-                                     href="/config",
+                                     href=dash_app.requests_pathname_external_prefix+"config",
                                      className="float-end"))]), el
 
 

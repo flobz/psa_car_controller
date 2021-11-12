@@ -171,7 +171,7 @@ def wakeup(vin):
     try:
         return jsonify(CONFIG.myp.wakeup(vin))
     except RateLimitException:
-        return jsonify({"error": "Waleup rate limit exceeded"})
+        return jsonify({"error": "Wakeup rate limit exceeded"})
 
 
 @app.route('/preconditioning/<string:vin>/<int:activate>')

@@ -127,8 +127,9 @@ class RemoteClient:
 
     def publish(self, mqtt_request: MQTTRequest, store=True):
         self._refresh_remote_token()
-        self.mqtt_client.publish(mqtt_request.topic,
-                                 mqtt_request.get_message_to_json(self.remoteCredentials.access_token))
+        message = mqtt_request.get_message_to_json(self.remoteCredentials.access_token)
+        logger.debug("%s %s", mqtt_request.topic, message)
+        self.mqtt_client.publish(mqtt_request.topic, message)
         if store:
             self.last_request = [mqtt_request]
 

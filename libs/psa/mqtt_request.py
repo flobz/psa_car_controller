@@ -40,4 +40,4 @@ class MQTTRequest:
         return correlation_id
 
     def __str__(self):
-        return "topic: " + self.topic + ": " + str(self.data)
+        return "topic: " + self.topic + ": " + str(self.req_parameters)

@@ -94,8 +94,8 @@ class RemoteClient:
             logger.exception("on_mqtt_message:")
 
     def start(self):
-        self.mqtt_client = mqtt.Client(clean_session=True, protocol=mqtt.MQTTv311)
         if self.load_otp():
+            self.mqtt_client = mqtt.Client(clean_session=True, protocol=mqtt.MQTTv311)
             if environ.get("MQTT_LOG", "0") == "1":
                 self.mqtt_client.enable_logger(logger=logger)
             if self._refresh_remote_token():
@@ -106,7 +106,9 @@ class RemoteClient:
                 self.mqtt_client.connect(MQTT_SERVER, 8885, 60)
                 self.mqtt_client.loop_start()
                 self.__keep_mqtt()
-        return self.mqtt_client.is_connected()
+                return self.mqtt_client.is_connected()
+        logger.error("Can't configure MQTT Client")
+        return False
 
     def __keep_mqtt(self):  # avoid token expiration
         timeout = 3600 * 24  # 1 day
@@ -138,11 +140,10 @@ class RemoteClient:
 
     def _refresh_remote_token(self, force=False):
         bad_remote_token = self.remoteCredentials.refresh_token is None
-        res = None
         if not force and not bad_remote_token and self.remoteCredentials.last_update:
             last_update: datetime = self.remoteCredentials.last_update
             if (datetime.now() - last_update).total_seconds() < MQTT_TOKEN_TTL:
-                return res
+                return True
         try:
             self.manager.refresh_token_now()
             if bad_remote_token:
@@ -166,11 +167,11 @@ class RemoteClient:
                 res = self.get_remote_access_token(otp_code)
             self.remote_token_last_update = datetime.now()
             self.mqtt_client.username_pw_set("IMA_OAUTH_ACCESS_TOKEN", self.remoteCredentials.access_token)
-            return res
+            return True
         except (RequestException, RateLimitException) as e:
             logger.exception("Can't refresh remote token %s", e)
             sleep(60)
-            return None
+            return False
 
     def get_sms_otp_code(self):
         res = self.manager.post(

@@ -6,7 +6,7 @@ class RemoteCredentials:
         self._refresh_token = remote_refresh_token
         self.access_token = None
         self.update_callbacks = []
-        self.last_update = datetime.now()
+        self.last_update = datetime.fromtimestamp(0)
 
     def __update_callbacks(self):
         self.last_update = datetime.now()

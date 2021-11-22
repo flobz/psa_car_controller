@@ -61,6 +61,7 @@ car_models = [
     ElecModel("Zaphira-e", 68, "peugeot:etraveler:21:75:opel", r"VXEVZZKX.*"),  # VXEVZZKXZMZ
     ElecModel("E-C4", 46, "citroen:ec4:21:50", r"VR7BCZKX.*"),  # VR7BCZKXCM
     CarModel("SUV 3008 Hybrid 225", 13.2, 43, reg=r"VF3M4DGZ.*"),  # VF3M4DGZUMS
+    CarModel("SUV 3008", 0, 53, reg=r"VF3MJEHZ.*"),  # VF3MJEHZRJ
     CarModel("308", 0, 56, reg=r"VF3L35GG.*"),
     CarModel("208", 0, 44, reg=r"VR3UPHN[SE].*"),  # VR3UPHNSSM VR3UPHNEKM
     CarModel("2008", 0, 44, reg=r"VR3USHNS.*"),  # VR3USHNSKM

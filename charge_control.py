@@ -38,7 +38,7 @@ class ChargeControl:
         return self._stop_hour
 
     def control_charge_with_ack(self, charge: bool):
-        self.psacc.charge_now(self.vin, charge)
+        self.psacc.remote_client.charge_now(self.vin, charge)
         self.retry_count += 1
         sleep(ChargeControl.MQTT_TIMEOUT)
         vehicle_status = self.psacc.get_vehicle_info(self.vin)
@@ -47,7 +47,7 @@ class ChargeControl:
             logger.warning("Car state isn't compatible with charging %s", status)
         if (status == INPROGRESS) != charge:
             logger.warning("retry to control the charge of %s", self.vin)
-            self.psacc.charge_now(self.vin, charge)
+            self.psacc.remote_client.charge_now(self.vin, charge)
             self.retry_count += 1
             return False
         self.retry_count = 0
@@ -62,7 +62,7 @@ class ChargeControl:
             wakeup_timeout = self.wakeup_timeout
         if (datetime.utcnow().replace(tzinfo=pytz.UTC) - last_update).total_seconds() > 60 * wakeup_timeout:
             try:
-                self.psacc.wakeup(self.vin)
+                self.psacc.remote_client.wakeup(self.vin)
             except RateLimitException:
                 logger.exception("force_update:")
 

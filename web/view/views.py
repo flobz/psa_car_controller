@@ -159,25 +159,27 @@ def get_style():
 
 @app.route('/charge_now/<string:vin>/<int:charge>')
 def charge_now(vin, charge):
-    return jsonify(CONFIG.myp.charge_now(vin, charge != 0))
+    return jsonify(CONFIG.myp.remote_client.charge_now(vin, charge != 0))
 
 
 @app.route('/charge_hour')
 def change_charge_hour():
-    return jsonify(CONFIG.myp.change_charge_hour(request.args['vin'], request.args['hour'], request.args['minute']))
+    return jsonify(CONFIG.myp.remote_client.change_charge_hour(request.args['vin'],
+                                                               request.args['hour'],
+                                                               request.args['minute']))
 
 
 @app.route('/wakeup/<string:vin>')
 def wakeup(vin):
     try:
-        return jsonify(CONFIG.myp.wakeup(vin))
+        return jsonify(CONFIG.myp.remote_client.wakeup(vin))
     except RateLimitException:
         return jsonify({"error": "Wakeup rate limit exceeded"})
 
 
 @app.route('/preconditioning/<string:vin>/<int:activate>')
 def preconditioning(vin, activate):
-    return jsonify(CONFIG.myp.preconditioning(vin, activate))
+    return jsonify(CONFIG.myp.remote_client.preconditioning(vin, activate))
 
 
 @app.route('/position/<string:vin>')

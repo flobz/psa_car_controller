@@ -4,7 +4,7 @@ from flask import request
 
 from app_decoder import firstLaunchConfig
 from libs.config import Config
-from mylogger import LOG_FILE
+from mylogger import LOG_FILE, logger
 from otp.otp import new_otp_session
 from web.app import dash_app
 import dash_bootstrap_components as dbc
@@ -144,7 +144,7 @@ def askCode(n_clicks):  # pylint: disable=unused-argument
     ctx = callback_context
     if ctx.triggered:
         try:
-            config.myp.get_sms_otp_code()
+            config.myp.remote_client.get_sms_otp_code()
             return dbc.Alert("Sms sent", color="success")
         except Exception as e:
             res = str(e)
@@ -161,13 +161,14 @@ def finishOtp(n_clicks, code_pin, sms_code):  # pylint: disable=unused-argument
     ctx = callback_context
     if ctx.triggered:
         try:
-            otp_session = new_otp_session(sms_code, code_pin, config.myp.otp)
-            config.myp.otp = otp_session
+            otp_session = new_otp_session(sms_code, code_pin, config.myp.remote_client.otp)
+            config.myp.remote_client.otp = otp_session
             config.myp.save_config()
             config.start_remote_control()
             return dbc.Alert(["OTP config finish !!! ", html.A("Go to home", href=request.url_root)],
                              color="success")
         except Exception as e:
             res = str(e)
+            logger.exception("finishOtp:")
             return dbc.Alert(res, color="danger")
     raise PreventUpdate()

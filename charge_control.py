@@ -7,7 +7,7 @@ from time import sleep
 
 import pytz
 
-from libs.psa_constants import DISCONNECTED, INPROGRESS, FINISHED
+from libs.psa.constants import DISCONNECTED, INPROGRESS, FINISHED
 from libs.utils import RateLimitException
 from my_psacc import MyPSACC
 from mylogger import logger
@@ -123,14 +123,14 @@ class ChargeControls(dict):
         config_str = json.dumps(chd, sort_keys=True, indent=4).encode('utf-8')
         new_hash = md5(config_str).hexdigest()
         if force or self._config_hash != new_hash:
-            with open(self.file_name, "wb") as f:
+            with open(self.file_name, "wb", encoding="utf-8") as f:
                 f.write(config_str)
             self._config_hash = new_hash
             logger.info("save config change")
 
     @staticmethod
     def load_config(psacc: MyPSACC, name="charge_config.json"):
-        with open(name, "r") as file:
+        with open(name, "r", encoding="utf-8") as file:
             config_str = file.read()
             chd = json.loads(config_str)
             charge_control_list = ChargeControls(name)

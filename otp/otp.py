@@ -189,7 +189,7 @@ class Otp:
             elif self.mode == Otp.OTP_MODE:
                 self.challenge = xml["challenge"]
             return True
-        return False
+        raise ConfigException(xml)
 
     def activation_finalyze(self, random_bytes=None):
         R = self.get_r()
@@ -334,7 +334,8 @@ def new_otp_session(smscode, codepin, old_otp_session: Otp = None, ):
         otp = Otp("bb8e981582b0f31353108fb020bead1c", device_id=old_otp_session.device_id)
     otp.smsCode = smscode
     otp.codepin = codepin
-    otp.activation_start()
-    otp.activation_finalyze()
-    save_otp(otp)
-    return otp
+    if otp.activation_start():
+        otp.activation_finalyze()
+        save_otp(otp)
+        return otp
+    return None

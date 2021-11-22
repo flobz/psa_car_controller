@@ -1,6 +1,7 @@
 import dash_bootstrap_components as dbc
 from dash import html
 
+from my_psacc import MyPSACC
 from mylogger import logger
 from web.tools.Button import Button
 from web.tools.Switch import Switch
@@ -19,7 +20,7 @@ def get_control_tabs(config):
             label = car.vin
         else:
             label = car.label
-        myp = config.myp
+        myp: MyPSACC = config.myp
         el = []
         buttons_row = []
         if config.remote_control:
@@ -35,10 +36,12 @@ def get_control_tabs(config):
                          }
                 el.append(dbc.Container(dbc.Row(children=create_card(cards)), fluid=True))
                 buttons_row.extend([Button(REFRESH_SWITCH, car.vin,
-                                           html.Img(src="assets/images/sync.svg", width="50px"), myp.wakeup).get_html(),
-                                    Switch(CHARGE_SWITCH, car.vin, "Charge", myp.charge_now, charging_state).get_html(),
+                                           html.Img(src="assets/images/sync.svg", width="50px"),
+                                           myp.remote_client.wakeup).get_html(),
+                                    Switch(CHARGE_SWITCH, car.vin, "Charge", myp.remote_client.charge_now,
+                                           charging_state).get_html(),
                                     Switch(PRECONDITIONING_SWITCH, car.vin, "Preconditioning",
-                                           myp.preconditioning, preconditionning_state).get_html()])
+                                           myp.remote_client.preconditioning, preconditionning_state).get_html()])
             except (AttributeError, TypeError):
                 logger.exception("get_control_tabs:")
         if not config.offline:

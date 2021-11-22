@@ -19,4 +19,5 @@ pylint:
     - W0603
     - I0011
     - W0511
+    - consider-using-f-string
 

@@ -271,7 +271,7 @@ class RemoteClient:
         return True
 
     def __get_charge_hour(self, vin):
-        hour_str = self.vehicles_list[vin].status.get_energy('Electric').charging.next_delayed_time
+        hour_str = self.vehicles_list.get_car_by_vin(vin).status.get_energy('Electric').charging.next_delayed_time
         try:
             return parse_hour(hour_str)[:2]
         except IndexError:

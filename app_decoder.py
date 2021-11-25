@@ -26,7 +26,7 @@ DOWNLOAD_URL = "https://github.com/flobz/psa_apk/raw/main/"
 
 def save_key_to_pem(pfx_data, pfx_password):
     private_key, certificate = pkcs12.load_key_and_certificates(pfx_data,
-                                                                bytes.fromhex(pfx_password), default_backend())[:2]
+                                                                pfx_password, default_backend())[:2]
     try:
         os.mkdir("certs")
     except FileExistsError:
@@ -63,7 +63,7 @@ def firstLaunchConfig(package_name, client_email, client_password, country_code,
     ## Get Customer id
     site_code = BRAND[package_name]["brand_code"] + "_" + country_code + "_ESP"
     pfx_cert = a.get_file("assets/MWPMYMA1.pfx")
-    save_key_to_pem(pfx_cert, "")
+    save_key_to_pem(pfx_cert, b"y5Y2my5B")
     try:
         res = requests.post(HOST_BRANDID_PROD + "/GetAccessToken",
                             headers={
@@ -80,18 +80,19 @@ def firstLaunchConfig(package_name, client_email, client_password, country_code,
                             )
 
         token = res.json()["accessToken"]
-    except:  # pylint: disable=bare-except
+    except Exception as ex:
         msg = traceback.format_exc() + f"\nHOST_BRANDID : {HOST_BRANDID_PROD} sitecode: {site_code}"
         try:
             msg += res.text
-        except:
+        except: # pylint: disable=bare-except
             pass
         logger.error(msg)
-        raise Exception(msg)
+        raise Exception(msg) from ex
     try:
+        version = "1.33.0"
         res2 = requests.post(
             f"https://mw-{BRAND[package_name]['brand_code'].lower()}-m2c.mym.awsmpsa.com/api/v1/"
-            f"user?culture=fr_FR&width=1080&v=1.27.0",
+            f"user?culture=fr_FR&width=1080&v=" + version,
             data=json.dumps({"site_code": site_code, "ticket": token}),
             headers={
                 "Connection": "Keep-Alive",
@@ -99,21 +100,21 @@ def firstLaunchConfig(package_name, client_email, client_password, country_code,
                 "Source-Agent": "App-Android",
                 "Token": token,
                 "User-Agent": "okhttp/4.8.0",
-                "Version": "1.27.0"
+                "Version": version
             },
             cert=("certs/public.pem", "certs/private.pem"),
         )
 
         res_dict = res2.json()["success"]
         customer_id = BRAND[package_name]["brand_code"] + "-" + res_dict["id"]
-    except:  # pylint: disable=bare-except
+    except Exception as ex:
         msg = traceback.format_exc()
         try:
             msg += res2.text
-        except:
+        except:  # pylint: disable=bare-except
             pass
         logger.error(msg)
-        Exception(msg)
+        raise Exception(msg) from ex
     # Psacc
     psacc = MyPSACC(None, client_id, client_secret, REMOTE_REFRESH_TOKEN, customer_id, BRAND[package_name]["realm"],
                     country_code)

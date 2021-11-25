@@ -43,7 +43,7 @@ class MyPSACC:
         self.client_id = client_id
         self.manager = OpenIdCredentialManager(self.service_information)
         self.api_config = Oauth2PSACCApiConfig()
-        self.api_config.set_refresh_callback(self.manager.refresh_token)
+        self.api_config.set_refresh_callback(self.manager.refresh_token_now)
         self.manager.refresh_token = refresh_token
         self.account_info = AccountInformation(client_id, customer_id, realm, country_code)
         self.remote_access_token = None

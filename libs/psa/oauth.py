@@ -56,7 +56,7 @@ class OpenIdCredentialManager(CredentialManager):
 class Oauth2PSACCApiConfig(psac.Configuration):
     def __init__(self):
         super().__init__()
-        self.refresh_callback = None
+        self.refresh_callback = lambda: True
 
     def set_refresh_callback(self, callback):
         self.refresh_callback = callback

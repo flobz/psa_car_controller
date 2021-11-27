@@ -20,8 +20,8 @@ BRAND = {"com.psa.mym.myopel": {"realm": "clientsB2COpel", "brand_code": "OP", "
          "com.psa.mym.myds": {"realm": "clientsB2CDS", "brand_code": "DS", "app_name": "MyDS"},
          "com.psa.mym.myvauxhall": {"realm": "clientsB2CVauxhall", "brand_code": "VX", "app_name": "MyVauxhall"}
          }
-
 DOWNLOAD_URL = "https://github.com/flobz/psa_apk/raw/main/"
+APP_VERSION = "1.33.0"
 
 
 def save_key_to_pem(pfx_data, pfx_password):
@@ -48,6 +48,11 @@ def urlretrieve(url, path):
             f.write(chunk)
 
 
+def get_cultures_code(file, country_code):
+    cultures = json.loads(file)
+    return cultures[country_code]["languages"][0]
+
+
 def firstLaunchConfig(package_name, client_email, client_password, country_code,  # pylint: disable=too-many-locals
                       config_prefix=""):
     filename = package_name.split(".")[-1] + ".apk"
@@ -60,6 +65,7 @@ def firstLaunchConfig(package_name, client_email, client_password, country_code,
     client_secret = resources.get_string(package_name, "PSA_API_CLIENT_SECRET_PROD")[1]
     HOST_BRANDID_PROD = resources.get_string(package_name, "HOST_BRANDID_PROD")[1]
     REMOTE_REFRESH_TOKEN = None
+    culture = get_cultures_code(a.get_file("res/raw/cultures.json"), country_code)
     ## Get Customer id
     site_code = BRAND[package_name]["brand_code"] + "_" + country_code + "_ESP"
     pfx_cert = a.get_file("assets/MWPMYMA1.pfx")
@@ -84,15 +90,18 @@ def firstLaunchConfig(package_name, client_email, client_password, country_code,
         msg = traceback.format_exc() + f"\nHOST_BRANDID : {HOST_BRANDID_PROD} sitecode: {site_code}"
         try:
             msg += res.text
-        except: # pylint: disable=bare-except
+        except:  # pylint: disable=bare-except
             pass
         logger.error(msg)
         raise Exception(msg) from ex
     try:
-        version = "1.33.0"
         res2 = requests.post(
-            f"https://mw-{BRAND[package_name]['brand_code'].lower()}-m2c.mym.awsmpsa.com/api/v1/"
-            f"user?culture=fr_FR&width=1080&v=" + version,
+            f"https://mw-{BRAND[package_name]['brand_code'].lower()}-m2c.mym.awsmpsa.com/api/v1/user",
+            params={
+                "culture": culture,
+                "width": 1080,
+                "version": APP_VERSION
+            },
             data=json.dumps({"site_code": site_code, "ticket": token}),
             headers={
                 "Connection": "Keep-Alive",
@@ -100,7 +109,7 @@ def firstLaunchConfig(package_name, client_email, client_password, country_code,
                 "Source-Agent": "App-Android",
                 "Token": token,
                 "User-Agent": "okhttp/4.8.0",
-                "Version": version
+                "Version": APP_VERSION
             },
             cert=("certs/public.pem", "certs/private.pem"),
         )

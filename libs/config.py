@@ -10,7 +10,7 @@ from libs.charging import Charging
 from libs.elec_price import ElecPrice
 from my_psacc import MyPSACC
 from mylogger import logger, my_logger
-from otp.otp import CONFIG_NAME as OTP_CONFIG_NAME
+from otp.otp import CONFIG_NAME as OTP_CONFIG_NAME, ConfigException
 
 DEFAULT_NAME = "config.json"
 
@@ -58,13 +58,16 @@ class Config(metaclass=Singleton):
         if self.args.remote_disable:
             logger.info("mqtt disabled")
         elif not self.args.web_conf or path.isfile(OTP_CONFIG_NAME):
-            if self.myp.mqtt_client is not None:
-                self.myp.mqtt_client.disconnect()
-            self.myp.start_mqtt()
-            if self.args.charge_control:
-                Config.chc = ChargeControls.load_config(self.myp, name=self.args.charge_control)
-                Config.chc.init()
-                self.myp.start_refresh_thread()
+            if self.myp.remote_client.mqtt_client is not None:
+                self.myp.remote_client.mqtt_client.disconnect()
+            try:
+                self.myp.remote_client.start()
+                if self.args.charge_control:
+                    Config.chc = ChargeControls.load_config(self.myp, name=self.args.charge_control)
+                    Config.chc.init()
+                    self.myp.start_refresh_thread()
+            except ConfigException:
+                logger.error("start_remote_control failed redo otp config")
 
     def load_app(self) -> bool:
         my_logger(handler_level=int(self.args.debug))
@@ -86,7 +89,7 @@ class Config(metaclass=Singleton):
         else:
             self.is_good = False
             try:
-                self.is_good = self.myp.refresh_token()
+                self.is_good = self.myp.manager.refresh_token_now()
                 if self.is_good:
                     logger.info(str(self.myp.get_vehicles()))
             except OAuthError:

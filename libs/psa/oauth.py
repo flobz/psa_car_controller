@@ -1,15 +1,21 @@
 from http import HTTPStatus
+from typing import Optional
 
-from oauth2_client.credentials_manager import CredentialManager
-from requests import Response
+from oauth2_client.credentials_manager import CredentialManager, ServiceInformation
+from requests import Response, RequestException
 
 import psa_connectedcar as psac
+from libs.utils import rate_limit
 from mylogger import logger
 from psa_connectedcar import ApiClient
 from psa_connectedcar.rest import ApiException
 
 
 class OpenIdCredentialManager(CredentialManager):
+    def __init__(self, service_information: ServiceInformation, proxies: Optional[dict] = None):
+        super().__init__(service_information, proxies)
+        self.refresh_callbacks = []
+
     def _grant_password_request_realm(self, login: str, password: str, realm: str) -> dict:
         return dict(grant_type='password',
                     username=login,
@@ -35,11 +41,22 @@ class OpenIdCredentialManager(CredentialManager):
     def access_token(self):
         return self._access_token
 
+    @rate_limit(6, 1800)
+    def refresh_token_now(self):
+        try:
+            self._refresh_token()
+            for refresh_callback in self.refresh_callbacks:
+                refresh_callback()
+            return True
+        except RequestException as e:
+            logger.error("Can't refresh token %s", e)
+        return False
+
 
 class Oauth2PSACCApiConfig(psac.Configuration):
     def __init__(self):
         super().__init__()
-        self.refresh_callback = None
+        self.refresh_callback = lambda: True
 
     def set_refresh_callback(self, callback):
         self.refresh_callback = callback

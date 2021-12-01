@@ -7,14 +7,10 @@ from time import sleep
 
 import pytz
 
+from libs.psa.constants import DISCONNECTED, INPROGRESS, FINISHED
+from libs.utils import RateLimitException
 from my_psacc import MyPSACC
 from mylogger import logger
-
-DISCONNECTED = "Disconnected"
-INPROGRESS = "InProgress"
-FAILURE = "Failure"
-STOPPED = "Stopped"
-FINISHED = "Finished"
 
 
 class ChargeControl:
@@ -42,7 +38,7 @@ class ChargeControl:
         return self._stop_hour
 
     def control_charge_with_ack(self, charge: bool):
-        self.psacc.charge_now(self.vin, charge)
+        self.psacc.remote_client.charge_now(self.vin, charge)
         self.retry_count += 1
         sleep(ChargeControl.MQTT_TIMEOUT)
         vehicle_status = self.psacc.get_vehicle_info(self.vin)
@@ -51,7 +47,7 @@ class ChargeControl:
             logger.warning("Car state isn't compatible with charging %s", status)
         if (status == INPROGRESS) != charge:
             logger.warning("retry to control the charge of %s", self.vin)
-            self.psacc.charge_now(self.vin, charge)
+            self.psacc.remote_client.charge_now(self.vin, charge)
             self.retry_count += 1
             return False
         self.retry_count = 0
@@ -65,7 +61,10 @@ class ChargeControl:
         else:
             wakeup_timeout = self.wakeup_timeout
         if (datetime.utcnow().replace(tzinfo=pytz.UTC) - last_update).total_seconds() > 60 * wakeup_timeout:
-            self.psacc.wakeup(self.vin)
+            try:
+                self.psacc.remote_client.wakeup(self.vin)
+            except RateLimitException:
+                logger.exception("force_update:")
 
     def process(self):
         now = datetime.now()
@@ -131,7 +130,7 @@ class ChargeControls(dict):
 
     @staticmethod
     def load_config(psacc: MyPSACC, name="charge_config.json"):
-        with open(name, "r") as file:
+        with open(name, "r", encoding="utf-8") as file:
             config_str = file.read()
             chd = json.loads(config_str)
             charge_control_list = ChargeControls(name)

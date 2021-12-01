@@ -5,7 +5,8 @@ from mylogger import logger
 from libs.car_model import CarModel
 from libs.car_status import CarStatus
 
-# pylint: disable=too-many-instance-attributes,too-many-arguments
+
+# pylint: disable=too-many-arguments
 class Car:
     def __init__(self, vin, vehicle_id, brand, label=None, battery_power=None, fuel_capacity=None,
                  max_elec_consumption=None, max_fuel_consumption=None, abrp_name=None):
@@ -118,7 +119,7 @@ class Cars(list):
         if name is None:
             name = self.config_filename
         config_str = json.dumps(self, default=lambda car: car.to_dict(), sort_keys=True, indent=4)
-        with open(name, "w") as file:
+        with open(name, "w", encoding="utf-8") as file:
             file.write(config_str)
 
     @staticmethod
@@ -126,7 +127,7 @@ class Cars(list):
         if name is None:
             name = Cars().config_filename
         try:
-            with open(name, "r") as file:
+            with open(name, "r",encoding="utf-8") as file:
                 json_str = file.read()
                 cars = Cars.from_json(json.loads(json_str))
                 cars.config_filename = name

@@ -64,9 +64,6 @@ class FigureFilter:
         res = {table.src: table.date_columns for table in self.tables}
         return res
 
-    def __get_table_src(self):
-        return [table.src for table in self.tables]
-
     def __get_figures(self):
         return {"graph": [graph.figure for graph in self.graphs],
                 "tables": [table.figure for table in self.tables],

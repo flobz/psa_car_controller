@@ -129,10 +129,9 @@ class Database:
             db_file = Database.DEFAULT_DB_FILE
         conn = CustomSqliteConnection(db_file, detect_types=sqlite3.PARSE_DECLTYPES | sqlite3.PARSE_COLNAMES)
         conn.row_factory = sqlite3.Row
-        Database.__thread_lock.acquire()
-        if not Database.db_initialized:
-            Database.init_db(conn)
-        Database.__thread_lock.release()
+        with Database.__thread_lock:
+            if not Database.db_initialized:
+                Database.init_db(conn)
         if update_callback:
             conn.callbacks.append(Database.callback_fct)
         return conn

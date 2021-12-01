@@ -1,84 +1,42 @@
 #!/usr/bin/env python3
 import json
-import os
 import traceback
-from os import path
 
-from androguard.core.bytecodes.apk import APK
 import requests
-from cryptography.hazmat.primitives import serialization
-from cryptography.hazmat.primitives.serialization import pkcs12
-from cryptography.hazmat.backends import default_backend
 
 from charge_control import ChargeControl, ChargeControls
+from libs.psa.constants import BRAND
+from libs.psa.setup.apk_parser import ApkParser
+from libs.psa.setup.github import urlretrieve_from_github
 from my_psacc import MyPSACC
 from mylogger import logger
 
-BRAND = {"com.psa.mym.myopel": {"realm": "clientsB2COpel", "brand_code": "OP", "app_name": "MyOpel"},
-         "com.psa.mym.mypeugeot": {"realm": "clientsB2CPeugeot", "brand_code": "AP", "app_name": "MyPeugeot"},
-         "com.psa.mym.mycitroen": {"realm": "clientsB2CCitroen", "brand_code": "AC", "app_name": "MyCitroen"},
-         "com.psa.mym.myds": {"realm": "clientsB2CDS", "brand_code": "DS", "app_name": "MyDS"},
-         "com.psa.mym.myvauxhall": {"realm": "clientsB2CVauxhall", "brand_code": "VX", "app_name": "MyVauxhall"}
-         }
-DOWNLOAD_URL = "https://github.com/flobz/psa_apk/raw/main/"
 APP_VERSION = "1.33.0"
+GITHUB_USER = "flobz"
+GITHUB_REPO = "psa_apk"
 
 
-def save_key_to_pem(pfx_data, pfx_password):
-    private_key, certificate = pkcs12.load_key_and_certificates(pfx_data,
-                                                                pfx_password, default_backend())[:2]
-    try:
-        os.mkdir("certs")
-    except FileExistsError:
-        pass
-    with open("certs/public.pem", "wb") as f:
-        f.write(certificate.public_bytes(encoding=serialization.Encoding.PEM))
-
-    with open("certs/private.pem", "wb") as f:
-        f.write(private_key.private_bytes(encoding=serialization.Encoding.PEM,
-                                          format=serialization.PrivateFormat.TraditionalOpenSSL,
-                                          encryption_algorithm=serialization.NoEncryption()))
-
-
-def urlretrieve(url, path):
-    with open(path, 'wb') as f:
-        r = requests.get(url, stream=True)
-        r.raise_for_status()
-        for chunk in r.iter_content(1024):
-            f.write(chunk)
-
-
-def get_cultures_code(file, country_code):
-    cultures = json.loads(file)
-    return cultures[country_code]["languages"][0]
+def get_content_from_apk(filename: str, country_code: str) -> ApkParser:
+    apk_parser = ApkParser(filename, country_code)
+    urlretrieve_from_github(GITHUB_USER, GITHUB_REPO, "", apk_parser.filename)
+    apk_parser.retrieve_content_from_apk()
+    return apk_parser
 
 
 def firstLaunchConfig(package_name, client_email, client_password, country_code,  # pylint: disable=too-many-locals
                       config_prefix=""):
     filename = package_name.split(".")[-1] + ".apk"
-    if not path.exists(filename):
-        urlretrieve(DOWNLOAD_URL + filename, filename)
-    a = APK(filename)
-    package_name = a.get_package()
-    resources = a.get_android_resources()  # .get_strings_resources()
-    client_id = resources.get_string(package_name, "PSA_API_CLIENT_ID_PROD")[1]
-    client_secret = resources.get_string(package_name, "PSA_API_CLIENT_SECRET_PROD")[1]
-    HOST_BRANDID_PROD = resources.get_string(package_name, "HOST_BRANDID_PROD")[1]
-    REMOTE_REFRESH_TOKEN = None
-    culture = get_cultures_code(a.get_file("res/raw/cultures.json"), country_code)
-    ## Get Customer id
-    site_code = BRAND[package_name]["brand_code"] + "_" + country_code + "_ESP"
-    pfx_cert = a.get_file("assets/MWPMYMA1.pfx")
-    save_key_to_pem(pfx_cert, b"y5Y2my5B")
+    apk_parser = get_content_from_apk(filename, country_code)
+
     try:
-        res = requests.post(HOST_BRANDID_PROD + "/GetAccessToken",
+        res = requests.post(apk_parser.host_brandid_prod + "/GetAccessToken",
                             headers={
                                 "Connection": "Keep-Alive",
                                 "Content-Type": "application/json",
                                 "User-Agent": "okhttp/2.3.0"
                             },
                             params={"jsonRequest": json.dumps(
-                                {"siteCode": site_code, "culture": "fr-FR", "action": "authenticate",
+                                {"siteCode": apk_parser.site_code, "culture": "fr-FR", "action": "authenticate",
                                  "fields": {"USR_EMAIL": {"value": client_email},
                                             "USR_PASSWORD": {"value": client_password}}
                                  }
@@ -87,7 +45,8 @@ def firstLaunchConfig(package_name, client_email, client_password, country_code,
 
         token = res.json()["accessToken"]
     except Exception as ex:
-        msg = traceback.format_exc() + f"\nHOST_BRANDID : {HOST_BRANDID_PROD} sitecode: {site_code}"
+        msg = traceback.format_exc() + f"\nHOST_BRANDID : {apk_parser.host_brandid_prod} " \
+                                       f"sitecode: {apk_parser.site_code}"
         try:
             msg += res.text
         except:  # pylint: disable=bare-except
@@ -98,11 +57,11 @@ def firstLaunchConfig(package_name, client_email, client_password, country_code,
         res2 = requests.post(
             f"https://mw-{BRAND[package_name]['brand_code'].lower()}-m2c.mym.awsmpsa.com/api/v1/user",
             params={
-                "culture": culture,
+                "culture": apk_parser.culture,
                 "width": 1080,
                 "version": APP_VERSION
             },
-            data=json.dumps({"site_code": site_code, "ticket": token}),
+            data=json.dumps({"site_code": apk_parser.site_code, "ticket": token}),
             headers={
                 "Connection": "Keep-Alive",
                 "Content-Type": "application/json;charset=UTF-8",
@@ -125,7 +84,8 @@ def firstLaunchConfig(package_name, client_email, client_password, country_code,
         logger.error(msg)
         raise Exception(msg) from ex
     # Psacc
-    psacc = MyPSACC(None, client_id, client_secret, REMOTE_REFRESH_TOKEN, customer_id, BRAND[package_name]["realm"],
+    psacc = MyPSACC(None, apk_parser.client_id, apk_parser.client_secret,
+                    None, customer_id, BRAND[package_name]["realm"],
                     country_code)
     psacc.connect(client_email, client_password)
     psacc.save_config(name=config_prefix + "config.json")

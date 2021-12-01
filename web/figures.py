@@ -51,8 +51,7 @@ SUMMARY_CARDS = {"Average consumption": {"text": [card_value_div(AVG_CONSUM_KW, 
 
 # pylint: disable=too-many-locals
 def get_figures(car: Car):
-    global consumption_fig, consumption_df, trips_map, consumption_fig_by_speed, table_fig, info, \
-        battery_table, consumption_fig_by_temp
+    global consumption_fig, trips_map, consumption_fig_by_speed, table_fig, battery_table, consumption_fig_by_temp
     lats = [42, 41]
     lons = [1, 2]
     names = ["undefined", "undefined"]

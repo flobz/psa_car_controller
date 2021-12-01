@@ -10,6 +10,7 @@ from flask import jsonify, request, Response as FlaskResponse
 
 import web.utils
 from libs.car import Cars, Car
+from libs.utils import RateLimitException
 from mylogger import logger
 
 from trip import Trips
@@ -38,9 +39,10 @@ CONFIG = Config()
 
 
 def add_header(el):
-    return dbc.Row([dbc.Col(dcc.Link(html.H1('My car info'), href="/", style={"text-decoration": "none"})),
+    return dbc.Row([dbc.Col(dcc.Link(html.H1('My car info'), href=dash_app.requests_pathname_external_prefix,
+                                     style={"text-decoration": "none"})),
                     dbc.Col(dcc.Link(html.Img(src="assets/images/settings.svg", width="30veh"),
-                                     href="/config",
+                                     href=dash_app.requests_pathname_external_prefix+"config",
                                      className="float-end"))]), el
 
 
@@ -77,7 +79,7 @@ def create_callback():  # noqa: MC0001
                            [Input("battery-table", "data_timestamp")],
                            [State("battery-table", "data"),
                             State("battery-table", "data_previous")])
-        def capture_diffs_in_battery_table(timestamp, data, data_previous):  # pylint: disable=unused-variable
+        def capture_diffs_in_battery_table(timestamp, data, data_previous):
             if timestamp is None:
                 raise PreventUpdate
             diff_data = diff_dashtable(data, data_previous, "start_at")
@@ -97,7 +99,7 @@ def create_callback():  # noqa: MC0001
                             Input("tab_battery_popup-close", "n_clicks")],
                            [State('battery-table', 'data'),
                             State("tab_battery_popup", "is_open")])
-        def get_battery_curve(active_cell, close, data, is_open):  # pylint: disable=unused-argument, unused-variable
+        def get_battery_curve(active_cell, close, data, is_open):  # pylint: disable=unused-argument
             if is_open is None:
                 is_open = False
             if active_cell is not None and active_cell["column_id"] in ["start_level", "end_level"] and not is_open:
@@ -109,7 +111,7 @@ def create_callback():  # noqa: MC0001
                            [Input("trips-table", "active_cell"),
                             Input("tab_trips_popup-close", "n_clicks")],
                            State("tab_trips_popup", "is_open"))
-        def get_altitude_graph(active_cell, close, is_open):  # pylint: disable=unused-argument, unused-variable
+        def get_altitude_graph(active_cell, close, is_open):  # pylint: disable=unused-argument
             if is_open is None:
                 is_open = False
             if active_cell is not None and active_cell["column_id"] in ["altitude_diff"] and not is_open:
@@ -147,7 +149,7 @@ STYLE_CACHE = None
 def get_style():
     global STYLE_CACHE
     if not STYLE_CACHE:
-        with open(app.root_path + "/assets/style.json", "r") as f:
+        with open(app.root_path + "/assets/style.json", "r", encoding="utf-8") as f:
             res = json.loads(f.read())
             STYLE_CACHE = res
     url_root = request.url_root
@@ -157,22 +159,27 @@ def get_style():
 
 @app.route('/charge_now/<string:vin>/<int:charge>')
 def charge_now(vin, charge):
-    return jsonify(CONFIG.myp.charge_now(vin, charge != 0))
+    return jsonify(CONFIG.myp.remote_client.charge_now(vin, charge != 0))
 
 
 @app.route('/charge_hour')
 def change_charge_hour():
-    return jsonify(CONFIG.myp.change_charge_hour(request.args['vin'], request.args['hour'], request.args['minute']))
+    return jsonify(CONFIG.myp.remote_client.change_charge_hour(request.args['vin'],
+                                                               request.args['hour'],
+                                                               request.args['minute']))
 
 
 @app.route('/wakeup/<string:vin>')
 def wakeup(vin):
-    return jsonify(CONFIG.myp.wakeup(vin))
+    try:
+        return jsonify(CONFIG.myp.remote_client.wakeup(vin))
+    except RateLimitException:
+        return jsonify({"error": "Wakeup rate limit exceeded"})
 
 
 @app.route('/preconditioning/<string:vin>/<int:activate>')
 def preconditioning(vin, activate):
-    return jsonify(CONFIG.myp.preconditioning(vin, activate))
+    return jsonify(CONFIG.myp.remote_client.preconditioning(vin, activate))
 
 
 @app.route('/position/<string:vin>')

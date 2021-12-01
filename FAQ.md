@@ -23,8 +23,15 @@ Your psa account is locked because you makes 20 sms activation. To unlock do thi
 4. Connect and test remote control, it should say that you need to reset your account
 6. If the remote control work on your smartphone it will work with psa_car_controller
 
-### 3. No data to show
-The app record your position if "-r" argument is provided.
+### 3. No data in dashboard
+The app record your position and other information if "-r" argument is provided and if data are fetched.
+
+Data are fetched in the following scenarios:
+- charge control is enabled with "-c" program argument
+- refresh is enabled with "-R"
+- You use "get_vehicleinfo" API endpoint
+
+
 You need to make few trips to be able to see stats in the dashboard.
 
 ### 4. Permission error

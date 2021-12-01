@@ -2,7 +2,7 @@ from dash import callback_context, html, dcc
 from dash.exceptions import PreventUpdate
 from flask import request
 
-from app_decoder import firstLaunchConfig
+from libs.psa.setup.app_decoder import firstLaunchConfig
 from libs.config import Config
 from mylogger import LOG_FILE, logger
 from otp.otp import new_otp_session

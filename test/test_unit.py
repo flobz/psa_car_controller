@@ -7,6 +7,8 @@ from datetime import datetime, timedelta
 from pytz import UTC
 
 import libs.config
+from libs.psa.setup.app_decoder import GITHUB_USER, GITHUB_REPO
+from libs.psa.setup.github import github_file_need_to_be_downloaded
 from psa_connectedcar import ApiClient
 import psa_connectedcar as psacc
 import reverse_geocode
@@ -28,9 +30,8 @@ from web.figures import get_figures, get_battery_curve_fig, get_altitude_fig
 from deepdiff import DeepDiff
 
 
-
 def compare_dict(result, expected):
-    diff = DeepDiff(expected,  result)
+    diff = DeepDiff(expected, result)
     if diff != {}:
         raise AssertionError(str(diff))
     return True
@@ -95,7 +96,8 @@ class TestUnit(unittest.TestCase):
             Ecomix.co2_signal_key = key
             def_country = "FR"
             Ecomix.get_data_from_co2_signal(latitude, longitude, def_country)
-            res = Ecomix.get_co2_from_signal_cache(datetime.utcnow().replace(tzinfo=UTC) - timedelta(minutes=5), datetime.now(), def_country)
+            res = Ecomix.get_co2_from_signal_cache(datetime.utcnow().replace(tzinfo=UTC) - timedelta(minutes=5),
+                                                   datetime.now(), def_country)
             assert isinstance(res, float)
 
     def test_charge_control(self):
@@ -167,7 +169,7 @@ class TestUnit(unittest.TestCase):
         end_level = 85
         Charging.record_charging(car, "InProgress", date0, start_level, latitude, longitude, None, "slow", 20, 60)
         Charging.record_charging(car, "InProgress", date1, 70, latitude, longitude, "FR", "slow", 20, 60)
-        Charging.record_charging(car, "InProgress", date1, 70, latitude, longitude, "FR", "slow",20, 60)
+        Charging.record_charging(car, "InProgress", date1, 70, latitude, longitude, "FR", "slow", 20, 60)
         Charging.record_charging(car, "InProgress", date2, 80, latitude, longitude, "FR", "slow", 20, 60)
         Charging.record_charging(car, "Stopped", date3, end_level, latitude, longitude, "FR", "slow", 20, 60)
         chargings = Charging.get_chargings()
@@ -202,7 +204,7 @@ class TestUnit(unittest.TestCase):
                                    'start_at': date0,
                                    'consumption_by_temp': None,
                                    'positions': {'lat': [latitude],
-                                                'long': [longitude]},
+                                                 'long': [longitude]},
                                    'duration': 40.0,
                                    'speed_average': 28.5,
                                    'distance': 19.0,
@@ -231,7 +233,7 @@ class TestUnit(unittest.TestCase):
                                    'start_at': start,
                                    'consumption_by_temp': None,
                                    'positions': {'lat': [latitude],
-                                                'long': [longitude]},
+                                                 'long': [longitude]},
                                    'duration': 120.0,
                                    'speed_average': 9.5,
                                    'distance': 19.0,
@@ -257,6 +259,7 @@ class TestUnit(unittest.TestCase):
         @rate_limit(2, 10)
         def test_fct():
             pass
+
         test_fct()
         test_fct()
         try:
@@ -264,6 +267,22 @@ class TestUnit(unittest.TestCase):
             raise Exception("It should have raise RateLimitException")
         except RateLimitException:
             pass
+
+    def test_parse_apk(self):
+        from libs.psa.setup.app_decoder import get_content_from_apk
+        filename = "mypeugeot.apk"
+        try:
+            os.remove(filename)
+        except FileNotFoundError:
+            pass
+        assert get_content_from_apk(filename, "FR")
+        assert github_file_need_to_be_downloaded(GITHUB_USER, GITHUB_REPO, "", filename) is False
+
+    def test_file_need_to_be_updated(self):
+        filename = "mypeugeot.apk"
+        with open(filename, "w") as f:
+            f.write(" ")
+        assert github_file_need_to_be_downloaded(GITHUB_USER, GITHUB_REPO, "", filename) is True
 
 
 if __name__ == '__main__':

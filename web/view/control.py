@@ -13,6 +13,13 @@ CHARGE_SWITCH = "charge-switch"
 PRECONDITIONING_SWITCH = "preconditioning-switch"
 
 
+def convert_value_to_str(value):
+    try:
+        return str(int(value))
+    except TypeError:
+        return "-"
+
+
 def get_control_tabs(config):
     tabs = []
     for car in config.myp.vehicles_list:
@@ -28,10 +35,12 @@ def get_control_tabs(config):
                 preconditionning_state = car.status.preconditionning.air_conditioning.status != "Disabled"
                 charging_state = car.status.get_energy('Electric').charging.status == "InProgress"
                 cards = {"Battery": {"text": [card_value_div("battery_value", "%",
-                                                             value=str(int(car.status.get_energy('Electric').level)))],
+                                                             value=convert_value_to_str(
+                                                                 car.status.get_energy('Electric').level))],
                                      "src": "assets/images/battery-charge.svg"},
                          "Mileage": {"text": [card_value_div("mileage_value", "km",
-                                                             value=str(int(car.status.timed_odometer.mileage)))],
+                                                             value=convert_value_to_str(
+                                                                 car.status.timed_odometer.mileage))],
                                      "src": "assets/images/mileage.svg"}
                          }
                 el.append(dbc.Container(dbc.Row(children=create_card(cards)), fluid=True))

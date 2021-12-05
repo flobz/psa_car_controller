@@ -75,5 +75,6 @@ car_models = [
     CarModel("508 Hybrid", 11.5, 43, reg=r"VR3F3DGZ.*"),  # VR3F3DGZTM
     CarModel("508 SW 2.0 HDI 163CV", 0, 72, reg=r"VF38ERHH.*"),  # VF38ERHH
     CarModel("Grandland X Hybrid", 13.2, 43, reg=r"W0VZ4DGZ.*"),  # W0VZ4DGZ2L
-    CarModel("Grandland X Hybrid 4x4", 13.2, 43, reg=r"W0VZ45GB.*")  # W0VZ45GB3L
+    CarModel("Grandland X Hybrid 4x4", 13.2, 43, reg=r"W0VZ45GB.*"),  # W0VZ45GB3L
+    CarModel("C4 Grand Picasso", 0, 60, reg=r"VF73ABHZMJ.*")
 ]

@@ -1,6 +1,7 @@
 import json
 import logging
 import threading
+from datetime import datetime, timedelta, timezone
 from json import JSONEncoder
 from hashlib import md5
 from time import sleep
@@ -184,9 +185,8 @@ class PSAClient:
         latitude = car.status.last_position.geometry.coordinates[1]
         altitude = car.status.last_position.geometry.coordinates[2]
         date = car.status.last_position.properties.updated_at
-        date = car.status.service.updated_at
-        if date is None:
-            date = charge_date
+        if date is None or date < datetime.now(timezone.utc) - timedelta(days=1):  # if position isn't updated
+            date = car.status.service.updated_at
         logger.debug("vin:%s longitude:%s latitude:%s date:%s mileage:%s level:%s charge_date:%s level_fuel:"
                      "%s moving:%s", car.vin, longitude, latitude, date, mileage, level, charge_date, level_fuel,
                      moving)

@@ -1,8 +1,6 @@
-default_language_version:
-      python: python3.6
 repos:
 -   repo: https://github.com/PyCQA/prospector
-    rev: 1.3.1 # The version of Prospector to use, at least 1.1.7
+    rev: 1.7.7 # The version of Prospector to use, if not 'master' for latest
     hooks:
     -   id: prospector
         language: system

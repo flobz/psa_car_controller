@@ -4,28 +4,30 @@ import os
 import unittest
 from datetime import datetime, timedelta
 
+import reverse_geocode
 from pytz import UTC
 
-import libs.config
-from libs.psa.setup.app_decoder import GITHUB_USER, GITHUB_REPO
-from libs.psa.setup.github import github_file_need_to_be_downloaded
-from psa_connectedcar import ApiClient
-import psa_connectedcar as psacc
-import reverse_geocode
-from libs.car import Car, Cars
-from libs.charging import Charging
-from libs.elec_price import ElecPrice
-from my_psacc import MyPSACC
-from ecomix import Ecomix
-from libs.car_model import CarModel
-from mylogger import my_logger
-from otp.otp import load_otp, save_otp
-from charge_control import ChargeControls
-from test.utils import DATA_DIR, record_position, latitude, longitude, date0, date1, date2, date3, record_charging, \
+import psa.connected_car_api
+
+from common.mylogger import my_logger
+from common.utils import parse_hour, RateLimitException, rate_limit
+from psa.otp.otp import load_otp, save_otp
+from psa.setup.app_decoder import get_content_from_apk, GITHUB_USER, GITHUB_REPO
+from psa.setup.github import github_file_need_to_be_downloaded
+from psa.connected_car_api import ApiClient
+from psacc.application.charge_control import ChargeControls
+from psacc.application.charging import Charging
+from psacc.application.ecomix import Ecomix
+from psacc.application.psa_client import PSAClient
+from psacc.model.car import Car, Cars
+from psacc.repository import config_repository
+from psacc.repository.car_model import CarModelRepository
+from psacc.repository.config_repository import ConfigRepository
+from psacc.repository.db import Database
+from psacc.repository.trips import Trips
+from psacc.utils.utils import get_temp
+from utils import DATA_DIR, record_position, latitude, longitude, date0, date1, date2, date3, record_charging, \
     vehicule_list, get_new_test_db, get_date, date4
-from trip import Trips
-from libs.utils import get_temp, parse_hour, rate_limit, RateLimitException
-from web.db import Database
 from web.figures import get_figures, get_battery_curve_fig, get_altitude_fig
 from deepdiff import DeepDiff
 
@@ -65,21 +67,19 @@ class TestUnit(unittest.TestCase):
 
     def test_mypsacc(self):
         if self.test_online:
-            myp = MyPSACC.load_config("config.json")
+            myp = PSAClient.load_config("config.json")
             myp.refresh_token()
             myp.get_vehicles()
             car = myp.vehicles_list[0]
             myp.abrp.abrp_enable_vin.add(car.vin)
-            res = myp.get_vehicle_info(myp.vehicles_list[0].vin)
+            myp.get_vehicle_info(myp.vehicles_list[0].vin)
             myp.abrp.call(car, 22.1)
-            libs.config.Config().myp = myp
-            libs.config.Config().save_config()
             assert isinstance(get_temp(str(latitude), str(longitude), myp.weather_api), float)
 
     def test_car_model(self):
-        assert CarModel.find_model_by_vin("VR3UHZKXZL").name == "e-208"
-        assert CarModel.find_model_by_vin("VR3UKZKXZM").name == "e-2008"
-        assert CarModel.find_model_by_vin("VXKUHZKXZL").name == "corsa-e"
+        assert CarModelRepository().find_model_by_vin("VR3UHZKXZL").name == "e-208"
+        assert CarModelRepository().find_model_by_vin("VR3UKZKXZM").name == "e-2008"
+        assert CarModelRepository().find_model_by_vin("VXKUHZKXZL").name == "corsa-e"
 
     def test_c02_signal_cache(self):
         start = datetime.utcnow().replace(tzinfo=UTC) - timedelta(minutes=30)
@@ -89,6 +89,8 @@ class TestUnit(unittest.TestCase):
                                 [start + timedelta(minutes=2), 20],
                                 [start + timedelta(minutes=3), 30]]}
         assert Ecomix.get_co2_from_signal_cache(start, end, "FR") == 20
+        Ecomix.clean_cache()
+        self.assertEqual(3, len(Ecomix._cache["FR"]))
 
     def test_c02_signal(self):
         if self.test_online:
@@ -106,10 +108,25 @@ class TestUnit(unittest.TestCase):
         charge_control.save_config(force=True)
 
     def test_battery_curve(self):
+        vin = self.vehicule_list[0].vin
         get_new_test_db()
         record_charging()
-        res = Database.get_battery_curve(Database.get_db(), date0, date4, self.vehicule_list[0].vin)
-        assert len(res) == 3
+        charge = Database.get_last_charge(vin)
+        self.assertEqual(charge.stop_at, date4)
+        res = Database.get_battery_curve(Database.get_db(), date0, date4, vin)
+        self.assertEqual(4, len(res))
+
+    def test_set_charge_price(self):
+        vin = self.vehicule_list[0].vin
+        get_new_test_db()
+        record_charging()
+        charge = Database.get_last_charge(vin)
+        charge.price = 42
+        conn = Database.get_db()
+        Database.set_chargings_price(conn, charge)
+        conn.close()
+        res = Database.get_charge(vin, charge.start_at)
+        self.assertEqual(charge.price, res.price)
 
     def test_sdk(self):
         res = {
@@ -133,13 +150,13 @@ class TestUnit(unittest.TestCase):
                     'href': 'https://api.groupe-psa.com/connectedcar/v4/user/vehicles/myid'}},
             'timed.odometer': {'createdAt': None, 'mileage': 1107.1}, 'updatedAt': '2021-04-01T16:17:01Z'}
         api = ApiClient()
-        status: psacc.models.status.Status = api._ApiClient__deserialize(res, "Status")
+        status: psa.connected_car_api.models.status.Status = api._ApiClient__deserialize(res, "Status")
         geocode_res = reverse_geocode.search([(status.last_position.geometry.coordinates[:2])[::-1]])[0]
         assert geocode_res["country_code"] == "DE"
         get_new_test_db()
         car = Car("XX", "vid", "Peugeot")
         car.status = status
-        myp = MyPSACC.load_config(DATA_DIR + "config.json")
+        myp = PSAClient.load_config(DATA_DIR + "config.json")
         myp.record_info(car)
         assert "features" in json.loads(Database.get_recorded_position())
         # electric should be first
@@ -147,7 +164,7 @@ class TestUnit(unittest.TestCase):
 
     def test_record_position_charging(self):
         get_new_test_db()
-        ElecPrice.CONFIG_FILENAME = DATA_DIR + "config.ini"
+        config_repository.CONFIG_FILENAME = DATA_DIR + "config.ini"
         car = self.vehicule_list[0]
         record_position()
         Database.add_altitude_to_db(Database.get_db())
@@ -164,7 +181,7 @@ class TestUnit(unittest.TestCase):
                                   'duration': 40.0, 'speed_average': 28.5, 'distance': 19.0, 'mileage': 30.0,
                                   'altitude_diff': 2, 'id': 1, 'consumption': 4.6})
 
-        Charging.elec_price = ElecPrice.read_config()
+        Charging.elec_price = ConfigRepository.read_config(DATA_DIR + "config.ini").Electricity_config
         start_level = 40
         end_level = 85
         Charging.record_charging(car, "InProgress", date0, start_level, latitude, longitude, None, "slow", 20, 60)
@@ -188,12 +205,13 @@ class TestUnit(unittest.TestCase):
         assert get_figures(car)
         row = {"start_at": date0.strftime('%Y-%m-%dT%H:%M:%S.000Z'),
                "stop_at": date3.strftime('%Y-%m-%dT%H:%M:%S.000Z'), "start_level": start_level, "end_level": end_level}
-        assert get_battery_curve_fig(row, car) is not None
+        battery_curve_fix = get_battery_curve_fig(row, car)
+        assert battery_curve_fix is not None
         assert get_altitude_fig(trip) is not None
 
     def test_fuel_car(self):
         get_new_test_db()
-        ElecPrice.CONFIG_FILENAME = DATA_DIR + "config.ini"
+        config_repository.CONFIG_FILENAME = DATA_DIR + "config.ini"
         car = self.vehicule_list[1]
         Database.record_position(None, car.vin, 11, latitude, longitude, 22, date0, 40, 30, False)
         Database.record_position(None, car.vin, 20, latitude, longitude, 22, date1, 35, 29, False)
@@ -212,11 +230,11 @@ class TestUnit(unittest.TestCase):
                                    'altitude_diff': 0,
                                    'id': 1,
                                    'consumption': 1.32,
-                                   'consumption_fuel_km': 10.53}])
+                                   'consumption_fuel_km': 4.53}])
 
     def test_none_mileage(self):
         get_new_test_db()
-        ElecPrice.CONFIG_FILENAME = DATA_DIR + "config.ini"
+        config_repository.CONFIG_FILENAME = DATA_DIR + "config.ini"
         car = self.vehicule_list[1]
         Database.record_position(None, car.vin, None, latitude, longitude, 22, get_date(1), 40, 30, False)
         Database.record_position(None, car.vin, None, latitude, longitude, 22, get_date(2), 35, 29, False)
@@ -241,7 +259,7 @@ class TestUnit(unittest.TestCase):
                                    'altitude_diff': 0,
                                    'id': 1,
                                    'consumption': 1.32,
-                                   'consumption_fuel_km': 10.53}])
+                                   'consumption_fuel_km': 4.53}])
 
     def test_db_callback(self):
         old_dummy_value = dummy_value
@@ -269,7 +287,6 @@ class TestUnit(unittest.TestCase):
             pass
 
     def test_parse_apk(self):
-        from libs.psa.setup.app_decoder import get_content_from_apk
         filename = "mypeugeot.apk"
         try:
             os.remove(filename)

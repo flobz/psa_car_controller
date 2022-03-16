@@ -1,10 +1,9 @@
 doc-warnings: false
-use: flask
 max-line-length: 120
 ignore-paths:
-  - psa_connectedcar
   - test
-pep8:
+  - connected_car_api
+pycodestyle:
   disable:
     - E722
 pyflakes:
@@ -20,4 +19,3 @@ pylint:
     - I0011
     - W0511
     - consider-using-f-string
-

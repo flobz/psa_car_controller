@@ -32,5 +32,6 @@ jobs:
           CODACY_PROJECT_TOKEN: ${{ secrets.CODACY_PROJECT_TOKEN }}
         run: |
           echo Test
+          prospector
           coverage run -m unittest || exit 1
           [ -n "$CODACY_PROJECT_TOKEN" ] && coverage combine && coverage xml -o cobertura.xml && bash <(curl -Ls https://coverage.codacy.com/get.sh) report -r cobertura.xml

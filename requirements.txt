@@ -6,6 +6,7 @@ cryptography>=2.6
 Werkzeug>=1.0.0
 flask>=1.0.4
 dash_bootstrap_components>=1
+configupdater>=3.0
 pandas
 oauth2_client
 requests
@@ -16,10 +17,11 @@ geojson
 reverse_geocode
 androguard
 pycryptodomex
+pydantic
+ruamel.yaml>=0.15.0
 
 #swagger req
 certifi >= 14.05.14
 six >= 1.10
 python_dateutil >= 2.5.3
 urllib3 >= 1.15.1
-

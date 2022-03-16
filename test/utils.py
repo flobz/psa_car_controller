@@ -5,9 +5,9 @@ from datetime import timedelta, datetime
 
 import pytz
 
-from libs.car import Car, Cars
-from libs.charging import Charging
-from web.db import Database
+from psacc.application.charging import Charging
+from psacc.model.car import Cars, Car
+from psacc.repository.db import Database
 
 DATA_DIR = os.path.dirname(os.path.realpath(__file__)) + "/data/"
 latitude = 47.2183
@@ -40,6 +40,7 @@ def record_position():
     Database.record_position(None, car.vin, 11, latitude, longitude - 0.05, None, date0, 40, None, False)
     Database.record_position(None, car.vin, 20, latitude, longitude, 32, date1, 35, None, False)
     Database.record_position(None, car.vin, 30, latitude, longitude, 42, date2, 30, None, False)
+    Database.record_position(None, car.vin, None, latitude, longitude, 42, date2, 30, None, False)
 
 
 def record_charging():

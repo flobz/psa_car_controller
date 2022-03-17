@@ -51,7 +51,7 @@ def firstLaunchConfig(package_name, client_email, client_password, country_code,
                                        f"sitecode: {apk_parser.site_code}"
         try:
             msg += res.text
-        except:  # pylint: disable=bare-except
+        except BaseException:
             pass
         logger.error(msg)
         raise Exception(msg) from ex
@@ -81,7 +81,7 @@ def firstLaunchConfig(package_name, client_email, client_password, country_code,
         msg = traceback.format_exc()
         try:
             msg += res2.text
-        except:  # pylint: disable=bare-except
+        except BaseException:
             pass
         logger.error(msg)
         raise Exception(msg) from ex

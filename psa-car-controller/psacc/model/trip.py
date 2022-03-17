@@ -8,6 +8,7 @@ from .car import Car
 
 logger = logging.getLogger(__name__)
 
+
 class Points:
     def __init__(self, latitude, longitude):
         self.latitude = latitude

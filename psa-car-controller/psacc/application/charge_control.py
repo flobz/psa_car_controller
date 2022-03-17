@@ -92,7 +92,7 @@ class ChargeControl:
                         if next_in_second < self.psacc.info_refresh_rate:
                             periodicity = next_in_second
                             thread = threading.Timer(periodicity, self.process)
-                            thread.setDaemon(True)  # pylint: disable=deprecated-method
+                            thread.setDaemon(True)
                             thread.start()
             else:
                 if self._next_stop_hour is not None and self._next_stop_hour < now:
@@ -100,7 +100,7 @@ class ChargeControl:
                 self.retry_count = 0
         except (AttributeError, ValueError):
             logger.exception("Probably can't retrieve all information from API:")
-        except:  # pylint: disable=bare-except
+        except BaseException:
             logger.exception("Charge control:")
 
     def get_dict(self):

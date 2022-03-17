@@ -9,6 +9,7 @@ from psacc.model.car import Car
 
 logger = logging.getLogger(__name__)
 
+
 class Abrp:
     api_key = "1e28ad14-df16-49f0-97da-364c9154b44a"
     url = "https://api.iternio.com/1/tlm/send"

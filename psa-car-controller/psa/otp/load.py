@@ -16,6 +16,7 @@ DEFAULT_VERSION = "529"
 def filter_load(string: str):
     return string.replace("&amp;", "&")
 
+
 class IWData:
     # pylint: disable=invalid-name,too-many-branches,too-many-statements
     def __init__(self, IW):

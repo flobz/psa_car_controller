@@ -9,7 +9,6 @@ from dash.dependencies import Output, Input
 logger = logging.getLogger(__name__)
 
 
-
 class Graph:
     def __init__(self, graph_id, x, y: [], figure):
         self.graph_id = graph_id
@@ -97,7 +96,7 @@ class FigureFilter:
         res = "{"
         i = ord("a")
         for table in self.tables:
-            res+= f'"{table.table_id}": {chr(i)},'
+            res += f'"{table.table_id}": {chr(i)},'
             i += 1
         res = res[:-1] + "}"
         return res

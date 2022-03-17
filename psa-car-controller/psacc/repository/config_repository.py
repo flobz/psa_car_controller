@@ -15,20 +15,20 @@ logger = logging.getLogger(__name__)
 DEFAULT_CONFIG = """[General]
 currency = €
 # minimum trip length in km so it's added to stats and map in website
-minimum trip length = 
+minimum trip length =
 
 [Electricity config]
 # price by kw/h
-day price = 
+day price =
 night price =
 # ex: 22h30
 night hour start =
 # ex: 6h00
 night hour end =
-dc charge price = 
-high speed dc charge price = 
+dc charge price =
+high speed dc charge price =
 # minimum power in kW that should be delivered during a charge so it can be considered as a high speed charger
-high speed dc charge threshold = 
+high speed dc charge threshold =
 """
 
 
@@ -150,7 +150,7 @@ class ConfigRepository(BaseModel):
     def _read_file(name):
         if name is None:
             name = CONFIG_FILENAME
-        with open(name, "r") as f:
+        with open(name, "r", encoding="utf-8") as f:
             return f.read()
 
     @staticmethod
@@ -186,7 +186,7 @@ class ConfigRepository(BaseModel):
 
     @staticmethod
     def _write(name, config):
-        with open(name, "w") as f:
+        with open(name, "w", encoding="utf-8") as f:
             config.write(f)
 
     @staticmethod

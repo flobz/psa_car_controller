@@ -357,8 +357,8 @@ def serve_layout():
                                           ],
                                           id="tab_trips_popup",
                                           size="xl",
-                                      )
-                                      ]),
+                            )
+                            ]),
                     dbc.Tab(label="Charge", tab_id="charge", id="tab_charge",
                             children=[figures.battery_table,
                                       dbc.Modal(

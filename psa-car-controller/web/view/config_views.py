@@ -109,7 +109,7 @@ def log_layout():
                "white-space": "pre-line"},
         children=log_text,
         className="m-3 bg-light h5"),
-                                              html.Div(id="empty-div")])
+        html.Div(id="empty-div")])
 
 
 def config_layout(activeTabs="log"):

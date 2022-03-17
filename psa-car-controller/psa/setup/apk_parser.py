@@ -32,7 +32,7 @@ class ApkParser:
         self.client_secret = resources.get_string(package_name, "PSA_API_CLIENT_SECRET_PROD")[1]
         self.host_brandid_prod = resources.get_string(package_name, "HOST_BRANDID_PROD")[1]
         self.culture = self.__get_cultures_code(a.get_file("res/raw/cultures.json"), self.country_code)
-        ## Get Customer id
+        # Get Customer id
         self.site_code = BRAND[package_name]["brand_code"] + "_" + self.country_code + "_ESP"
         pfx_cert = a.get_file("assets/MWPMYMA1.pfx")
         save_key_to_pem(pfx_cert, b"y5Y2my5B")

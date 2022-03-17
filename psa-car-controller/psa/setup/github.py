@@ -35,9 +35,9 @@ def urlretrieve_from_github(user, repo, directory, filename, branch="main"):
             r = requests.get("https://github.com/{}/{}/raw/{}/{}{}".format(user, repo, branch, directory, filename),
                              headers={
                                  "Accept": "application/vnd.github.VERSION.raw"
-                             },
-                             stream=True
-                             )
+            },
+                stream=True
+            )
 
             r.raise_for_status()
             for chunk in r.iter_content(1024):

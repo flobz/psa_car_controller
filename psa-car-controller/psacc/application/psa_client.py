@@ -122,13 +122,13 @@ class PSAClient:
                         self.get_vehicle_info(car.vin)
                     for callback in self.info_callback:
                         callback()
-                except:  # pylint: disable=bare-except
+                except BaseException:
                     logger.exception("refresh_vehicle_info: ")
                 sleep(self.info_refresh_rate)
 
     def start_refresh_thread(self):
         if self.refresh_thread is None:
-            self.refresh_thread = threading.Thread(target=self.__refresh_vehicle_info,daemon=True)
+            self.refresh_thread = threading.Thread(target=self.__refresh_vehicle_info, daemon=True)
             self.refresh_thread.start()
 
     def get_vehicles(self):

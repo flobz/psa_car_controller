@@ -187,7 +187,7 @@ class Database:
     @staticmethod
     def get_battery_curve(conn, start_at, stop_at, vin):
         battery_curves = []
-        res = conn.execute("""SELECT date, level, rate, autonomy 
+        res = conn.execute("""SELECT date, level, rate, autonomy
                                                 FROM battery_curve
                                                 WHERE start_at=? and date<=? and VIN=?;""",
                            (start_at, stop_at, vin)).fetchall()

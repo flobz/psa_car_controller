@@ -256,7 +256,7 @@ class Otp:
         password = self.data.iwK1 + ":" + str(self.defi) + ":" + self.data.iwsecval
         res = bytes(hashlib.sha256(password.encode("utf-8")).digest())
         nb = ((int.from_bytes(res[:4], byteorder="big") & 0xfffffff) * 1024) + (
-                int.from_bytes(res[4:8], byteorder="big") & 1023)
+            int.from_bytes(res[4:8], byteorder="big") & 1023)
         otp = number_to_base36(nb)
         return otp
 
@@ -305,7 +305,7 @@ def save_otp(obj, filename="otp.bin"):
 
 class RenameUnpickler(pickle.Unpickler):
     def find_class(self, module, name):
-        renamed_module = "psa."+module.lower()
+        renamed_module = "psa." + module.lower()
         return super().find_class(renamed_module, name)
 
 

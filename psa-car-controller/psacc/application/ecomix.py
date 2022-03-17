@@ -15,6 +15,7 @@ CO2_SIGNAL_URL = "https://api.co2signal.com"
 
 logger = logging.getLogger(__name__)
 
+
 class Ecomix:
     _cache = {}
     co2_signal_key = None

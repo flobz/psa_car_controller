@@ -8,6 +8,7 @@ LEVEL_FUEL = 8
 
 logger = logging.getLogger(__name__)
 
+
 class TripParser:
     def __init__(self, car: Car):
         self.car = car

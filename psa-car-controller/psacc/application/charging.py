@@ -53,10 +53,8 @@ class Charging:
         Database.update_charge(charge)
         Database.clean_battery(conn)
 
-
-
     @staticmethod
-    def is_charge_ended(charge:'Charge'):
+    def is_charge_ended(charge: 'Charge'):
         return not charge or charge.stop_at
 
     @staticmethod

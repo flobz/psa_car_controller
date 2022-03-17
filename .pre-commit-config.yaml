@@ -1,6 +1,13 @@
+default_language_version:
+    python: python3.7
 repos:
--   repo: https://github.com/PyCQA/prospector
-    rev: 1.7.7 # The version of Prospector to use, if not 'master' for latest
-    hooks:
-    -   id: prospector
-        language: system
+    - repo: https://github.com/pre-commit/mirrors-autopep8
+      rev: 'v1.6.0'  # Use the sha / tag you want to point at
+      hooks:
+          - id: autopep8
+            language: system
+    -   repo: https://github.com/PyCQA/prospector
+        rev: 1.7.7 # The version of Prospector to use, if not 'master' for latest
+        hooks:
+        -   id: prospector
+            language: system

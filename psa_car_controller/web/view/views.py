@@ -1,5 +1,4 @@
 import json
-import logging
 from typing import List
 from urllib.parse import parse_qs, urlparse
 
@@ -9,6 +8,7 @@ from dash.dependencies import Output, Input, State
 from dash.exceptions import PreventUpdate
 from flask import jsonify, request, Response as FlaskResponse
 
+from psa_car_controller.common.mylogger import CustomLogger
 from psa_car_controller.psacc.application.car_controller import PSACarController
 from psa_car_controller.psacc.model.car import Cars, Car
 from psa_car_controller.common.utils import RateLimitException
@@ -28,7 +28,7 @@ from psa_car_controller.web.view.config_views import log_layout, config_layout
 from psa_car_controller.web.tools.figurefilter import FigureFilter
 from psa_car_controller.web.view.control import get_control_tabs
 
-logger = logging.getLogger(__name__)
+logger = CustomLogger.getLogger(__name__)
 
 EMPTY_DIV = "empty-div"
 CALLBACK_CREATED = False

@@ -24,6 +24,10 @@ class CustomLogger(logging.Logger):
         if self.isEnabledFor(DEBUG_LEVELV_NUM):
             self.__new_style_log(DEBUG_LEVELV_NUM, msg, args, **kwargs)
 
+    @staticmethod
+    def getLogger(name):
+        return logging.getLogger(name)
+
 
 logging.setLoggerClass(CustomLogger)
 logger = logging.getLogger()

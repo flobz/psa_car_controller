@@ -1,5 +1,4 @@
 import json
-import logging
 import threading
 from datetime import datetime, timedelta, timezone
 from json import JSONEncoder
@@ -22,12 +21,13 @@ from psa_car_controller.psa.constants import realm_info, AUTHORIZE_SERVICE
 
 from .abrp import Abrp
 from psa_car_controller.psacc.repository.db import Database
+from psa_car_controller.common.mylogger import CustomLogger
 
 SCOPE = ['openid profile']
 CARS_FILE = "cars.json"
 DEFAULT_CONFIG_FILENAME = "config.json"
 
-logger = logging.getLogger(__name__)
+logger = CustomLogger.getLogger(__name__)
 
 
 class PSAClient:

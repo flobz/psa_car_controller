@@ -3,9 +3,10 @@ import json
 import os
 import unittest
 from datetime import datetime, timedelta
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, patch
 
 import reverse_geocode
+from dateutil.tz import tzutc
 from pytz import UTC
 
 from psa_car_controller import psa
@@ -28,6 +29,7 @@ from psa_car_controller.psacc.repository.config_repository import ConfigReposito
 from psa_car_controller.psacc.repository.db import Database
 from psa_car_controller.psacc.repository.trips import Trips
 from psa_car_controller.psacc.utils.utils import get_temp
+from tests.data.car_status import FUEL_CAR_STATUS, ELECTRIC_CAR_STATUS
 from tests.utils import DATA_DIR, record_position, latitude, longitude, date0, date1, date2, date3, record_charging, \
     vehicule_list, get_new_test_db, get_date, date4
 from psa_car_controller.web.figures import get_figures, get_battery_curve_fig, get_altitude_fig
@@ -131,38 +133,35 @@ class TestUnit(unittest.TestCase):
         self.assertEqual(charge.price, res.price)
 
     def test_sdk(self):
-        res = {
-            'lastPosition': {'type': 'Feature', 'geometry': {'type': 'Point', 'coordinates': [9.65457, 49.96119, 21]},
-                             'properties': {'updatedAt': '2021-03-29T05:16:10Z', 'heading': 126,
-                                            'type': 'Estimated'}}, 'preconditionning': {
-                'airConditioning': {'updatedAt': '2021-04-01T16:17:01Z', 'status': 'Disabled', 'programs': [
-                    {'enabled': False, 'slot': 1, 'recurrence': 'Daily', 'start': 'PT21H40M',
-                     'occurence': {'day': ['Sat']}}]}},
-            'energy': [{'updatedAt': '2021-02-23T22:29:03Z', 'type': 'Fuel', 'level': 0},
-                       {'updatedAt': '2021-04-01T16:17:01Z', 'type': 'Electric', 'level': 70, 'autonomy': 192,
-                        'charging': {'plugged': True, 'status': 'InProgress', 'remainingTime': 'PT0S',
-                                     'chargingRate': 20, 'chargingMode': 'Slow', 'nextDelayedTime': 'PT21H30M'}}],
-            'createdAt': '2021-04-01T16:17:01Z',
-            'battery': {'voltage': 99, 'current': 0, 'createdAt': '2021-04-01T16:17:01Z'},
-            'kinetic': {'createdAt': '2021-03-29T05:16:10Z', 'moving': False},
-            'privacy': {'createdAt': '2021-04-01T16:17:01Z', 'state': 'None'},
-            'service': {'type': 'Electric', 'updatedAt': '2021-02-23T21:10:29Z'}, '_links': {'self': {
-                'href': 'https://api.groupe-psa.com/connectedcar/v4/user/vehicles/myid/status'},
-                'vehicles': {
-                    'href': 'https://api.groupe-psa.com/connectedcar/v4/user/vehicles/myid'}},
-            'timed.odometer': {'createdAt': None, 'mileage': 1107.1}, 'updatedAt': '2021-04-01T16:17:01Z'}
         api = ApiClient()
-        status: psa.connected_car_api.models.status.Status = api._ApiClient__deserialize(res, "Status")
+        status: psa.connected_car_api.models.status.Status = api._ApiClient__deserialize(FUEL_CAR_STATUS, "Status")
         geocode_res = reverse_geocode.search([(status.last_position.geometry.coordinates[:2])[::-1]])[0]
-        assert geocode_res["country_code"] == "DE"
         get_new_test_db()
         car = Car("XX", "vid", "Peugeot")
         car.status = status
         myp = PSAClient.load_config(DATA_DIR + "config.json")
         myp.record_info(car)
+        assert geocode_res["country_code"] == "DE"
         assert "features" in json.loads(Database.get_recorded_position())
         # electric should be first
         assert car.status.energy[0].type == 'Electric'
+
+    @patch("psa_car_controller.psacc.repository.db.Database.record_position")
+    def test_electric_record_info(self, mock_db):
+        api = ApiClient()
+        status: psa.connected_car_api.models.status.Status = api._ApiClient__deserialize(ELECTRIC_CAR_STATUS, "Status")
+        get_new_test_db()
+        car = self.vehicule_list[0]
+        car.status = status
+        myp = PSAClient.load_config(DATA_DIR + "config.json")
+        myp.record_info(car)
+        db_record_position_arg = mock_db.call_args_list[0][0]
+        expected_result = (None, 'VR3UHZKX', 3196.5, 47.274, -1.59008, 30,
+                           datetime(2022, 3, 26, 11, 2, 54, tzinfo=tzutc()),
+                           59.0,
+                           None,
+                           True)
+        self.assertEqual(db_record_position_arg, expected_result)
 
     def test_record_position_charging(self):
         get_new_test_db()

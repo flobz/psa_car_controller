@@ -19,9 +19,9 @@ class CarStatus(Status):
                  service=None, timed_odometer=None):  # noqa: E501
         super().__init__(embedded, links, battery, doors_state, energy, environment, ignition, kinetic, last_position,
                          preconditionning, privacy, safety, service, timed_odometer)
-        self.correct()
+        self.correct(False)
 
-    def correct(self):
+    def correct(self, electric_car):
         try:
             if len(self.last_position.geometry.coordinates) < 2:
                 raise AttributeError()
@@ -39,6 +39,8 @@ class CarStatus(Status):
 
         if self.timed_odometer is None:
             self.timed_odometer = VehicleOdometer()
+        if electric_car:
+            self.get_energy("Fuel").level = None
 
     def is_moving(self):
         try:

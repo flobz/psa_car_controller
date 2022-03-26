@@ -70,7 +70,7 @@ class Car:
         raise ValueError("ABRP model is not set")
 
     @property
-    def status(self):
+    def status(self) -> CarStatus:
         return self._status
 
     @status.setter
@@ -78,7 +78,7 @@ class Car:
         self._status = value
         if self._status is not None and self.status.__class__ != CarStatus:
             self._status.__class__ = CarStatus
-            self._status.correct()
+            self._status.correct(self.is_electric())
 
     def get_charge_speed(self, diff_elvel, duration_in_sec) -> float:
         duration_in_hour = duration_in_sec / 3600

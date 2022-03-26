@@ -305,7 +305,7 @@ def save_otp(obj, filename="otp.bin"):
 
 class RenameUnpickler(pickle.Unpickler):
     def find_class(self, module, name):
-        renamed_module = "psa_car_controller." + module.lower()
+        renamed_module = "psa_car_controller.psa." + module.lower()
         return super().find_class(renamed_module, name)
 
 

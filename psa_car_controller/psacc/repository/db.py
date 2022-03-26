@@ -84,15 +84,20 @@ class Database:
 
     @staticmethod
     def init_db(conn):
-        conn.execute("""CREATE TABLE IF NOT EXISTS position (Timestamp DATETIME PRIMARY KEY,
-                                                             VIN TEXT, longitude REAL,
-                                                             latitude REAL,
-                                                             mileage REAL,
-                                                             level INTEGER,
-                                                             level_fuel INTEGER,
-                                                             moving BOOLEAN,
-                                                             temperature INTEGER,
-                                                             altitude INTEGER);""")
+        new_db = True
+        try:
+            conn.execute("""CREATE TABLE position (Timestamp DATETIME PRIMARY KEY,
+                                                                 VIN TEXT, longitude REAL,
+                                                                 latitude REAL,
+                                                                 mileage REAL,
+                                                                 level INTEGER,
+                                                                 level_fuel INTEGER,
+                                                                 moving BOOLEAN,
+                                                                 temperature INTEGER,
+                                                                 altitude INTEGER);""")
+        except sqlite3.OperationalError:
+            new_db = False
+            logger.debug("Database already exist")
         make_backup = False
         conn.execute("CREATE TABLE IF NOT EXISTS battery (start_at DATETIME PRIMARY KEY,stop_at DATETIME,VIN TEXT, "
                      "start_level INTEGER, end_level INTEGER, co2 INTEGER, kw INTEGER);")
@@ -108,7 +113,7 @@ class Database:
                     make_backup = True
                 except sqlite3.OperationalError:
                     pass
-        if make_backup:
+        if not new_db and make_backup:
             Database.backup(conn)
         conn.execute("DROP TRIGGER IF EXISTS update_trigger")
         Database.clean_battery(conn)
@@ -237,7 +242,7 @@ class Database:
             conn = Database.get_db()
             if conn.execute("SELECT Timestamp from position where Timestamp=?", (date,)).fetchone() is None:
                 temp = get_temp(latitude, longitude, weather_api)
-                if level_fuel == 0:  # fix fuel level not provided when car is off
+                if level_fuel and level_fuel == 0:  # fix fuel level not provided when car is off
                     try:
                         level_fuel = conn.execute(
                             "SELECT level_fuel FROM position WHERE level_fuel>0 AND VIN=? ORDER BY Timestamp DESC "

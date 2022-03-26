@@ -3,8 +3,10 @@
 ### 1. Can't get car model
 The car model need to be known by the app. To find it, the app use the first 10 character of your VIN.
 If the car isn't in the list we need to add it, to do that you need to edit the file here:
-### todo
 
+Go to [car_models.yml](https://github.com/flobz/psa_car_controller/blob/develop/psa_car_controller/psacc/resources/car_models.yml)
+and click on edit then copy cut and already existent model in the list and edit all properties that are incorrect for your model.
+Finally, click on propose change. 
 
 ### 2. Error during activation {'newversion': '2.0.0', 'newversionurl': 'http://m.inwebo.com/', 'err': 'NOK:FORBIDDEN'}
 Your psa account is locked because you makes 20 sms activation. To unlock do this : 

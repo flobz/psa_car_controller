@@ -93,6 +93,8 @@ You can modify a price manually in the dashboard. It can be useful if you use pu
 
 ## FAQ
 If you have a problem, or a question please check if the answer isn't in the [FAQ](FAQ.md). 
+
+## Contribute
 If you need information to contribute or edit this program go [here](docs/Develop.md).
 
 ## Donation

@@ -1,7 +1,7 @@
 import os
 import unittest
 from configparser import ConfigParser
-from unittest.mock import patch, Mock, MagicMock
+from unittest.mock import patch
 
 from psa_car_controller.common.mylogger import my_logger
 
@@ -11,7 +11,7 @@ from psa_car_controller.psacc.repository.config_repository import ConfigReposito
 class TestUnit(unittest.TestCase):
     def test_read_config(self):
         from psa_car_controller.psacc.repository.config_repository import ConfigRepository
-        config = ConfigRepository.read_config()
+        ConfigRepository.read_config()
 
     @patch("psa_car_controller.psacc.repository.config_repository.ConfigRepository._write")
     @patch("psa_car_controller.psacc.repository.config_repository.ConfigRepository._read_file")
@@ -32,7 +32,9 @@ night hour end = 4h42
         config_written: ConfigParser = mock_write.call_args_list[0][0][1]
         self.assertEqual(config_written["General"]["currency"].value, "€")
         self.assertEqual(config_written["Electricity config"]["day price"].value, 42)
-        print(config_written)
+        self.assertEqual(config_written["Electricity config"]["night price"].value, 0.1)
+        self.assertEqual(str(config_written["Electricity config"]["night hour start"].value), "1h0")
+        self.assertEqual(str(config_written["Electricity config"]["night hour end"].value), "4h42")
 
     def test_read_non_existent_config(self):
         from psa_car_controller.psacc.repository.config_repository import ConfigRepository

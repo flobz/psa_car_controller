@@ -3,13 +3,12 @@ from typing import Dict
 
 from geojson import FeatureCollection
 
+from psa_car_controller.common.mylogger import logger
 from psa_car_controller.psacc.application.trip_parser import TripParser
 
 from psa_car_controller.psacc.model.trip import Trip
 from psa_car_controller.psacc.model.car import Cars
 from psa_car_controller.psacc.repository.db import Database
-
-logger = logging.getLogger(__name__)
 
 
 class Trips(list):
@@ -47,8 +46,8 @@ class Trips(list):
             trips = Trips()
             vin = vin[0]
             res = conn.execute('SELECT Timestamp, VIN, longitude, latitude, mileage, level, moving, temperature, '
-                               'level_fuel, altitude FROM position WHERE VIN=? AND mileage NOT NULL ORDER BY Timestamp',
-                               (vin,)).fetchall()
+                               'level_fuel, altitude FROM position WHERE VIN=? '
+                               'AND mileage IS NOT NULL ORDER BY Timestamp', (vin,)).fetchall()
             if len(res) > 1:
                 car = vehicles_list.get_car_by_vin(vin)
                 assert car is not None

@@ -7,6 +7,7 @@ from unittest.mock import MagicMock, patch
 
 import reverse_geocode
 from dateutil.tz import tzutc
+from greenery.lego import parse, charclass
 from pytz import UTC
 
 from psa_car_controller import psa
@@ -301,6 +302,15 @@ class TestUnit(unittest.TestCase):
         with open(filename, "w") as f:
             f.write(" ")
         assert github_file_need_to_be_downloaded(GITHUB_USER, GITHUB_REPO, "", filename) is True
+
+    def test_regex(self):
+        car_models = CarModelRepository().models
+        for x in range(0, len(car_models)):
+            for y in range(x + 1, len(car_models)):
+                reg_a = car_models[x].reg
+                reg_b = car_models[y].reg
+                res: charclass = parse(reg_a) & parse(reg_b)
+                self.assertTrue(res.empty(), msg=f"{reg_a} and {reg_b} can match the same string")
 
 
 if __name__ == '__main__':

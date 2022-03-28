@@ -3,7 +3,7 @@ import logging
 import threading
 from datetime import datetime
 from os import environ
-from time import sleep
+import time
 
 import paho.mqtt.client as mqtt
 from requests import RequestException
@@ -82,18 +82,21 @@ class RemoteClient:
             elif msg.topic.startswith(MQTT_EVENT_TOPIC):
                 charge_info = data["charging_state"]
                 self.precond_programs[data["vin"]] = data["precond_state"]["programs"]
-            if charge_info is not None and charge_info['remaining_time'] != 0:
-                try:
-                    car = self.vehicles_list.get_car_by_vin(vin=msg.topic.split("/")[-1])
-                    if car and car.status.get_energy('Electric').charging.status != INPROGRESS:
-                        # fix a psa server bug where charge beginning without status api being properly updated
-                        logger.warning("charge begin but API isn't updated")
-                        sleep(60)
-                        self.wakeup(data["vin"])
-                except (IndexError, AttributeError, RateLimitException):
-                    logger.exception("on_mqtt_message:")
+            self._fix_not_updated_api(charge_info, data["vin"])
         except KeyError:
             logger.exception("on_mqtt_message:")
+
+    def _fix_not_updated_api(self, charge_info, vin):
+        if charge_info is not None and charge_info['remaining_time'] != 0:
+            try:
+                car = self.vehicles_list.get_car_by_vin(vin=vin)
+                if car and car.status.get_energy('Electric').charging.status != INPROGRESS:
+                    # fix a psa server bug where charge beginning without status api being properly updated
+                    logger.warning("charge begin but API isn't updated")
+                    time.sleep(60)
+                    self.wakeup(vin)
+            except (IndexError, AttributeError, RateLimitException):
+                logger.exception("on_mqtt_message:")
 
     def start(self):
         if self.load_otp():
@@ -172,7 +175,7 @@ class RemoteClient:
             return True
         except (RequestException, RateLimitException) as e:
             logger.exception("Can't refresh remote token %s", e)
-            sleep(60)
+            time.sleep(60)
             return False
 
     def get_sms_otp_code(self):
@@ -204,7 +207,7 @@ class RemoteClient:
             return res
         except RequestException as e:
             logger.error("Can't refresh remote token %s", e)
-            sleep(60)
+            time.sleep(60)
         return None
 
     def horn(self, vin, count):

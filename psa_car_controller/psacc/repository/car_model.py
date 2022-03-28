@@ -18,7 +18,7 @@ class CarModelRepository(metaclass=Singleton):
         yaml = ruamel.yaml.YAML()
         yaml.register_class(ElecModel)
         yaml.register_class(CarModel)
-        self.models: List = yaml.load(models)
+        self.models: List[CarModel] = yaml.load(models)
 
     def find_model_by_vin(self, vin) -> CarModel:
         if vin != "vin":

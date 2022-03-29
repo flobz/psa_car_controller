@@ -1,7 +1,7 @@
 import logging
 from datetime import datetime, timedelta
 from statistics import mean, StatisticsError
-import xml.etree.cElementTree as ElT
+import xml.etree.ElementTree as ElT
 import numbers
 
 import requests

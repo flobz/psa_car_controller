@@ -8,13 +8,20 @@ logging.addLevelName(DEBUG_LEVELV_NUM, "DEBUGV")
 
 
 class CustomLogger(logging.Logger):
-    # pylint: disable=too-many-arguments,unused-argument,arguments-differ
-    def _log(self, level, msg, args, exc_info=None, extra=None, stack_info=False, exc_info_debug=False, **kwargs):
+    def _log(self, level,
+             msg,
+             args,
+             exc_info=None,
+             extra=None,
+             stack_info=False,
+             exc_info_debug=False,
+             **kwargs):  # pylint: disable=too-many-arguments,unused-argument,arguments-differ
         if exc_info_debug and self.isEnabledFor(logging.DEBUG):
             exc_info = True
         super()._log(level, msg, args, exc_info, extra, stack_info)
 
-    def __new_style_log(self, level, msg, args, exc_info=None, extra=None, stack_info=False, **kwargs):
+    def __new_style_log(self, level, msg, args, exc_info=None, extra=None,  # pylint: disable=too-many-arguments
+                        stack_info=False, **kwargs):
         if kwargs.pop('style', "%") == "{":  # optional
             msg = msg.format(*args)
             args = []

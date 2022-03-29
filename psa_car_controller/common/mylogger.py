@@ -8,14 +8,14 @@ logging.addLevelName(DEBUG_LEVELV_NUM, "DEBUGV")
 
 
 class CustomLogger(logging.Logger):
-    def _log(self, level,
+    def _log(self, level,  # pylint: disable=too-many-arguments,unused-argument,arguments-differ
              msg,
              args,
              exc_info=None,
              extra=None,
              stack_info=False,
              exc_info_debug=False,
-             **kwargs):  # pylint: disable=too-many-arguments,unused-argument,arguments-differ
+             **kwargs):
         if exc_info_debug and self.isEnabledFor(logging.DEBUG):
             exc_info = True
         super()._log(level, msg, args, exc_info, extra, stack_info)

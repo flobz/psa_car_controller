@@ -3,12 +3,14 @@ from typing import Dict
 
 from geojson import FeatureCollection
 
-from psa_car_controller.common.mylogger import logger
+from psa_car_controller.common.mylogger import CustomLogger
 from psa_car_controller.psacc.application.trip_parser import TripParser
 
 from psa_car_controller.psacc.model.trip import Trip
 from psa_car_controller.psacc.model.car import Cars
 from psa_car_controller.psacc.repository.db import Database
+
+logger = CustomLogger.getLogger(__name__)
 
 
 class Trips(list):

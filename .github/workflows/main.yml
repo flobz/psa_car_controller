@@ -18,7 +18,7 @@ jobs:
   # This workflow contains a single job called "build"
   test:
     # The type of runner that the job will run on
-    runs-on: debian-buster
+    runs-on: ubuntu-18.04
 
     # Steps represent a sequence of tasks that will be executed as part of the job
     steps:
@@ -27,7 +27,9 @@ jobs:
       # Runs a set of commands using the runners shell
       - name: Install requirements
         run: |
-          curl -sSL https://raw.githubusercontent.com/python-poetry/poetry/master/get-poetry.py | python -
+          sudo apt-get update
+          sudo apt-get install -y python3.7
+          curl -sSL https://raw.githubusercontent.com/python-poetry/poetry/master/get-poetry.py | python3.7 -
           export PATH="${PATH}:${HOME}/.poetry/bin/"
           poetry install
       - name: check quality

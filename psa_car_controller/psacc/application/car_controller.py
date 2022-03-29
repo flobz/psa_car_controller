@@ -1,5 +1,6 @@
 import argparse
 import atexit
+import logging
 import threading
 from os import environ, path
 
@@ -10,10 +11,12 @@ from .charging import Charging
 from psa_car_controller.psacc.repository.config_repository import ConfigRepository
 from psa_car_controller.psacc.utils.utils import Singleton
 from .psa_client import PSAClient
-from psa_car_controller.common.mylogger import logger, my_logger
+from psa_car_controller.common.mylogger import my_logger
 from psa_car_controller.psa.otp.otp import CONFIG_NAME as OTP_CONFIG_NAME, ConfigException
 
 DEFAULT_NAME = "config.json"
+
+logger = logging.getLogger(__name__)
 
 
 def parse_args():

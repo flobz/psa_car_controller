@@ -1,4 +1,5 @@
 import locale
+import logging
 
 import dash_bootstrap_components as dbc
 from flask import Flask
@@ -12,12 +13,14 @@ try:
 except ImportError:
     from werkzeug import DispatcherMiddleware
 
-from psa_car_controller.common.mylogger import logger, file_handler
+from psa_car_controller.common.mylogger import file_handler
 import importlib
 
 # pylint: disable=invalid-name
 app = None
 dash_app = None
+
+logger = logging.getLogger(__name__)
 
 
 class MyProxyFix(ProxyFix):

@@ -28,6 +28,8 @@ jobs:
       - name: Install requirements
         run: |
           sudo apt-get update
+          sudo apt install -y software-properties-common
+          sudo add-apt-repository ppa:deadsnakes/ppa -y
           sudo apt-get install -y python3.7
           curl -sSL https://raw.githubusercontent.com/python-poetry/poetry/master/get-poetry.py | python3.7 -
           export PATH="${PATH}:${HOME}/.poetry/bin/"

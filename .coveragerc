@@ -2,6 +2,6 @@
 parallel=True
 concurrency=thread
 omit =
-	psa-car-controller/psa/connected_car_api/*
+	psa_car_controller/psa/connected_car_api/*
 	venv/*
-	test/*
+	tests/*

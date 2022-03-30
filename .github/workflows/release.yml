@@ -5,6 +5,14 @@ on:
      - 'v*.*.*'
   workflow_dispatch:
 jobs:
+  create_release:
+    name: Push to pypi
+    runs-on: ubuntu-latest
+    steps:
+     - name: Build and publish to pypi
+       uses: JRubics/poetry-publish@v1.10
+       with:
+         pypi_token: ${{ secrets.PYPI_TOKEN }}
   push_to_registry:
     name: Push Docker image to Docker Hub
     runs-on: ubuntu-latest

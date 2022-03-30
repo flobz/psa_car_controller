@@ -60,7 +60,7 @@ class RemoteClient:
         else:
             logger.warning(mqtt.error_string(result_code))
 
-    def __on_mqtt_message(self, client, userdata, msg):  # pylint: disable=unused-argument
+    def _on_mqtt_message(self, client, userdata, msg):  # pylint: disable=unused-argument
         try:
             logger.info("mqtt msg received: %s %s", msg.topic, msg.payload)
             data = json.loads(msg.payload)
@@ -81,13 +81,15 @@ class RemoteClient:
                     logger.error('%s : %s', data["return_code"], data.get("reason", "?"))
             elif msg.topic.startswith(MQTT_EVENT_TOPIC):
                 charge_info = data["charging_state"]
-                self.precond_programs[data["vin"]] = data["precond_state"]["programs"]
+                programs = data["precond_state"].get("programs", None)
+                if programs:
+                    self.precond_programs[data["vin"]] = data["precond_state"]["programs"]
             self._fix_not_updated_api(charge_info, data["vin"])
         except KeyError:
             logger.exception("on_mqtt_message:")
 
     def _fix_not_updated_api(self, charge_info, vin):
-        if charge_info is not None and charge_info['remaining_time'] != 0:
+        if charge_info is not None and charge_info.get('remaining_time', 0) != 0:
             try:
                 car = self.vehicles_list.get_car_by_vin(vin=vin)
                 if car and car.status.get_energy('Electric').charging.status != INPROGRESS:
@@ -106,7 +108,7 @@ class RemoteClient:
             if self._refresh_remote_token():
                 self.mqtt_client.tls_set_context()
                 self.mqtt_client.on_connect = self.__on_mqtt_connect
-                self.mqtt_client.on_message = self.__on_mqtt_message
+                self.mqtt_client.on_message = self._on_mqtt_message
                 self.mqtt_client.on_disconnect = self._on_mqtt_disconnect
                 self.mqtt_client.connect(MQTT_SERVER, 8885, 60)
                 self.mqtt_client.loop_start()

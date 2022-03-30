@@ -2,10 +2,12 @@
 
 import os
 from datetime import timedelta, datetime
+from unittest.mock import MagicMock
 
 import pytz
 
-
+from psa_car_controller.psa.RemoteClient import RemoteClient
+from psa_car_controller.psa.connected_car_api import Vehicles
 from psa_car_controller.psacc.application.charging import Charging
 from psa_car_controller.psacc.model.car import Cars, Car
 from psa_car_controller.psacc.repository.db import Database
@@ -54,3 +56,9 @@ def record_charging():
 
 def get_date(offset):
     return date3 + timedelta(minutes=60 * offset)
+
+
+def get_rc() -> RemoteClient:
+    account_info = MagicMock()
+    account_info.realm = ""
+    return RemoteClient(account_info, Vehicles, None, None)

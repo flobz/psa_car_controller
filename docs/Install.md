@@ -4,7 +4,7 @@
 
 1.2 Install requirements :
 
-- You need **python >= 3.6**
+- You need **python >= 3.7**
 
 - On debian based distribution you can install some requirement from repos, it's faster than installtion with pip: 
  
@@ -20,10 +20,10 @@
         
 Start the app with charge control enabled :
 
-``python3 server.py --web-conf``
+``python3 -m psa-car-controller --web-conf``
 
 At the first launch you will be asked to connect and give a code that you will receive by SMS and also give your pin code (the four-digit code that your use on the android app).
 If it failed you can remove the file otp.bin and retry.
 
 You can see all options available with :
-``python3 server.py -h``
+``python3 -m psa-car-controller -h``

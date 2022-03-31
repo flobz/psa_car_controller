@@ -65,7 +65,7 @@ A video in French was made by vlycop to explain how to use this application : ht
      
 You can add the -r argument to record the position of the vehicle and retrieve this information in a dashboard.
 
-``python3 server.py -f config.json -c charge_config.json -r``
+``python3 psa-car-controller -f config.json -c charge_config.json -r``
     
 You will be able to visualize your trips, your consumption and some statistics:
     
@@ -93,6 +93,8 @@ You can modify a price manually in the dashboard. It can be useful if you use pu
 
 ## FAQ
 If you have a problem, or a question please check if the answer isn't in the [FAQ](FAQ.md). 
+
+## Contribute
 If you need information to contribute or edit this program go [here](docs/Develop.md).
 
 ## Donation

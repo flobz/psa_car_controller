@@ -4,7 +4,7 @@ Description=PSA Controller
 After=network-online.target
 
 [Service]
-ExecStart=/opt/psa_car_controller/server.py -c -r -d
+ExecStart=/opt/psa_car_controller/__main__.py -c -r -d
 Restart=on-failure
 RestartSec=1m
 Environment=PYTHONUNBUFFERED=true

@@ -1,0 +1,198 @@
+- !ElecModel
+  name: e-208
+  battery_power: 46
+  fuel_capacity: 0
+  abrp_name: peugeot:e208:20:50
+  reg: VR3UHZKX.*
+  max_elec_consumption: 70
+- !ElecModel
+  name: e-2008
+  battery_power: 46
+  fuel_capacity: 0
+  abrp_name: peugeot:e2008:20:48
+  reg: VR3UKZKX.*
+  max_elec_consumption: 70
+  max_fuel_consumption: 0
+- !ElecModel
+  name: e-Spacetourer
+  battery_power: 46
+  fuel_capacity: 0
+  abrp_name: peugeot:etraveler:21:50:citroen
+  reg: VF7VZZKX.*
+  max_elec_consumption: 70
+  max_fuel_consumption: 0
+- !ElecModel
+  name: e-Traveller
+  battery_power: 46
+  fuel_capacity: 0
+  abrp_name: peugeot:etraveler:21:50
+  reg: VF3VZZKX.*
+  max_elec_consumption: 70
+  max_fuel_consumption: 0
+- !ElecModel
+  name: corsa-e
+  battery_power: 46
+  fuel_capacity: 0
+  abrp_name: opel:corsae:20:50
+  reg: VXKUHZKX.*
+  max_elec_consumption: 70
+  max_fuel_consumption: 0
+- !ElecModel
+  name: DS3 Crossback e-tense
+  battery_power: 46
+  fuel_capacity: 0
+  abrp_name: ds:3crossback:20:48
+  reg: VR1UJZKX.*
+  max_elec_consumption: 70
+  max_fuel_consumption: 0
+- !ElecModel
+  name: Mokka-e
+  battery_power: 46
+  fuel_capacity: 0
+  abrp_name: opel:mokkae:20:48
+  reg: VXKUKZKX.*
+  max_elec_consumption: 70
+- !ElecModel
+  name: Zaphira-e
+  battery_power: 68
+  fuel_capacity: 0
+  abrp_name: peugeot:etraveler:21:75:opel
+  reg: VXEVZZKX.*
+  max_elec_consumption: 70
+  max_fuel_consumption: 0
+- !ElecModel
+  name: E-C4
+  battery_power: 46
+  fuel_capacity: 0
+  abrp_name: citroen:ec4:21:50
+  reg: VR7BCZKX.*
+  max_elec_consumption: 70
+  max_fuel_consumption: 0
+- !CarModel
+  name: SUV 3008 Hybrid 225
+  battery_power: 13.2
+  fuel_capacity: 43
+  abrp_name:
+  reg: VF3M4DGZ.*
+  max_elec_consumption: 70
+  max_fuel_consumption: 30
+- !CarModel
+  name: SUV 3008
+  battery_power: 0
+  fuel_capacity: 53
+  abrp_name:
+  reg: VF3MJEHZ.*
+  max_elec_consumption: 70
+  max_fuel_consumption: 30
+- !CarModel
+  name: '308'
+  battery_power: 0
+  fuel_capacity: 56
+  abrp_name:
+  reg: VF3L35GG.*
+  max_elec_consumption: 70
+  max_fuel_consumption: 30
+- !CarModel
+  name: '208'
+  battery_power: 0
+  fuel_capacity: 44
+  abrp_name:
+  reg: VR3UPHN[SE].*
+  max_elec_consumption: 70
+  max_fuel_consumption: 30
+- !CarModel
+  name: '2008'
+  battery_power: 0
+  fuel_capacity: 44
+  abrp_name:
+  reg: VR3USHNS.*
+  max_elec_consumption: 70
+  max_fuel_consumption: 30
+- !CarModel
+  name: 2008 II
+  battery_power: 0
+  fuel_capacity: 45
+  abrp_name:
+  reg: VR3USHNK.*
+  max_elec_consumption: 70
+  max_fuel_consumption: 30
+- !CarModel
+  name: SUV 5008 II
+  battery_power: 0
+  fuel_capacity: 56
+  abrp_name:
+  reg: VF3MRHNS.*
+  max_elec_consumption: 70
+  max_fuel_consumption: 30
+- !CarModel
+  name: SUV 5008 II 2018
+  battery_power: 0
+  fuel_capacity: 56
+  abrp_name:
+  reg: VF3MRHNY.*
+  max_elec_consumption: 70
+  max_fuel_consumption: 30
+- !CarModel
+  name: N5008 GT-LINE 1.6L
+  battery_power: 0
+  fuel_capacity: 60
+  abrp_name:
+  reg: VF3MCBHZ.*
+  max_elec_consumption: 70
+  max_fuel_consumption: 30
+- !CarModel
+  name: C5 Aircross Hybrid
+  battery_power: 13.2
+  fuel_capacity: 43
+  abrp_name:
+  reg: VR7A4DGZ.*
+  max_elec_consumption: 70
+  max_fuel_consumption: 30
+- !CarModel
+  name: DS7 Crossback E-Tense 300 4x4
+  battery_power: 11.5
+  fuel_capacity: 43
+  abrp_name:
+  reg: VR1J45GB.*
+  max_elec_consumption: 70
+  max_fuel_consumption: 30
+- !CarModel
+  name: 508 SW Hybrid
+  battery_power: 11.5
+  fuel_capacity: 45
+  abrp_name:
+  reg: VR3F4DGZ.*
+  max_elec_consumption: 70
+  max_fuel_consumption: 30
+- !CarModel
+  name: 508 Hybrid
+  battery_power: 11.5
+  fuel_capacity: 43
+  abrp_name:
+  reg: VR3F3DGZ.*
+  max_elec_consumption: 70
+  max_fuel_consumption: 30
+- !CarModel
+  name: 508 SW 2.0 HDI 163CV
+  battery_power: 0
+  fuel_capacity: 72
+  abrp_name:
+  reg: VF38ERHH.*
+  max_elec_consumption: 70
+  max_fuel_consumption: 30
+- !CarModel
+  name: Grandland X Hybrid
+  battery_power: 13.2
+  fuel_capacity: 43
+  abrp_name:
+  reg: W0VZ4DGZ.*
+  max_elec_consumption: 70
+  max_fuel_consumption: 30
+- !CarModel
+  name: Grandland X Hybrid 4x4
+  battery_power: 13.2
+  fuel_capacity: 43
+  abrp_name:
+  reg: W0VZ45GB.*
+  max_elec_consumption: 70
+  max_fuel_consumption: 30

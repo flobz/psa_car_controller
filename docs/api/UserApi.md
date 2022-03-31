@@ -15,15 +15,16 @@ User's information
 Returns the User's information.
 
 ### Example
+
 ```python
 from __future__ import print_function
 import time
-import psa_connectedcar
-from psa_connectedcar.rest import ApiException
+import connected_car_api
+from connected_car_api.rest import ApiException
 from pprint import pprint
 
 # create an instance of the API class
-api_instance = psa_connectedcar.UserApi()
+api_instance = connected_car_api.UserApi()
 
 try:
     # User's information

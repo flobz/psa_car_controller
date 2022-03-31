@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "psa-car-controller"
-version = "3.0.0"
+version = "0.0.0"
 description = "This is a python program to control a psa car with connected_car v4 api."
 authors = ["Florian Bezannier <florian.bezannier@hotmail.fr>"]
 license = "GPL-3.0"
@@ -11,7 +11,7 @@ include = [
 ]
 
 [tool.poetry.dependencies]
-python = "^3.7.0"
+python = ">=3.7.0, <4.0.0"
 paho-mqtt = ">=1.5.0"
 dash = ">=2"
 dash-daq = "^0.5.0"

@@ -1,4 +1,4 @@
-name: Publish Docker image
+name: Publish Docker image and pypi package
 on:
   push:
     tags:
@@ -9,10 +9,13 @@ jobs:
     name: Push to pypi
     runs-on: ubuntu-latest
     steps:
+     - uses: actions/checkout@v2
      - name: Build and publish to pypi
        uses: JRubics/poetry-publish@v1.10
        with:
          pypi_token: ${{ secrets.PYPI_TOKEN }}
+         ignore_dev_requirements: "yes"
+         extra_build_dependency_packages: "libblas3 liblapack3 liblapack-dev libblas-dev gfortran libatlas-base-dev"
   push_to_registry:
     name: Push Docker image to Docker Hub
     runs-on: ubuntu-latest

@@ -272,12 +272,12 @@ class RemoteClient:
             charge_type = IMMEDIATE_CHARGE
         else:
             charge_type = DELAYED_CHARGE
-        hour, minute = self.__get_charge_hour(vin)
+        hour, minute = self.get_charge_hour(vin)
         res = self.veh_charge_request(vin, hour, minute, charge_type)
         logger.info("charge_now: %s", res)
         return True
 
-    def __get_charge_hour(self, vin):
+    def get_charge_hour(self, vin):
         hour_str = self.vehicles_list.get_car_by_vin(vin).status.get_energy('Electric').charging.next_delayed_time
         try:
             return parse_hour(hour_str)[:2]

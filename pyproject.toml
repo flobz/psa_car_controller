@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "psa-car-controller"
-version = "3.0.0"
+version = "3.0.0rc0"
 description = "This is a python program to control a psa car with connected_car v4 api."
 authors = ["Florian Bezannier <florian.bezannier@hotmail.fr>"]
 license = "GPL-3.0"

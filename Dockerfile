@@ -3,7 +3,7 @@ ARG DEBIAN_FRONTEND=noninteractive
 
 FROM debian:bullseye-slim AS builder
 ARG PYTHON_DEP
-RUN  BUILD_DEP='python3-pip python3-setuptools python3-dev libblas-dev liblapack-dev gfortran libffi-dev libxml2-dev libxslt1-dev' ; \
+RUN  BUILD_DEP='python3-pip python3-setuptools python3-dev libblas-dev liblapack-dev gfortran libffi-dev libxml2-dev libxslt1-dev make automake gcc g++ subversion' ; \
      apt-get update && apt-get install -y --no-install-recommends $BUILD_DEP $PYTHON_DEP;
 RUN pip3 install --upgrade pip
 RUN pip3 install poetry

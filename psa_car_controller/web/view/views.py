@@ -161,7 +161,7 @@ def get_style():
             res = json.loads(f.read())
             STYLE_CACHE = res
     url_root = request.url_root
-    STYLE_CACHE["sprite"] = url_root + "assets/sprites/osm-liberty@2x"
+    STYLE_CACHE["sprite"] = url_root + "assets/sprites/osm-liberty"
     return jsonify(STYLE_CACHE)
 
 

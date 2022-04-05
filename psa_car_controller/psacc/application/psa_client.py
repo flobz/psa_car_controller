@@ -115,7 +115,7 @@ class PSAClient:
     def __refresh_vehicle_info(self):
         if self.info_refresh_rate is not None:
             if self.refresh_thread and self.refresh_thread.is_alive():
-                logger.warning("refresh_vehicle_info: precedent task still alive")
+                logger.debug("refresh_vehicle_info: precedent task still alive")
             self.refresh_thread = threading.Timer(self.info_refresh_rate, self.__refresh_vehicle_info)
             self.refresh_thread.setDaemon(True)
             self.refresh_thread.start()

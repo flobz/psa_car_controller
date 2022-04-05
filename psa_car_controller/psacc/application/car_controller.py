@@ -109,5 +109,5 @@ class PSACarController(metaclass=Singleton):
         return True
 
     def save_config(self):
-        self.myp.save_config(self.config_name)
         threading.Timer(30, self.save_config).start()
+        self.myp.save_config(self.config_name)

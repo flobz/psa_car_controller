@@ -39,7 +39,7 @@ min_date = max_date = min_millis = max_millis = step = marks = cached_layout = N
 APP = PSACarController()
 
 
-def get_default_car():
+def get_default_car() -> Car:
     return APP.myp.vehicles_list[0]
 
 
@@ -396,7 +396,7 @@ def serve_layout():
 
 try:
     if APP.is_good:
-        Charging.set_default_price(get_default_car())
+        Charging.set_default_price(APP.myp.vehicles_list)
     Database.set_db_callback(update_trips)
     update_trips()
 except (IndexError, TypeError):

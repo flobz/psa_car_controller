@@ -9,7 +9,7 @@ from .ecomix import Ecomix
 
 from psa_car_controller.psacc.repository.config_repository import ElectricityPriceConfig
 from psa_car_controller.psacc.repository.db import Database
-from ..model.car import Car
+from ..model.car import Car, Cars
 from ..model.charge import Charge
 
 logger = logging.getLogger(__name__)
@@ -37,7 +37,7 @@ class Charging:
         charge.price = Charging.elec_price.get_price(charge, battery_curves)
 
     @staticmethod
-    def set_default_price(cars):
+    def set_default_price(cars: Cars):
         if Charging.elec_price.is_enable():
             conn = Database.get_db()
             charge_list = Database.get_all_charge_without_price(conn)

@@ -10,7 +10,6 @@ RUN pip3 install poetry
 COPY poetry.lock pyproject.toml ./
 RUN poetry export -f requirements.txt --output /tmp/requirements.txt
 RUN pip3 install --no-deps --no-cache-dir --ignore-installed -r /tmp/requirements.txt
-RUN poetry install
 EXPOSE 5000
 
 FROM debian:bullseye-slim

@@ -4,7 +4,7 @@
 The car model need to be known by the app. To find it, the app use the first 10 character of your VIN.
 If the car isn't in the list we need to add it, to do that you need to edit the file here:
 
-Go to [car_models.yml](https://github.com/flobz/psa_car_controller/blob/develop/psa_car_controller/psacc/resources/car_models.yml)
+Go to [car_models.yml](https://github.com/flobz/psa_car_controller/blob/master/psa_car_controller/psacc/resources/car_models.yml)
 and click on edit then copy cut and already existent model in the list and edit all properties that are incorrect for your model.
 Finally, click on propose change. 
 

@@ -8,8 +8,8 @@ RUN  BUILD_DEP='python3-pip python3-setuptools python3-dev libblas-dev liblapack
 RUN pip3 install --upgrade pip
 RUN pip3 install poetry
 COPY poetry.lock pyproject.toml ./
-RUN poetry export -f requirements.txt --output /tmp/requirements.txt
-RUN pip3 install --no-deps --no-cache-dir --ignore-installed -r /tmp/requirements.txt
+RUN poetry build
+RUN pip3 install  --no-deps --no-cache-dir --ignore-installed dist/psa_car_controller-0.0.0-py3-none-any.whl
 EXPOSE 5000
 
 FROM debian:bullseye-slim

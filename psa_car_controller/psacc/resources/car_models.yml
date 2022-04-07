@@ -181,6 +181,14 @@
   max_elec_consumption: 70
   max_fuel_consumption: 30
 - !CarModel
+  name: 508 SW II
+  battery_power: 0
+  fuel_capacity: 62
+  abrp_name:
+  reg: VR3F45GG.*
+  max_elec_consumption: 70
+  max_fuel_consumption: 30
+- !CarModel
   name: Grandland X Hybrid
   battery_power: 13.2
   fuel_capacity: 43

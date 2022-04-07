@@ -23,7 +23,12 @@ jobs:
        run: |
          poetry version $(git describe --tags --abbrev=0)
          poetry publish --build --username __token__ --password ${{ secrets.PYPI_TOKEN }}
+     - uses: actions/upload-artifact@master
+       with:
+         name: wheel-package
+         path: dist/psa_car_controller-$(git describe --tags --abbrev=0)-py3-none-any.whl
   push_to_registry:
+    needs: create_release
     name: Push Docker image to Docker Hub
     runs-on: ubuntu-latest
     steps:
@@ -41,6 +46,11 @@ jobs:
             TAGS="${DOCKER_IMAGE}:${VERSION}"
           fi
           echo ::set-output name=tags::${TAGS}
+          echo "PSACC_VERSION=$(git describe --tags --abbrev=0)"  >> $GITHUB_ENV
+      - uses: actions/download-artifact@master
+        with:
+          name: wheel-package
+          path: dist/psa_car_controller-$(git describe --tags --abbrev=0)-py3-none-any.whl
       - name: Set up QEMU
         uses: docker/setup-qemu-action@master
         with:
@@ -64,6 +74,7 @@ jobs:
           push: true
           tags: ${{ steps.prep.outputs.tags }}
           platforms: linux/amd64,linux/arm64,linux/arm/v7
+          build-args: PSACC_VERSION=${{ env.PSACC_VERSION }}
       -
         name: Image digest
         run: echo ${{ steps.docker_build.outputs.digest }}

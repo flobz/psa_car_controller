@@ -41,4 +41,5 @@ jobs:
           echo Test
           source .venv/bin/activate
           coverage run -m unittest || exit 1
+          coverage report
           [ -n "$CODACY_PROJECT_TOKEN" ] && coverage combine && coverage xml -o cobertura.xml && bash <(curl -Ls https://coverage.codacy.com/get.sh) report -r cobertura.xml

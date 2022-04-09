@@ -4,6 +4,7 @@ import logging
 import threading
 from os import environ, path
 
+import psa_car_controller
 from oauth2_client.credentials_manager import OAuthError
 
 from .charge_control import ChargeControls
@@ -36,6 +37,8 @@ def parse_args():
     parser.add_argument("--offline", help="offline limited mode", action='store_true')
     parser.add_argument("--web-conf", help="ignore if config files not existing yet", action='store_true')
     parser.add_argument("-b", "--base-path", help="base path for web app", default="/")
+    parser.add_argument('--version', action='version', version='PSACC {}'.format(psa_car_controller.__version__))
+
     return parser.parse_args()
 
 

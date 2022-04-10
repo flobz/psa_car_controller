@@ -74,8 +74,8 @@ class ChargeControl:
     def __is_approaching_scheduled_time(self, now: datetime):
         scheduled_hour, scheduled_minute = self.psacc.remote_client.get_charge_hour(self.vin)
         minutes_passed = now.hour * 60 + now.minute
-        scheduled_minute = scheduled_hour * 60 + scheduled_minute
-        return minutes_passed < scheduled_minute and scheduled_minute - minutes_passed < 30
+        scheduled_minute_of_day = scheduled_hour * 60 + scheduled_minute
+        return minutes_passed < scheduled_minute_of_day and scheduled_minute_of_day - minutes_passed < 30
 
     def process(self):
         now = datetime.now()

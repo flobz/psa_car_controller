@@ -29,6 +29,7 @@ dc charge price =
 high speed dc charge price =
 # minimum power in kW that should be delivered during a charge so it can be considered as a high speed charger
 high speed dc charge threshold =
+charger efficiency =
 """
 
 
@@ -91,6 +92,7 @@ class ElectricityPriceConfig(BaseModel):
     dc_charge_price: float = None
     high_speed_dc_charge_price: float = None
     high_speed_dc_charge_threshold: float = None
+    charger_efficiency: float = 0.8942
 
     @staticmethod
     def compare_hour(date: datetime, hour, minute):
@@ -128,7 +130,7 @@ class ElectricityPriceConfig(BaseModel):
                 prices.append(self.get_instant_price(date))
                 date = date + timedelta(minutes=30)
             try:
-                res = round(consumption * mean(prices), 2)
+                res = round(consumption * mean(prices) / self.charger_efficiency, 2)
             except (TypeError, StatisticsError):
                 logger.error("Can't get_price of charge, check config")
         return res
@@ -157,15 +159,17 @@ class ConfigRepository(BaseModel):
     def read_config(name=None) -> 'ConfigRepository':
         try:
             config_str = ConfigRepository._read_file(name)
-            config = ConfigUpdater()
+            config = ConfigUpdater(allow_no_value=True)
             config.read_string(config_str)
+            return ConfigRepository.config_file_to_dto(config)
         except FileNotFoundError:
-            config = ConfigRepository.get_default_config()
-        return ConfigRepository.config_file_to_dto(config)
+            config = ConfigRepository.config_file_to_dto(ConfigRepository.get_default_config())
+            config.write_config()
+            return config
 
     @staticmethod
     def get_default_config():
-        config = ConfigUpdater()
+        config = ConfigUpdater(allow_no_value=True)
         config.read_string(DEFAULT_CONFIG)
         return config
 
@@ -198,7 +202,7 @@ class ConfigRepository(BaseModel):
             for option in config[section]:
                 new_option = option.replace(" ", "_")
                 value = config[section][option].value
-                if len(value) > 0:
+                if value and len(value) > 0:
                     new_dict[new_section][new_option] = value
 
         config_obj = ConfigRepository(**new_dict)

@@ -70,9 +70,9 @@ function filterDataset (data, range) {
   return res
 }
 
-function filterShortTrip (data) {
+function filterShortTrip (data, minimumLength) {
   const longTrips = {
-    trips: data.trips.filter(line => line.distance > 10),
+    trips: data.trips.filter(line => line.distance > minimumLength),
     chargings: data.chargings
   }
   console.log('long trips:', longTrips)
@@ -87,31 +87,41 @@ function updateFigures (data, oldFigure, x, y) {
     const xLabel = x[i]
     const figure = Object.assign({}, oldFigure[i])
     i++
-    if ('mapbox' in figure.layout) {
-      figure.data[0].lat = []
-      figure.data[0].lon = []
-      figure.data[0].hovertext = []
-      let trip = null
-      for (trip of trips) {
-        const xPos = trip.positions[xLabel]
-        figure.data[0].lat.push(...xPos, null)
-        figure.data[0].lon.push(...trip.positions[yLabel[0]])
-        figure.data[0].hovertext.push(...Array(xPos.length).fill(trip[yLabel[1]]), null)
-      }
-      if (trip) {
-        const lastPos = trip.positions[yLabel[0]].length - 1
-        figure.layout.mapbox.center.lat = trip.positions[xLabel][lastPos]
-        figure.layout.mapbox.center.lon = trip.positions[yLabel[0]][lastPos]
-        figure.data[1].lat = [figure.layout.mapbox.center.lat]
-        figure.data[1].lon = [figure.layout.mapbox.center.lon]
-      }
-    } else {
-      const xValues = trips.map(a => a[xLabel])
-      // for each y label
-      for (let j = 0; j < yLabel.length; j++) {
-        figure.data[j].y = trips.map(a => a[yLabel[j]])
-        figure.data[j].x = xValues
-      }
+    const xValues = trips.map(a => a[xLabel])
+    // for each y label
+    for (let j = 0; j < yLabel.length; j++) {
+      figure.data[j].y = trips.map(a => a[yLabel[j]])
+      figure.data[j].x = xValues
+    }
+    console.log(xLabel, figure)
+    figures.push(figure)
+  })
+  return figures
+}
+
+function updateMap (data, oldFigure, x, y, lastPos) {
+  const trips = data.trips
+  const figures = []
+  let i = 0
+  y.forEach(function (yLabel) {
+    const xLabel = x[i]
+    const figure = Object.assign({}, oldFigure[i])
+    i++
+    figure.data[0].lat = []
+    figure.data[0].lon = []
+    figure.data[0].hovertext = []
+    let trip = null
+    for (trip of trips) {
+      const xPos = trip.positions[xLabel]
+      figure.data[0].lat.push(...xPos, null)
+      figure.data[0].lon.push(...trip.positions[yLabel[0]])
+      figure.data[0].hovertext.push(...Array(xPos.length).fill(trip[yLabel[1]]), null)
+    }
+    if (trip) {
+      figure.layout.mapbox.center.lat = lastPos.lat
+      figure.layout.mapbox.center.lon = lastPos.lon
+      figure.data[1].lat = [lastPos.lat]
+      figure.data[1].lon = [lastPos.lon]
     }
     console.log(xLabel, figure)
     figures.push(figure)
@@ -215,7 +225,14 @@ function sortMultipleTable (sortParams, data, tables) {
   }
 }
 
-function filterAndSort (data, range, figures, p, log, sort) { // eslint-disable-line no-unused-vars
+function getLastPosition (trips) {
+  const lastPos = {}
+  lastPos.lat = trips.at(-1).positions.lat[0]
+  lastPos.lon = trips.at(-1).positions.long[0]
+  return lastPos
+}
+
+function filterAndSort (data, range, figures, p, log, sort, config) { // eslint-disable-line no-unused-vars
   if (log > 10) {
     logger.disableLogger()
   }
@@ -236,12 +253,11 @@ function filterAndSort (data, range, figures, p, log, sort) { // eslint-disable-
     dataFiltered = filterDataset(data, range)
     sortMultipleTable(sort, dataFiltered, p.table_src)
     outFigures.push(...updateTables(dataFiltered, p.table_src))
-    console.log(dataFiltered.trips.length)
-    const longTrips = filterShortTrip(dataFiltered)
-    console.log('trips', dataFiltered.trips.length)
+    const longTrips = filterShortTrip(dataFiltered, config.minimumLength)
+    console.log('trips', dataFiltered.trips)
     console.log('longTrips', longTrips.trips.length)
     outFigures.push(...updateFigures(longTrips, figures.graph, p.graph_x_label, p.graph_y_label))
-    outFigures.push(...updateFigures(dataFiltered, figures.maps, p.map_x_label, p.map_y_label))
+    outFigures.push(...updateMap(dataFiltered, figures.maps, p.map_x_label, p.map_y_label, getLastPosition(dataFiltered.trips)))
     updateCardsValue(longTrips)
   }
   return outFigures

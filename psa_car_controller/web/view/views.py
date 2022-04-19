@@ -327,7 +327,7 @@ def serve_layout():
             fig_filter.add_table("trips", figures.table_fig)
             fig_filter.add_table("chargings", figures.battery_table)
             fig_filter.src = {"trips": trips.get_trips_as_dict(), "chargings": chargings}
-            fig_filter.set_clientside_callback(dash_app)
+            fig_filter.set_clientside_callback(dash_app, {"minimumLength": APP.config.General.minimum_trip_length})
             create_callback()
         except (IndexError, TypeError, NameError, AssertionError, NameError, AttributeError):
             summary_tab = figures.ERROR_DIV
@@ -398,6 +398,7 @@ try:
     if APP.is_good:
         Charging.set_default_price(APP.myp.vehicles_list)
     Database.set_db_callback(update_trips)
+    figures.CURRENCY = APP.config.General.currency
     update_trips()
 except (IndexError, TypeError):
     logger.debug("Failed to get trips, there is probably not enough data yet:", exc_info=True)

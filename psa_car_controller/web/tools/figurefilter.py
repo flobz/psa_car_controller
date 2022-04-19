@@ -112,9 +112,10 @@ class FigureFilter:
         }, indent=4)
         return params
 
-    def set_clientside_callback(self, dash_app):
+    def set_clientside_callback(self, dash_app, config: dict):
         callback_id = create_callback_id(self.__get_output())
         if callback_id not in dash_app.callback_map:
+            config_str = json.dumps(config)
             if logger.isEnabledFor(DEBUG):
                 log_level = 10
             else:
@@ -122,7 +123,8 @@ class FigureFilter:
             fct_def = f"""function(data,range, figures, {self.gen_sort_variable()}) {{
                             const params={self.get_params()}
                             const logLevel={log_level}
-                            return filterAndSort(data, range, figures, params, logLevel, {self.__gen_sort_dict()})
+                            return filterAndSort(data, range, figures, params, logLevel,
+                             {self.__gen_sort_dict()}, {config_str})
                           }}"""
             dash_app.clientside_callback(fct_def,
                                          *self.__get_output(),

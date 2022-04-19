@@ -74,7 +74,7 @@ class ChargeControl:
             vehicle_status = self.psacc.vehicles_list.get_car_by_vin(self.vin).get_status()
             status = vehicle_status.get_energy('Electric').charging.status
             level = vehicle_status.get_energy('Electric').level
-            if status == "InProgress" and self.percentage_threshold < 100:
+            if status == "InProgress":
                 logger.info("charging status of %s is %s, battery level: %d", self.vin, status, level)
                 charging_mode = vehicle_status.get_energy('Electric').charging.charging_mode
                 quick_refresh = isinstance(charging_mode, str) and charging_mode == "Quick"

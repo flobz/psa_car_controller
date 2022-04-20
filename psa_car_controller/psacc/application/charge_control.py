@@ -85,7 +85,7 @@ class ChargeControl:
             level = vehicle_status.get_energy('Electric').level
             has_threshold = self.percentage_threshold < 100
             hit_threshold = level >= self.percentage_threshold
-            if status == INPROGRESS and has_threshold:
+            if status == INPROGRESS:
                 logger.info("charging status of %s is %s, battery level: %d", self.vin, status, level)
                 self.force_update(vehicle_status)
                 if hit_threshold and self.retry_count < 2:

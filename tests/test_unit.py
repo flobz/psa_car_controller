@@ -203,7 +203,7 @@ class TestUnit(unittest.TestCase):
                                          'end_level': 85,
                                          'co2': co2,
                                          'kw': 20.7,
-                                         'price': 3.84,
+                                         'price': 4.29,
                                          'charging_mode': 'slow'}])
         assert get_figures(car)
         row = {"start_at": date0.strftime('%Y-%m-%dT%H:%M:%S.000Z'),

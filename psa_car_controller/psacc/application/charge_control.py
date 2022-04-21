@@ -8,7 +8,7 @@ from time import sleep
 
 import pytz
 
-from psa_car_controller.psa.constants import DISCONNECTED, INPROGRESS, FINISHED
+from psa_car_controller.psa.constants import DISCONNECTED, INPROGRESS, FINISHED, STOPPED
 from psa_car_controller.common.utils import RateLimitException
 from .psa_client import PSAClient
 
@@ -55,7 +55,10 @@ class ChargeControl:
         self.retry_count = 0
         return True
 
-    def force_update(self, quick_refresh):
+    def force_update(self, vehicle_status):
+        charging_mode = vehicle_status.get_energy('Electric').charging.charging_mode
+        quick_refresh = isinstance(charging_mode, str) and charging_mode == "Quick"
+
         # force update if the car doesn't send info during 10 minutes
         last_update = self.psacc.vehicles_list.get_car_by_vin(self.vin).get_status().get_energy('Electric').updated_at
         if quick_refresh:
@@ -68,18 +71,24 @@ class ChargeControl:
             except RateLimitException:
                 logger.exception("force_update:")
 
+    def __is_approaching_scheduled_time(self, now: datetime):
+        scheduled_hour, scheduled_minute = self.psacc.remote_client.get_charge_hour(self.vin)
+        minutes_passed = now.hour * 60 + now.minute
+        scheduled_minute_of_day = scheduled_hour * 60 + scheduled_minute
+        return minutes_passed < scheduled_minute_of_day and scheduled_minute_of_day - minutes_passed < 30
+
     def process(self):
         now = datetime.now()
         try:
             vehicle_status = self.psacc.vehicles_list.get_car_by_vin(self.vin).get_status()
             status = vehicle_status.get_energy('Electric').charging.status
             level = vehicle_status.get_energy('Electric').level
-            if status == "InProgress":
+            has_threshold = self.percentage_threshold < 100
+            hit_threshold = level >= self.percentage_threshold
+            if status == INPROGRESS:
                 logger.info("charging status of %s is %s, battery level: %d", self.vin, status, level)
-                charging_mode = vehicle_status.get_energy('Electric').charging.charging_mode
-                quick_refresh = isinstance(charging_mode, str) and charging_mode == "Quick"
-                self.force_update(quick_refresh)
-                if level >= self.percentage_threshold and self.retry_count < 2:
+                self.force_update(vehicle_status)
+                if hit_threshold and self.retry_count < 2:
                     logger.info("Charge threshold is reached, stop the charge")
                     self.control_charge_with_ack(False)
                 elif self._next_stop_hour is not None:
@@ -94,6 +103,11 @@ class ChargeControl:
                             thread = threading.Timer(periodicity, self.process)
                             thread.setDaemon(True)
                             thread.start()
+            elif status == STOPPED and has_threshold and hit_threshold and self.__is_approaching_scheduled_time(now):
+                logger.info("Approaching scheduled charging time, but should not charge. Postponing charge hour!")
+                self.force_update(vehicle_status)
+                hour = now.hour - 1 if now.hour > 0 else 23
+                self.psacc.remote_client.change_charge_hour(self.vin, hour, 0)
             else:
                 if self._next_stop_hour is not None and self._next_stop_hour < now:
                     self._next_stop_hour += timedelta(days=1)

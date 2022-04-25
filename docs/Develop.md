@@ -1,11 +1,11 @@
 # Developer Information
-## Contributing
+    ## Contributing
 
-Before create a pull request check your code with Prospector.
+Before creating a pull request check your code with Prospector.
 You can install it with
 
 ```
-poetry install --no-root```
+poetry install --no-root
 #Then in the root of the git project:
 prospector
 ```

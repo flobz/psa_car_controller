@@ -11,7 +11,6 @@ jobs:
   test:
     runs-on: ubuntu-18.04
     steps:
-      - uses: actions/checkout@v2
       - name: Set up python
         id: setup-python
         uses: actions/setup-python@v2
@@ -21,6 +20,7 @@ jobs:
         uses: snok/install-poetry@v1
         with:
           virtualenvs-in-project: true
+      - uses: actions/checkout@v2
       - name: Load cached venv
         id: cached-poetry-dependencies
         uses: actions/cache@v2
@@ -40,6 +40,7 @@ jobs:
         run: |
           echo Test
           source .venv/bin/activate
-          coverage run -m unittest || exit 1
+          coverage run -m unittest || exit 11
+          coverage combine
           coverage report
-          [ -n "$CODACY_PROJECT_TOKEN" ] && coverage combine && coverage xml -o cobertura.xml && bash <(curl -Ls https://coverage.codacy.com/get.sh) report -r cobertura.xml
+          [ -n "$CODACY_PROJECT_TOKEN" ] && coverage xml -o cobertura.xml && bash <(curl -Ls https://coverage.codacy.com/get.sh) report -r cobertura.xml

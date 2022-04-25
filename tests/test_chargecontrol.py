@@ -22,20 +22,22 @@ from psa_car_controller.psacc.application.charge_control import ChargeControl
 # 2022-04-20 12:31:15,552 :: INFO :: Approaching scheduled charging time, but should not charge. Postponing charge hour!
 # 2022-04-20 12:31:15,552 :: INFO :: Changing stop_hour to 11:0
 
-class MyTestCase(unittest.TestCase):
 
-    def test_something(self):
+class TestChargeControl(unittest.TestCase):
+
+    def test_charge_control(self):
         my_logger()
         ChargeControl.MQTT_TIMEOUT = 0
 
         now = datetime.datetime.now()
+        stop_hour = now + datetime.timedelta(minutes=2)
 
         vin = "123"
         percentage_threshold = 70
 
         state = {
             "charging": True,
-            "stop_hour": [now.hour, now.minute + 2]
+            "stop_hour": [stop_hour.hour, stop_hour.minute]
         }
 
         expectations = {

@@ -153,6 +153,15 @@ function updateTables (data, tables) {
   return figures
 }
 
+function nbFormat (nb) {
+  const nbStr = nb.toFixed(2)
+  const nbInt = nbStr.split('.')[0]
+  if (nbInt.length > 3) {
+    return nbInt
+  }
+  return nbStr
+}
+
 function updateCardsValue (data) {
   const res = {}
   let avgPriceKw
@@ -185,7 +194,7 @@ function updateCardsValue (data) {
     res.avg_consum_price = avgPriceKw * res.avg_consum_kw
   }
   for (const [key, value] of Object.entries(res)) {
-    document.getElementById(key).innerHTML = value.toPrecision(3)
+    document.getElementById(key).innerHTML = nbFormat(value)
   }
 }
 

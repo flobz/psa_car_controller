@@ -43,4 +43,9 @@ jobs:
           coverage run -m unittest || exit 11
           coverage combine
           coverage report
-          [ -n "$CODACY_PROJECT_TOKEN" ] && coverage xml -o cobertura.xml && bash <(curl -Ls https://coverage.codacy.com/get.sh) report -r cobertura.xml
+          if [ -n "$CODACY_PROJECT_TOKEN" ]; then
+            coverage xml -o cobertura.xml
+            bash <(curl -Ls https://coverage.codacy.com/get.sh) report -r cobertura.xml
+          else
+            echo no CODACY_PROJECT_TOKEN
+          fi

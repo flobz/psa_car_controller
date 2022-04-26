@@ -16,7 +16,8 @@ DEFAULT_CONFIG = """[General]
 currency = €
 # minimum trip length in km so it's added to stats and map in website
 minimum trip length =
-
+# for future use
+length unit = km
 [Electricity config]
 # price by kw/h
 day price =

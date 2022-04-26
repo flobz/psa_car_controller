@@ -21,12 +21,15 @@ jobs:
          sudo apt-get install libblas3 liblapack3 liblapack-dev libblas-dev gfortran libatlas-base-dev
      - name: Build and publish
        run: |
-         poetry version $(git describe --tags --abbrev=0)
-         poetry publish --build --username __token__ --password ${{ secrets.PYPI_TOKEN }}
+         export PSACC_VERSION=$(git describe --tags --abbrev=0)
+         poetry version ${PSACC_VERSION}
+         poetry build
+         poetry publish --username __token__ --password ${{ secrets.PYPI_TOKEN }}
+         mv dist/psa_car_controller-${PSACC_VERSION:1}-py3-none-any.whl dist/psa_car_controller-0.0.0-py3-none-any.whl
      - uses: actions/upload-artifact@master
        with:
          name: wheel-package
-         path: dist/psa_car_controller-$(git describe --tags --abbrev=0)-py3-none-any.whl
+         path: dist/psa_car_controller-0.0.0-py3-none-any.whl
   push_to_registry:
     needs: create_release
     name: Push Docker image to Docker Hub
@@ -46,11 +49,6 @@ jobs:
             TAGS="${DOCKER_IMAGE}:${VERSION}"
           fi
           echo ::set-output name=tags::${TAGS}
-          echo "PSACC_VERSION=$(git describe --tags --abbrev=0)"  >> $GITHUB_ENV
-      - uses: actions/download-artifact@master
-        with:
-          name: wheel-package
-          path: dist/psa_car_controller-$(git describe --tags --abbrev=0)-py3-none-any.whl
       - name: Set up QEMU
         uses: docker/setup-qemu-action@master
         with:
@@ -60,6 +58,10 @@ jobs:
         uses: docker/setup-buildx-action@master
       - name: Check out the repo
         uses: actions/checkout@v2
+      - uses: actions/download-artifact@master
+        with:
+          name: wheel-package
+          path: dist/psa_car_controller-0.0.0-py3-none-any.whl
       - name: Login to DockerHub
         uses: docker/login-action@v1 
         with:
@@ -74,7 +76,6 @@ jobs:
           push: true
           tags: ${{ steps.prep.outputs.tags }}
           platforms: linux/amd64,linux/arm64,linux/arm/v7
-          build-args: PSACC_VERSION=${{ env.PSACC_VERSION }}
       -
         name: Image digest
         run: echo ${{ steps.docker_build.outputs.digest }}

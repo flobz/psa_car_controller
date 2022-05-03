@@ -72,7 +72,7 @@
   name: e-Rifter
   battery_power: 45
   fuel_capacity: 0
-  abrp_name:
+  abrp_name: opel:comboe:22:50:peugeot
   reg: VR3EZZKXZM.*
   max_elec_consumption: 70
 - !CarModel

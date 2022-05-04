@@ -68,6 +68,13 @@
   reg: VR7BCZKX.*
   max_elec_consumption: 70
   max_fuel_consumption: 0
+- !ElecModel
+  name: e-Rifter
+  battery_power: 45
+  fuel_capacity: 0
+  abrp_name: opel:comboe:22:50:peugeot
+  reg: VR3EZZKXZM.*
+  max_elec_consumption: 70
 - !CarModel
   name: SUV 3008 Hybrid 225
   battery_power: 13.2

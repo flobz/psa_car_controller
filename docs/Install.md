@@ -26,4 +26,4 @@ At the first launch you will be asked to connect and give a code that you will r
 If it failed you can remove the file otp.bin and retry.
 
 You can see all options available with :
-``psa_car_controller -h``
+``psa-car-controller -h``

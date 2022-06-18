@@ -227,3 +227,11 @@
   reg: VR3F4DGYTN.*
   max_elec_consumption: 70
   max_fuel_consumption: 30
+- !CarModel
+  name: DS7 Crossback E-Tense 225
+  battery_power: 13.2
+  fuel_capacity: 43
+  abrp_name:
+  reg: VR1J4DGZ.*
+  max_elec_consumption: 70
+  max_fuel_consumption: 30

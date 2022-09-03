@@ -83,7 +83,7 @@ class Charging:
             try:
                 last_charge = Database.get_last_charge(car.vin)
                 charge_just_finished = last_charge.stop_at is None
-            except TypeError:
+            except (TypeError, AttributeError):
                 logger.debug("battery table is probably empty :", exc_info=True)
                 charge_just_finished = False
             if charge_just_finished:

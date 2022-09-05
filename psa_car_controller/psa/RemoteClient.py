@@ -89,7 +89,7 @@ class RemoteClient:
             logger.exception("on_mqtt_message:")
 
     def _fix_not_updated_api(self, charge_info, vin):
-        if charge_info is not None and charge_info.get('remaining_time', 0) != 0 and charge_info.get('rate', 0) != 0:
+        if charge_info is not None and (charge_info.get('remaining_time', 0) != 0 or charge_info.get('rate', 0) != 0):
             try:
                 car = self.vehicles_list.get_car_by_vin(vin=vin)
                 if car and car.status.get_energy('Electric').charging.status != INPROGRESS:

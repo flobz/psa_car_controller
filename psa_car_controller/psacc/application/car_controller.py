@@ -75,7 +75,7 @@ class PSACarController(metaclass=Singleton):
         if path.isfile(self.config_name):
             self.myp = PSAClient.load_config(name=self.config_name)
         elif self.args.web_conf:
-            logger.error("Bad config")
+            logger.error("No config file")
             self.is_good = False
             return False
         else:

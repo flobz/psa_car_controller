@@ -3,12 +3,12 @@ from datetime import datetime, timedelta
 from statistics import mean, StatisticsError
 import xml.etree.ElementTree as ElT
 import numbers
+from typing import Union
 
 import requests
 import reverse_geocode
 from pytz import UTC
 from requests import RequestException
-
 
 CO2_SIGNAL_REQ_INTERVAL = 600
 CO2_SIGNAL_URL = "https://api.co2signal.com"
@@ -21,7 +21,7 @@ class Ecomix:
     co2_signal_key = None
 
     @staticmethod
-    def get_data_france(start, end):
+    def get_data_france(start, end) -> Union[float, None]:
         start_str = start.strftime("%d/%m/%Y")
         end_str = end.strftime("%d/%m/%Y")
         try:
@@ -42,13 +42,16 @@ class Ecomix:
 
         valeurs = etree.iter("valeur")
         co2_per_kw = []
-
-        valeur = next(valeurs)
-        while int(valeur.attrib["periode"]) != period_start:
+        try:
             valeur = next(valeurs)
-        while int(valeur.attrib["periode"]) != period_end:
-            co2_per_kw.append(int(valeur.text))
-            valeur = next(valeurs)
+            while int(valeur.attrib["periode"]) != period_start:
+                valeur = next(valeurs)
+            while int(valeur.attrib["periode"]) != period_end:
+                co2_per_kw.append(int(valeur.text))
+                valeur = next(valeurs)
+        except StopIteration:
+            logger.exception("Can't get CO2 value between %s %s", start, end)
+            return None
         try:
             return mean(co2_per_kw)
         except StatisticsError:

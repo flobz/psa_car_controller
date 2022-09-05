@@ -236,8 +236,14 @@ function sortMultipleTable (sortParams, data, tables) {
 
 function getLastPosition (trips) {
   const lastPos = {}
-  lastPos.lat = trips.at(-1).positions.lat[0]
-  lastPos.lon = trips.at(-1).positions.long[0]
+  if(Array.isArray(trips) && trips.length > 0){
+    lastPos.lat = trips.at(-1).positions.lat[0]
+    lastPos.lon = trips.at(-1).positions.long[0]
+  }
+  else {
+     lastPos.lat = 40
+     lastPos.lon = 40
+  }
   return lastPos
 }
 

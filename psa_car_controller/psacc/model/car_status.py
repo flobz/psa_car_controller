@@ -28,7 +28,7 @@ class CarStatus(Status):
             if len(self.last_position.geometry.coordinates) < 3:
                 # set altitude none
                 self.last_position.geometry.coordinates.append(None)
-        except AttributeError:
+        except (AttributeError, TypeError):
             self.last_position = Position(geometry=Geometry(coordinates=[None, None, None], type="Point"),
                                           properties=PositionProperties(updated_at=None))
         if self.kinetic is None:

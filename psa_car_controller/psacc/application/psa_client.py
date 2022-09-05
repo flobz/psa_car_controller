@@ -175,7 +175,7 @@ class PSAClient:
     def set_record(self, value: bool):
         self._record_enabled = value
 
-    def record_info(self, car: Car):
+    def record_info(self, car: Car):  # pylint: disable=too-many-locals
         mileage = car.status.timed_odometer.mileage
         level = car.status.get_energy('Electric').level
         level_fuel = car.status.get_energy('Fuel').level
@@ -202,8 +202,9 @@ class PSAClient:
             Charging.record_charging(car, charging_status, charge_date, level, latitude, longitude, self.country_code,
                                      charging_mode, charging_rate, autonomy)
             logger.debug("charging_status:%s ", charging_status)
-        except AttributeError:
+        except AttributeError as ex:
             logger.error("charging status not available from api")
+            logger.debug(ex)
 
     def __iter__(self):
         for key, value in self.__dict__.items():

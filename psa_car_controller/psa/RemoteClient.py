@@ -40,7 +40,7 @@ class RemoteClient:
             "accept": "application/hal+json",
             "User-Agent": "okhttp/4.8.0",
         }
-        self.last_request = []
+        self.last_request = None
         self.mqtt_client = None
         self.otp = None
 
@@ -140,7 +140,7 @@ class RemoteClient:
         logger.debug("%s %s", mqtt_request.topic, message)
         self.mqtt_client.publish(mqtt_request.topic, message)
         if store:
-            self.last_request = [mqtt_request]
+            self.last_request = mqtt_request
 
     def mqtt_request(self, vin, req_parameters, topic):
         return MQTTRequest(topic, vin, req_parameters, self.account_info.get_mqtt_customer_id())

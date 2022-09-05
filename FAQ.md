@@ -5,7 +5,13 @@ The car model need to be known by the app. To find it, the app use the first 10 
 If the car isn't in the list we need to add it, to do that you need to edit the file here:
 
 Go to [car_models.yml](https://github.com/flobz/psa_car_controller/blob/master/psa_car_controller/psacc/resources/car_models.yml)
-and click on edit then copy cut and already existent model in the list and edit all properties that are incorrect for your model.
+and click on edit then copy cut an already existent model in the list and edit all properties that are incorrect for your model:
+- Model
+- First ten letter of the car VIN:  
+- Useable Electric capacity in kw: [find it here](https://ev-database.org/cheatsheet/useable-battery-capacity-electric-car)
+- Fuel capacity in liter
+- abrp ref : [find it here](https://api.iternio.com/1/tlm/get_carmodels_list?api_key=32b2162f-9599-4647-8139-66e9f9528370)
+
 Finally, click on propose change. 
 
 ### 2. Error during activation {'newversion': '2.0.0', 'newversionurl': 'http://m.inwebo.com/', 'err': 'NOK:FORBIDDEN'}

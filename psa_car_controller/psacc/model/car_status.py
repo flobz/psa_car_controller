@@ -1,5 +1,6 @@
 import logging
 
+from psa_car_controller.psa.connected_car_api import Battery
 from psa_car_controller.psa.connected_car_api.models.energy import Energy
 from psa_car_controller.psa.connected_car_api.models.energy_charging import EnergyCharging
 from psa_car_controller.psa.connected_car_api.models.geometry import Geometry
@@ -41,6 +42,8 @@ class CarStatus(Status):
             self.timed_odometer = VehicleOdometer()
         if electric_car:
             self.get_energy("Fuel").level = None
+        if self.battery is None:
+            self.battery = Battery()
 
     def is_moving(self):
         try:

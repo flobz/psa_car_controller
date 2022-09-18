@@ -243,3 +243,10 @@
   reg: VF73ABHZMJ.*
   max_elec_consumption: 70
   max_fuel_consumption: 30
+- !ElecModel
+  name: Combo-e Cargo
+  battery_power: 50
+  fuel_capacity: 0
+  abrp_name: opel:comboe:22:50
+  reg: W0VEAZKXZM.*
+  max_elec_consumption: 45

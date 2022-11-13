@@ -1,10 +1,8 @@
 #!/usr/bin/env python3
-import logging
 import os
 import sys
 from threading import Thread
 
-logger = logging.getLogger(__name__)
 DIR = os.path.dirname(os.path.realpath(__file__))
 if sys.version_info < (3, 7):
     raise RuntimeError("This application requires Python 3.7+")
@@ -12,6 +10,7 @@ if sys.version_info < (3, 7):
 # pylint: disable=wrong-import-position
 from psa_car_controller.psacc.application.car_controller import PSACarController
 from psa_car_controller import web
+from psa_car_controller.common.mylogger import logger
 
 
 # noqa: MC0001

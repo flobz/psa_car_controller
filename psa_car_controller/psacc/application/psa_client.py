@@ -187,7 +187,7 @@ class PSAClient:
         altitude = car.status.last_position.geometry.coordinates[2]
         date = car.status.last_position.properties.updated_at
         if date is None or date < datetime.now(timezone.utc) - timedelta(days=1):  # if position isn't updated
-            date = car.status.service.updated_at
+            date = charge_date
         logger.debug("vin:%s longitude:%s latitude:%s date:%s mileage:%s level:%s charge_date:%s level_fuel:"
                      "%s moving:%s", car.vin, longitude, latitude, date, mileage, level, charge_date, level_fuel,
                      moving)

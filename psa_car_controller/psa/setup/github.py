@@ -8,7 +8,11 @@ logger = logging.getLogger(__name__)
 
 def get_github_sha_from_file(user, repo, directory, filename):
     res = requests.get("https://api.github.com/repos/{}/{}/git/trees/main:{}".format(user, repo, directory)).json()
-    file_info = next((file for file in res["tree"] if file['path'] == filename))
+    try:
+        file_info = next((file for file in res["tree"] if file['path'] == filename))
+    except KeyError as e:
+        logger.error("can't get github file: %s", res)
+        raise e
     return file_info["sha"]
 
 

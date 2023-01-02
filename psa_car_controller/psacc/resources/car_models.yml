@@ -1,4 +1,11 @@
 - !ElecModel
+  name: e-jumpy
+  battery_power: 68
+  fuel_capacity: 0
+  abrp_name: citroen:ejumpy:20:75:m
+  reg: VF7V1ZKXZM.*
+  max_elec_consumption: 70
+- !ElecModel
   name: e-208
   battery_power: 46
   fuel_capacity: 0

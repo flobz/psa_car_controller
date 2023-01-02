@@ -53,3 +53,6 @@ If you have an error more or less like this one:
 ```
 It's a problem on PSA server so don't open an issue, you can retry a second time and if it still doesn't work you just have to wait.
 You can look to issue about this problem [here](https://github.com/flobz/psa_car_controller/search?q=ssl&type=issues).
+
+### 7. AttributeError: 'PSACarController' object has no attribute 'chc'
+The setup phase did't worked. Please retry the "user config" and "otp config".

@@ -56,7 +56,7 @@ The official api is documented [here](https://developer.groupe-psa.io/webapi/b2c
     http://localhost:5000/preconditioning/YOURVIN/1 or 0
     
     2.8 Change charge hour (for example: set it to 22h30)
-    http://127.0.0.1:5000/charge_hour?vin=YOURVIN&hour=22&min=30
+    http://127.0.0.1:5000/charge_hour?vin=YOURVIN&hour=22&minute=30
 
 
 ## III. Use the dashboard

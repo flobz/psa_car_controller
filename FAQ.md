@@ -56,3 +56,9 @@ You can look to issue about this problem [here](https://github.com/flobz/psa_car
 
 ### 7. AttributeError: 'PSACarController' object has no attribute 'chc'
 The setup phase did't worked. Please retry the "user config" and "otp config".
+
+### 8. AUTHENTICATION_FAILED
+One of the following parameter is incorrect:
+- email
+- password
+- country code

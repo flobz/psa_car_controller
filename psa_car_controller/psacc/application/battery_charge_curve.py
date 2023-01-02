@@ -21,7 +21,7 @@ class BatteryChargeCurve:
         conn = Database.get_db()
         conn.close()
         battery_curves = []
-        if len(battery_curves_dto) > 0:
+        if len(battery_curves_dto) > 0 and battery_curves_dto[-1].level > 0:
             battery_capacity = battery_curves_dto[-1].level * car.battery_power / 100
             km_by_kw = 0.8 * battery_curves_dto[-1].autonomy / battery_capacity
             start = 0

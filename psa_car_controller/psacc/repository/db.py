@@ -293,7 +293,8 @@ class Database:
 
     @staticmethod
     def update_charge(charge: Charge):
-        # we don't need to update mileage, since it should be inserted at beginning of charge, maybe in future this will be supported
+        # we don't need to update mileage, since it should be inserted at beginning of charge,
+        # maybe in future this will be supported
         conn = Database.get_db()
         res = conn.execute(
             "UPDATE battery set stop_at=?, end_level=?, co2=?, kw=?, price=? WHERE start_at=? and VIN=?",

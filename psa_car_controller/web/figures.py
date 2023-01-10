@@ -72,13 +72,19 @@ def get_figures(car: Car):
         id='trips-table',
         sort_action='custom',
         sort_by=[{'column_id': 'id', 'direction': 'desc'}],
+        style_data={
+            'width': '10%',
+            'maxWidth': '10%',
+            'minWidth': '10%',
+            'color': 'gray'
+        },
         columns=[{'id': 'id', 'name': '#', 'type': 'numeric'},
                  {'id': 'start_at_str', 'name': 'start at', 'type': 'datetime'},
                  {'id': 'duration', 'name': 'duration', 'type': 'numeric',
                   'format': deepcopy(nb_format).symbol_suffix(" min").precision(0)},
-                 {'id': 'speed_average', 'name': 'average speed', 'type': 'numeric',
+                 {'id': 'speed_average', 'name': 'avg. speed', 'type': 'numeric',
                   'format': deepcopy(nb_format).symbol_suffix(" km/h").precision(0)},
-                 {'id': 'consumption_km', 'name': 'average consumption', 'type': 'numeric',
+                 {'id': 'consumption_km', 'name': 'avg. consumption', 'type': 'numeric',
                   'format': deepcopy(nb_format).symbol_suffix(" kWh/100km")},
                  {'id': 'consumption_fuel_km', 'name': 'average consumption fuel', 'type': 'numeric',
                   'format': deepcopy(nb_format).symbol_suffix(" L/100km")},
@@ -86,14 +92,17 @@ def get_figures(car: Car):
                   'format': nb_format.symbol_suffix(" km").precision(1)},
                  {'id': 'mileage', 'name': 'mileage', 'type': 'numeric',
                   'format': nb_format},
-                 {'id': 'altitude_diff', 'name': 'Altitude diff', 'type': 'numeric',
+                 {'id': 'altitude_diff', 'name': 'altitude diff', 'type': 'numeric',
                   'format': deepcopy(nb_format).symbol_suffix(" m").precision(0)}
                  ],
         style_data_conditional=[
             {
+                'if': {'column_id': ['id']},
+                'width': '5%'
+            },
+            {
                 'if': {'column_id': ['altitude_diff']},
-                'color': 'dodgerblue',
-                "text-decoration": "underline"
+                'color': 'black'
             }
         ],
         style_cell_conditional=style_cell_conditional,
@@ -118,6 +127,12 @@ def get_figures(car: Car):
     battery_table = DataTable(
         id='battery-table',
         sort_action='custom',
+        style_data={
+            'width': '10%',
+            'maxWidth': '10%',
+            'minWidth': '10%',
+            'color': 'gray'
+        },
         sort_by=[{'column_id': 'start_at_str', 'direction': 'desc'}],
         columns=[{'id': 'start_at_str', 'name': 'start at', 'type': 'datetime'},
                  {'id': 'stop_at_str', 'name': 'stop at', 'type': 'datetime'},
@@ -136,12 +151,32 @@ def get_figures(car: Car):
         style_data_conditional=[
             {
                 'if': {'column_id': ['start_level', "end_level"]},
-                'color': 'dodgerblue',
-                "text-decoration": "underline"
+                'color': 'black'
+            },
+            {
+                'if': {
+                    'filter_query': '{start_level} < 15',
+                    'column_id': 'start_level'
+                },
+                'color': 'red'
+            },
+            {
+                'if': {
+                    'filter_query': '{end_level} > 85',
+                    'column_id': 'end_level'
+                },
+                'color': 'green'
+            },
+            {
+                'if': {
+                    'filter_query': '{charging_mode} = "Slow"'
+                },
+                'backgroundColor': 'ivory'
             },
             {
                 'if': {'column_id': 'price'},
-                'backgroundColor': '#ABE2FB'
+                'color': 'dodgerblue',
+                'font-weihgt': 'bold'
             }
         ],
     )

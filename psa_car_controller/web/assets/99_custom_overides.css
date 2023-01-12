@@ -9,5 +9,5 @@ div.export-load-anim div.dash-sk-circle {
 }
 
 .dash-table-container .dash-spreadsheet-container .dash-spreadsheet-inner tr:hover > td:not(.focused) {
-  background-color: #ffeb3b;
+  background-color: #ffeb3b !important; /* need to be here, because datatables override it, if filter is specified */
 }

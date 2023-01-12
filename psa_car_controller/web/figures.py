@@ -5,7 +5,7 @@ from dash import html
 from dash.dash_table import DataTable
 import plotly.express as px
 import plotly.graph_objects as go
-from dash.dash_table.Format import Scheme, Symbol, Format
+from dash.dash_table.Format import Scheme, Symbol, Group, Format
 from dash.dcc import Graph
 
 from psa_car_controller.psacc.application.charging import Charging
@@ -35,6 +35,7 @@ ELEC_CONSUM_PRICE = "elec_consum_price"
 AVG_CONSUM_KW = "avg_consum_kw"
 AVG_CONSUM_PRICE = "avg_consum_price"
 CURRENCY = "€"
+EXPORT_FORMAT = "csv"
 
 SUMMARY_CARDS = {"Average consumption": {"text": [card_value_div(AVG_CONSUM_KW, "kWh/100km"),
                                                   card_value_div(AVG_CONSUM_PRICE, f"{CURRENCY}/100km")],
@@ -62,7 +63,7 @@ def get_figures(car: Car):
         lon=[lons[0]], lat=[lats[0]],
         showlegend=False, name="Last Position"))
     # table
-    nb_format = Format(precision=2, scheme=Scheme.fixed, symbol=Symbol.yes)  # pylint: disable=no-member
+    nb_format = Format(precision=2, scheme=Scheme.fixed, symbol=Symbol.yes, group=Group.yes)  # pylint: disable=no-member
     style_cell_conditional = []
     if car.is_electric():
         style_cell_conditional.append({'if': {'column_id': 'consumption_fuel_km', }, 'display': 'None', })
@@ -70,6 +71,7 @@ def get_figures(car: Car):
         style_cell_conditional.append({'if': {'column_id': 'consumption_km', }, 'display': 'None', })
     table_fig = DataTable(
         id='trips-table',
+        export_format=EXPORT_FORMAT,
         sort_action='custom',
         sort_by=[{'column_id': 'id', 'direction': 'desc'}],
         style_data={
@@ -122,10 +124,10 @@ def get_figures(car: Car):
     consumption_fig_by_speed.add_trace(go.Scatter(mode="markers", x=[0],
                                                   y=[0], name="Trips"))
     consumption_fig_by_speed.update_layout(xaxis_title="average Speed km/h", yaxis_title="Consumption kWh/100Km")
-
     # battery_table
     battery_table = DataTable(
         id='battery-table',
+        export_format=EXPORT_FORMAT,
         sort_action='custom',
         style_data={
             'width': '10%',
@@ -148,6 +150,7 @@ def get_figures(car: Car):
                  {'id': 'mileage', 'name': 'mileage', 'type': 'numeric', 'format': nb_format},
                  ],
         data=[],
+        page_size=50,
         style_data_conditional=[
             {
                 'if': {'column_id': ['start_level', "end_level"]},
@@ -169,7 +172,7 @@ def get_figures(car: Car):
             },
             {
                 'if': {
-                    'filter_query': '{charging_mode} = "Slow"'
+                    'filter_query': '{charging_mode} = "Quick"'
                 },
                 'backgroundColor': 'ivory'
             },

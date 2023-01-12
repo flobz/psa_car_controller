@@ -1,12 +1,13 @@
 #battery-table button.export,
 #trips-table button.export {
-    display: none;
+  display: none;
 }
+
 div.export-load-anim div.dash-sk-circle {
-    width: 20px;
-    height: 20px;
+  width: 20px;
+  height: 20px;
 }
+
 .dash-table-container .dash-spreadsheet-container .dash-spreadsheet-inner tr:hover > td:not(.focused) {
-    background-color: #FFEB3B !important
-    ;
+  background-color: #ffeb3b;
 }

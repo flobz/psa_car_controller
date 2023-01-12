@@ -2,9 +2,6 @@
 #trips-table button.export {
     display: none;
 }
-.dash-sk-circle {
-    visibility: none;
-}
 div.export-load-anim div.dash-sk-circle {
     width: 20px;
     height: 20px;

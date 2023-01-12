@@ -63,7 +63,7 @@ def get_figures(car: Car):
         lon=[lons[0]], lat=[lats[0]],
         showlegend=False, name="Last Position"))
     # table
-    nb_format = Format(precision=2, scheme=Scheme.fixed, symbol=Symbol.yes, group=Group.yes)  # pylint: disable=no-member
+    nb_format = Format(precision=2, scheme=Scheme.fixed, symbol=Symbol.yes, group=Group.yes) #pylint: disable=no-member
     style_cell_conditional = []
     if car.is_electric():
         style_cell_conditional.append({'if': {'column_id': 'consumption_fuel_km', }, 'display': 'None', })

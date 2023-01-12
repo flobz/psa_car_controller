@@ -231,7 +231,7 @@
   battery_power: 12.4
   fuel_capacity: 40
   abrp_name:
-  reg: VR3F3DGYTN.*
+  reg: VR3F3DGYT.*
   max_elec_consumption: 70
   max_fuel_consumption: 30
 - !CarModel

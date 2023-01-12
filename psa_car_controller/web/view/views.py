@@ -127,11 +127,11 @@ def create_callback():  # noqa: MC0001
             return "", False
 
         @dash_app.callback(Output("loading-output-trips", "children"), Input("export-trips-table", "n_clicks"))
-        def export_trips_loading_animation():
+        def export_trips_loading_animation(n_clicks): # pylint: disable=unused-argument
             time.sleep(3)
 
         @dash_app.callback(Output("loading-output-battery", "children"), Input("export-battery-table", "n_clicks"))
-        def export_batt_loading_animation():
+        def export_batt_loading_animation(n_clicks): # pylint: disable=unused-argument
             time.sleep(3)
         # Emulate click on original Export datatables button, since original button is hard to modify
         dash_app.clientside_callback(

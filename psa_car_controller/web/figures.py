@@ -128,7 +128,9 @@ def get_figures(car: Car):
                  {'id': 'kw', 'name': 'consumption', 'type': 'numeric',
                   'format': deepcopy(nb_format).symbol_suffix(" kWh").precision(2)},
                  {'id': 'price', 'name': 'price', 'type': 'numeric',
-                  'format': deepcopy(nb_format).symbol_suffix(" " + CURRENCY).precision(2), 'editable': True}
+                  'format': deepcopy(nb_format).symbol_suffix(" " + CURRENCY).precision(2), 'editable': True},
+                 {'id': 'charging_mode', 'name': 'charging mode', 'type': 'string'},
+                 {'id': 'mileage', 'name': 'mileage', 'type': 'numeric', 'format': nb_format},
                  ],
         data=[],
         style_data_conditional=[

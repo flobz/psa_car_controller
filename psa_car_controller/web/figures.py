@@ -5,7 +5,7 @@ from dash import html
 from dash.dash_table import DataTable
 import plotly.express as px
 import plotly.graph_objects as go
-from dash.dash_table.Format import Scheme, Symbol, Format
+from dash.dash_table.Format import Scheme, Symbol, Group, Format
 from dash.dcc import Graph
 
 from psa_car_controller.psacc.application.charging import Charging
@@ -35,6 +35,7 @@ ELEC_CONSUM_PRICE = "elec_consum_price"
 AVG_CONSUM_KW = "avg_consum_kw"
 AVG_CONSUM_PRICE = "avg_consum_price"
 CURRENCY = "€"
+EXPORT_FORMAT = "csv"
 
 SUMMARY_CARDS = {"Average consumption": {"text": [card_value_div(AVG_CONSUM_KW, "kWh/100km"),
                                                   card_value_div(AVG_CONSUM_PRICE, f"{CURRENCY}/100km")],
@@ -62,7 +63,7 @@ def get_figures(car: Car):
         lon=[lons[0]], lat=[lats[0]],
         showlegend=False, name="Last Position"))
     # table
-    nb_format = Format(precision=2, scheme=Scheme.fixed, symbol=Symbol.yes)  # pylint: disable=no-member
+    nb_format = Format(precision=2, scheme=Scheme.fixed, symbol=Symbol.yes, group=Group.yes)
     style_cell_conditional = []
     if car.is_electric():
         style_cell_conditional.append({'if': {'column_id': 'consumption_fuel_km', }, 'display': 'None', })
@@ -70,15 +71,22 @@ def get_figures(car: Car):
         style_cell_conditional.append({'if': {'column_id': 'consumption_km', }, 'display': 'None', })
     table_fig = DataTable(
         id='trips-table',
+        export_format=EXPORT_FORMAT,
         sort_action='custom',
         sort_by=[{'column_id': 'id', 'direction': 'desc'}],
+        style_data={
+            'width': '10%',
+            'maxWidth': '10%',
+            'minWidth': '10%',
+            'color': 'gray'
+        },
         columns=[{'id': 'id', 'name': '#', 'type': 'numeric'},
                  {'id': 'start_at_str', 'name': 'start at', 'type': 'datetime'},
                  {'id': 'duration', 'name': 'duration', 'type': 'numeric',
                   'format': deepcopy(nb_format).symbol_suffix(" min").precision(0)},
-                 {'id': 'speed_average', 'name': 'average speed', 'type': 'numeric',
+                 {'id': 'speed_average', 'name': 'avg. speed', 'type': 'numeric',
                   'format': deepcopy(nb_format).symbol_suffix(" km/h").precision(0)},
-                 {'id': 'consumption_km', 'name': 'average consumption', 'type': 'numeric',
+                 {'id': 'consumption_km', 'name': 'avg. consumption', 'type': 'numeric',
                   'format': deepcopy(nb_format).symbol_suffix(" kWh/100km")},
                  {'id': 'consumption_fuel_km', 'name': 'average consumption fuel', 'type': 'numeric',
                   'format': deepcopy(nb_format).symbol_suffix(" L/100km")},
@@ -86,14 +94,17 @@ def get_figures(car: Car):
                   'format': nb_format.symbol_suffix(" km").precision(1)},
                  {'id': 'mileage', 'name': 'mileage', 'type': 'numeric',
                   'format': nb_format},
-                 {'id': 'altitude_diff', 'name': 'Altitude diff', 'type': 'numeric',
+                 {'id': 'altitude_diff', 'name': 'altitude diff', 'type': 'numeric',
                   'format': deepcopy(nb_format).symbol_suffix(" m").precision(0)}
                  ],
         style_data_conditional=[
             {
+                'if': {'column_id': ['id']},
+                'width': '5%'
+            },
+            {
                 'if': {'column_id': ['altitude_diff']},
-                'color': 'dodgerblue',
-                "text-decoration": "underline"
+                'color': 'black'
             }
         ],
         style_cell_conditional=style_cell_conditional,
@@ -113,11 +124,17 @@ def get_figures(car: Car):
     consumption_fig_by_speed.add_trace(go.Scatter(mode="markers", x=[0],
                                                   y=[0], name="Trips"))
     consumption_fig_by_speed.update_layout(xaxis_title="average Speed km/h", yaxis_title="Consumption kWh/100Km")
-
     # battery_table
     battery_table = DataTable(
         id='battery-table',
+        export_format=EXPORT_FORMAT,
         sort_action='custom',
+        style_data={
+            'width': '10%',
+            'maxWidth': '10%',
+            'minWidth': '10%',
+            'color': 'gray'
+        },
         sort_by=[{'column_id': 'start_at_str', 'direction': 'desc'}],
         columns=[{'id': 'start_at_str', 'name': 'start at', 'type': 'datetime'},
                  {'id': 'stop_at_str', 'name': 'stop at', 'type': 'datetime'},
@@ -133,15 +150,36 @@ def get_figures(car: Car):
                  {'id': 'mileage', 'name': 'mileage', 'type': 'numeric', 'format': nb_format},
                  ],
         data=[],
+        page_size=50,
         style_data_conditional=[
             {
                 'if': {'column_id': ['start_level', "end_level"]},
-                'color': 'dodgerblue',
-                "text-decoration": "underline"
+                'color': 'black'
+            },
+            {
+                'if': {
+                    'filter_query': '{start_level} < 15',
+                    'column_id': 'start_level'
+                },
+                'color': 'red'
+            },
+            {
+                'if': {
+                    'filter_query': '{end_level} > 85',
+                    'column_id': 'end_level'
+                },
+                'color': 'green'
+            },
+            {
+                'if': {
+                    'filter_query': '{charging_mode} = "Quick"'
+                },
+                'backgroundColor': 'ivory'
             },
             {
                 'if': {'column_id': 'price'},
-                'backgroundColor': '#ABE2FB'
+                'color': 'dodgerblue',
+                'font-weihgt': 'bold'
             }
         ],
     )

@@ -29,14 +29,15 @@ The official api is documented [here](https://developer.groupe-psa.io/webapi/b2c
 - [Installation on Linux or Windows](docs/Install.md)
 - [Instalation as Home Assistant addon](https://github.com/flobz/psacc-ha/blob/main/psacc-ha/README.md)  
 - [Installation in Docker](docs/Docker.md)
+- [Installation on Raspberry Pi with docker-compose (external Tutorial)](https://return2.net/opel-peugeot-electric-vehicle-set-charging-threshold-limit/)
  ## II. Use the app
-  
+
     2.1 Get the car state :
     http://localhost:5000/get_vehicleinfo/YOURVIN
     
     2.2 Get the car state from cache to avoid to use psa api too much
     http://localhost:5000/get_vehicleinfo/YOURVIN?from_cache=1
-
+    
     2.2 Stop charge
     http://localhost:5000/charge_now/YOURVIN/0
     
@@ -45,7 +46,7 @@ The official api is documented [here](https://developer.groupe-psa.io/webapi/b2c
     
     2.4 Change car charge threshold to 80 percent
     http://localhost:5000/charge_control?vin=YOURVIN&percentage=80 
-
+    
     2.5 See the dashboard (only if record is enabled)
     http://localhost:5000
     
@@ -60,7 +61,7 @@ The official api is documented [here](https://developer.groupe-psa.io/webapi/b2c
 
 
 ## III. Use the dashboard
-     
+
 You can add the -r argument to record the position of the vehicle and retrieve this information in a dashboard.
 
 ``python3 psa-car-controller -f config.json -c charge_config.json -r``

@@ -5,6 +5,14 @@
   abrp_name: citroen:ejumpy:20:75:m
   reg: VF7V1ZKXZM.*
   max_elec_consumption: 70
+- !CarModel
+  name: C3
+  battery_power: 62
+  fuel_capacity: 45
+  abrp_name:
+  reg: VF7SXHNPYL.*
+  max_elec_consumption: 70
+  max_fuel_consumption: 30
 - !ElecModel
   name: e-208
   battery_power: 46

@@ -296,3 +296,11 @@
   reg: VXKF3DGXTN.*
   max_elec_consumption: 70
   max_fuel_consumption: 30
+- !CarModel
+  name: DS 4
+  battery_power: 12.4
+  fuel_capacity: 35
+  abrp_name:
+  reg: VR1F4DGYTN.*
+  max_elec_consumption: 70
+  max_fuel_consumption: 30

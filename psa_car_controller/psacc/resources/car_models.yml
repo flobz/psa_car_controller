@@ -259,7 +259,7 @@
   max_elec_consumption: 45
 - !CarModel
   name: Astra L Hybrid
-  battery_power: 12.4
+  battery_power: 11.3
   fuel_capacity: 42
   abrp_name:
   reg: VXKF3DGXTN.*

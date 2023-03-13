@@ -296,3 +296,11 @@
   reg: VXKF3DGXTN.*
   max_elec_consumption: 70
   max_fuel_consumption: 30
+- !CarModel
+  name: 508 PSE
+  battery_power: 11.5
+  fuel_capacity: 43
+  abrp_name:
+  reg: VR3F35GBTM.*
+  max_elec_consumption: 70
+  max_fuel_consumption: 30

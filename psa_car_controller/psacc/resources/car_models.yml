@@ -82,6 +82,13 @@
   abrp_name: opel:comboe:22:50:peugeot
   reg: VR3EZZKXZ.*
   max_elec_consumption: 70
+- !ElecModel
+  name: ION
+  battery_power: 14.5
+  fuel_capacity: 0
+  abrp_name: peugeot:ion:12:14:other
+  reg: VF31NZKY.*
+  max_elec_consumption: 70
 - !CarModel
   name: SUV 3008 Hybrid 225
   battery_power: 13.2
@@ -115,11 +122,27 @@
   max_elec_consumption: 70
   max_fuel_consumption: 30
 - !CarModel
+  name: '208'
+  battery_power: 0
+  fuel_capacity: 44
+  abrp_name:
+  reg: VF3CCBHY6H.*
+  max_elec_consumption: 70
+  max_fuel_consumption: 30
+- !CarModel
   name: '2008'
   battery_power: 0
   fuel_capacity: 44
   abrp_name:
   reg: VR3USHNS.*
+  max_elec_consumption: 70
+  max_fuel_consumption: 30
+- !CarModel
+  name: '2008'
+  battery_power: 0
+  fuel_capacity: 44
+  abrp_name:
+  reg: VF3CU9HP.*
   max_elec_consumption: 70
   max_fuel_consumption: 30
 - !CarModel
@@ -224,6 +247,14 @@
   fuel_capacity: 45
   abrp_name:
   reg: VF72RHNPXK.*
+  max_elec_consumption: 70
+  max_fuel_consumption: 30
+- !CarModel
+  name: 308 Hybrid
+  battery_power: 12.4
+  fuel_capacity: 40
+  abrp_name:
+  reg: VR3F3DGYT.*
   max_elec_consumption: 70
   max_fuel_consumption: 30
 - !CarModel

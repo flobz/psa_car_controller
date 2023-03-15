@@ -38,7 +38,7 @@ jobs:
       - name: Prepare
         id: prep
         run: |
-          DOCKER_IMAGE=flobz/psa_car_controller
+          DOCKER_IMAGE=gozdzickip/psa_car_controller
           VERSION=edge
           if [[ $GITHUB_REF == refs/tags/* ]]; then
             VERSION=${GITHUB_REF#refs/tags/}

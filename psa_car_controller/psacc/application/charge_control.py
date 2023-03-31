@@ -88,7 +88,7 @@ class ChargeControl:
             if status == INPROGRESS:
                 logger.info("charging status of %s is %s, battery level: %d", self.vin, status, level)
                 self.force_update(vehicle_status)
-                if hit_threshold and self.retry_count < 2:
+                if has_threshold and hit_threshold and self.retry_count < 2:
                     logger.info("Charge threshold is reached, stop the charge")
                     self.control_charge_with_ack(False)
                 elif self._next_stop_hour is not None:

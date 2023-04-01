@@ -166,7 +166,7 @@
   battery_power: 0
   fuel_capacity: 56
   abrp_name:
-  reg: VF3MRHNY.*
+  reg: VF3MRHNYHH.*
   max_elec_consumption: 70
   max_fuel_consumption: 30
 - !CarModel

@@ -170,6 +170,14 @@
   max_elec_consumption: 70
   max_fuel_consumption: 30
 - !CarModel
+  name: SUV 3008 II
+  battery_power: 0
+  fuel_capacity: 53
+  abrp_name:
+  reg: VF3MRHNYHJ.*
+  max_elec_consumption: 70
+  max_fuel_consumption: 30
+- !CarModel
   name: N5008 GT-LINE 1.6L
   battery_power: 0
   fuel_capacity: 60

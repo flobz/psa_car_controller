@@ -18,7 +18,7 @@ FUEL_CAR_STATUS = {
         'href': 'https://api.groupe-psa.com/connectedcar/v4/user/vehicles/myid/status'},
         'vehicles': {
             'href': 'https://api.groupe-psa.com/connectedcar/v4/user/vehicles/myid'}},
-    'timed.odometer': {'createdAt': None, 'mileage': 1107.1}, 'updatedAt': '2021-04-01T16:17:01Z'}
+    'odometer': {'createdAt': None, 'mileage': 1107.1}, 'updatedAt': '2021-04-01T16:17:01Z'}
 
 ELECTRIC_CAR_STATUS = {
     "lastPosition": {"type": "Feature", "geometry": {"type": "Point", "coordinates": [-1.59008, 47.274, 30]},
@@ -36,4 +36,4 @@ ELECTRIC_CAR_STATUS = {
         "href": "https://api.groupe-psa.com/connectedcar/v4/user/vehicles/aa/status"},
         "vehicles": {
             "href": "https://api.groupe-psa.com/connectedcar/v4/user/vehicles/aa"}},
-    "timed.odometer": {"createdAt": None, "mileage": 3196.5}, "updatedAt": "2022-03-26T11:02:54Z"}
+    "odometer": {"createdAt": None, "mileage": 3196.5}, "updatedAt": "2022-03-26T11:02:54Z"}

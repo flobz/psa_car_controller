@@ -44,7 +44,8 @@ class Status(object):
         'privacy': 'Privacy',
         'safety': 'Safety',
         'service': 'ServiceType',
-        'odometer': 'VehicleOdometer'
+        'odometer': 'VehicleOdometer',
+        'timed_odometer': 'VehicleOdometer'
     }
 
     attribute_map = {
@@ -61,7 +62,8 @@ class Status(object):
         'privacy': 'privacy',
         'safety': 'safety',
         'service': 'service',
-        'odometer': 'odometer'
+        'odometer': 'odometer',
+        'timed_odometer': 'timed.odometer'
     }
 
     def __init__(self, embedded=None, links=None, battery=None, doors_state=None, energy=None, environment=None, ignition=None, kinetic=None, last_position=None, preconditionning=None, privacy=None, safety=None, service=None, odometer=None):  # noqa: E501
@@ -408,6 +410,16 @@ class Status(object):
         """
 
         self._odometer = odometer
+            
+    @property
+    def timed_odometer(self):
+        """Gets the odometer of this Status.  # noqa: E501
+
+
+        :return: The odometer of this Status.  # noqa: E501
+        :rtype: VehicleOdometer
+        """
+        return self._odometer
 
     def to_dict(self):
         """Returns the model properties as a dict"""

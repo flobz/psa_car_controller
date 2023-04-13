@@ -43,7 +43,7 @@ def get_control_tabs(config):
                                      "src": "assets/images/battery-charge.svg"},
                          "Mileage": {"text": [card_value_div("mileage_value", "km",
                                                              value=convert_value_to_str(
-                                                                 car.status.timed_odometer.mileage))],
+                                                                 car.status.odometer.mileage))],
                                      "src": "assets/images/mileage.svg"}
                          }
                 el.append(dbc.Container(dbc.Row(children=create_card(cards)), fluid=True))

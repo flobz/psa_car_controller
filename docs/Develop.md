@@ -1,16 +1,16 @@
 # Developer Information
-## Contributing
+    ## Contributing
 
-Before create a pull request check your code with Prospector.
+Before creating a pull request check your code with Prospector.
 You can install it with
 
 ```
-pip3 install -r requirements-dev.txt```
-#Then on the root of the git project:
+poetry install --no-root
+#Then in the root of the git project:
 prospector
 ```
 ## API documentation
-The api documentation is described here : [api_spec.md](api_spec.md).
+The api documentation is described here : [api_spec.md](../api_spec.md).
 You can use all functions from the doc, for example :
 ```myp.api().get_car_last_position(myp.get_vehicle_id_with_vin("myvin"))```
 ## Analysing request
@@ -26,6 +26,6 @@ Then you can use mitmproxy for example:
 mitmproxy --set client_certs=MWPMYMA1.pem
 ```
 
-For being able to see trafic from android app you need a rooted phone, you can use an android emulator then follow this:
+For being able to see traffic from the android app you need a rooted phone, you can use an android emulator then follow this:
 https://docs.mitmproxy.org/stable/howto-install-system-trusted-ca-android/
 

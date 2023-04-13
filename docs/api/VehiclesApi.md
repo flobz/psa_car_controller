@@ -30,29 +30,30 @@ Delete a Monitor. OUT OF 1ST RELEASE (R-LEV 1.1) SCOPE
 Stop (disable) an existing Monitor.
 
 ### Example
+
 ```python
 from __future__ import print_function
 import time
-import psa_connectedcar
-from psa_connectedcar.rest import ApiException
+import connected_car_api
+from connected_car_api.rest import ApiException
 from pprint import pprint
 
 # Configure OAuth2 access token for authorization: Vehicle_auth
-configuration = psa_connectedcar.Configuration()
+configuration = connected_car_api.Configuration()
 configuration.access_token = 'YOUR_ACCESS_TOKEN'
 # Configure API key authorization: client_id
-configuration = psa_connectedcar.Configuration()
+configuration = connected_car_api.Configuration()
 configuration.api_key['client_id'] = 'YOUR_API_KEY'
 # Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
 # configuration.api_key_prefix['client_id'] = 'Bearer'
 # Configure API key authorization: realm
-configuration = psa_connectedcar.Configuration()
+configuration = connected_car_api.Configuration()
 configuration.api_key['x-introspect-realm'] = 'YOUR_API_KEY'
 # Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
 # configuration.api_key_prefix['x-introspect-realm'] = 'Bearer'
 
 # create an instance of the API class
-api_instance = psa_connectedcar.VehiclesApi(psa_connectedcar.ApiClient(configuration))
+api_instance = connected_car_api.VehiclesApi(connected_car_api.ApiClient(configuration))
 id = 'id_example' # str | Results will only be related to this Vehicle *id*.
 mid = 'mid_example' # str | id of the alert.
 
@@ -93,29 +94,30 @@ Last position identified
 Returns the latest GPS Position of the Vehicle.
 
 ### Example
+
 ```python
 from __future__ import print_function
 import time
-import psa_connectedcar
-from psa_connectedcar.rest import ApiException
+import connected_car_api
+from connected_car_api.rest import ApiException
 from pprint import pprint
 
 # Configure OAuth2 access token for authorization: Vehicle_auth
-configuration = psa_connectedcar.Configuration()
+configuration = connected_car_api.Configuration()
 configuration.access_token = 'YOUR_ACCESS_TOKEN'
 # Configure API key authorization: client_id
-configuration = psa_connectedcar.Configuration()
+configuration = connected_car_api.Configuration()
 configuration.api_key['client_id'] = 'YOUR_API_KEY'
 # Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
 # configuration.api_key_prefix['client_id'] = 'Bearer'
 # Configure API key authorization: realm
-configuration = psa_connectedcar.Configuration()
+configuration = connected_car_api.Configuration()
 configuration.api_key['x-introspect-realm'] = 'YOUR_API_KEY'
 # Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
 # configuration.api_key_prefix['x-introspect-realm'] = 'Bearer'
 
 # create an instance of the API class
-api_instance = psa_connectedcar.VehiclesApi(psa_connectedcar.ApiClient(configuration))
+api_instance = connected_car_api.VehiclesApi(connected_car_api.ApiClient(configuration))
 id = 'id_example' # str | Results will only be related to this Vehicle *id*.
 
 try:
@@ -155,29 +157,30 @@ OUT OF 1ST RELEASE (R-LEV 1.1) SCOPE
 Returns the latest Telemetry messages that occurred during a selective timestamp-ranges and bounded by an index range.
 
 ### Example
+
 ```python
 from __future__ import print_function
 import time
-import psa_connectedcar
-from psa_connectedcar.rest import ApiException
+import connected_car_api
+from connected_car_api.rest import ApiException
 from pprint import pprint
 
 # Configure OAuth2 access token for authorization: Vehicle_auth
-configuration = psa_connectedcar.Configuration()
+configuration = connected_car_api.Configuration()
 configuration.access_token = 'YOUR_ACCESS_TOKEN'
 # Configure API key authorization: client_id
-configuration = psa_connectedcar.Configuration()
+configuration = connected_car_api.Configuration()
 configuration.api_key['client_id'] = 'YOUR_API_KEY'
 # Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
 # configuration.api_key_prefix['client_id'] = 'Bearer'
 # Configure API key authorization: realm
-configuration = psa_connectedcar.Configuration()
+configuration = connected_car_api.Configuration()
 configuration.api_key['x-introspect-realm'] = 'YOUR_API_KEY'
 # Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
 # configuration.api_key_prefix['x-introspect-realm'] = 'Bearer'
 
 # create an instance of the API class
-api_instance = psa_connectedcar.VehiclesApi(psa_connectedcar.ApiClient(configuration))
+api_instance = connected_car_api.VehiclesApi(connected_car_api.ApiClient(configuration))
 id = 'id_example' # str | Results will only be related to this Vehicle *id*.
 type = ['type_example'] # list[str] | Results will only contain Telemetry messages of this kind. You can add more than one message type. (optional)
 index_range = '0-' # str | Results indexes will be included in this range (see **indexRange** model).      default: 0-    example: 0-, 0-5 (optional) (default to 0-)
@@ -229,31 +232,32 @@ Name | Type | Description  | Notes
 Returns the latest alert messages for a Vehicle.
 
 ### Example
+
 ```python
 from __future__ import print_function
 import time
-import psa_connectedcar
-from psa_connectedcar.rest import ApiException
+import connected_car_api
+from connected_car_api.rest import ApiException
 from pprint import pprint
 
 # Configure OAuth2 access token for authorization: Vehicle_auth
-configuration = psa_connectedcar.Configuration()
+configuration = connected_car_api.Configuration()
 configuration.access_token = 'YOUR_ACCESS_TOKEN'
 # Configure API key authorization: client_id
-configuration = psa_connectedcar.Configuration()
+configuration = connected_car_api.Configuration()
 configuration.api_key['client_id'] = 'YOUR_API_KEY'
 # Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
 # configuration.api_key_prefix['client_id'] = 'Bearer'
 # Configure API key authorization: realm
-configuration = psa_connectedcar.Configuration()
+configuration = connected_car_api.Configuration()
 configuration.api_key['x-introspect-realm'] = 'YOUR_API_KEY'
 # Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
 # configuration.api_key_prefix['x-introspect-realm'] = 'Bearer'
 
 # create an instance of the API class
-api_instance = psa_connectedcar.VehiclesApi(psa_connectedcar.ApiClient(configuration))
+api_instance = connected_car_api.VehiclesApi(connected_car_api.ApiClient(configuration))
 id = 'id_example' # str | Results will only be related to this Vehicle *id*.
-timestamps = [psa_connectedcar.TimeRange()] # list[TimeRange] | Array of **\"timestamp\"** ranges. Results will contain results whose timestamps are included in those date-time ranges (see **timestamp** data  model).**\"timestamp\"** items should be expressed as in '[RFC3339](https://www.ietf.org/rfc/rfc3339.txt)'. (optional)
+timestamps = [connected_car_api.TimeRange()] # list[TimeRange] | Array of **\"timestamp\"** ranges. Results will contain results whose timestamps are included in those date-time ranges (see **timestamp** data  model).**\"timestamp\"** items should be expressed as in '[RFC3339](https://www.ietf.org/rfc/rfc3339.txt)'. (optional)
 index_range = '0-' # str | Results indexes will be included in this range (see **indexRange** model).      default: 0-    example: 0-, 0-5 (optional) (default to 0-)
 page_size = 60 # int | The maximum number of results (for a collection results response) to return per page. When not set, at most 60 results will be returned.   (optional) (default to 60)
 page_token = 'page_token_example' # str | Start-Page marker, the token for continuing a previous list request on the next page. It is built and used **only** by the server. (optional)
@@ -302,29 +306,30 @@ Name | Type | Description  | Notes
 Returns information about a specific alert messages for a Vehicle.
 
 ### Example
+
 ```python
 from __future__ import print_function
 import time
-import psa_connectedcar
-from psa_connectedcar.rest import ApiException
+import connected_car_api
+from connected_car_api.rest import ApiException
 from pprint import pprint
 
 # Configure OAuth2 access token for authorization: Vehicle_auth
-configuration = psa_connectedcar.Configuration()
+configuration = connected_car_api.Configuration()
 configuration.access_token = 'YOUR_ACCESS_TOKEN'
 # Configure API key authorization: client_id
-configuration = psa_connectedcar.Configuration()
+configuration = connected_car_api.Configuration()
 configuration.api_key['client_id'] = 'YOUR_API_KEY'
 # Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
 # configuration.api_key_prefix['client_id'] = 'Bearer'
 # Configure API key authorization: realm
-configuration = psa_connectedcar.Configuration()
+configuration = connected_car_api.Configuration()
 configuration.api_key['x-introspect-realm'] = 'YOUR_API_KEY'
 # Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
 # configuration.api_key_prefix['x-introspect-realm'] = 'Bearer'
 
 # create an instance of the API class
-api_instance = psa_connectedcar.VehiclesApi(psa_connectedcar.ApiClient(configuration))
+api_instance = connected_car_api.VehiclesApi(connected_car_api.ApiClient(configuration))
 id = 'id_example' # str | Results will only be related to this Vehicle *id*.
 aid = 'aid_example' # str | id of the alert.
 locale = 'locale_example' # str | Locale is used for rendering text, correctly displaying regional monetary values, time and date formats. Respect REGEX \\w(-\\w)? (optional)
@@ -367,29 +372,30 @@ Details of vehicule
 Returns detailed information about a Vehicle.
 
 ### Example
+
 ```python
 from __future__ import print_function
 import time
-import psa_connectedcar
-from psa_connectedcar.rest import ApiException
+import connected_car_api
+from connected_car_api.rest import ApiException
 from pprint import pprint
 
 # Configure OAuth2 access token for authorization: Vehicle_auth
-configuration = psa_connectedcar.Configuration()
+configuration = connected_car_api.Configuration()
 configuration.access_token = 'YOUR_ACCESS_TOKEN'
 # Configure API key authorization: client_id
-configuration = psa_connectedcar.Configuration()
+configuration = connected_car_api.Configuration()
 configuration.api_key['client_id'] = 'YOUR_API_KEY'
 # Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
 # configuration.api_key_prefix['client_id'] = 'Bearer'
 # Configure API key authorization: realm
-configuration = psa_connectedcar.Configuration()
+configuration = connected_car_api.Configuration()
 configuration.api_key['x-introspect-realm'] = 'YOUR_API_KEY'
 # Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
 # configuration.api_key_prefix['x-introspect-realm'] = 'Bearer'
 
 # create an instance of the API class
-api_instance = psa_connectedcar.VehiclesApi(psa_connectedcar.ApiClient(configuration))
+api_instance = connected_car_api.VehiclesApi(connected_car_api.ApiClient(configuration))
 id = 'id_example' # str | Results will only be related to this Vehicle *id*.
 
 try:
@@ -429,31 +435,32 @@ OUT OF 1ST RELEASE (R-LEV 1.1) SCOPE
 Returns the set of Collisions that occurred for a given vehicle (id) during the timestamp ranges and bounded by an index range.
 
 ### Example
+
 ```python
 from __future__ import print_function
 import time
-import psa_connectedcar
-from psa_connectedcar.rest import ApiException
+import connected_car_api
+from connected_car_api.rest import ApiException
 from pprint import pprint
 
 # Configure OAuth2 access token for authorization: Vehicle_auth
-configuration = psa_connectedcar.Configuration()
+configuration = connected_car_api.Configuration()
 configuration.access_token = 'YOUR_ACCESS_TOKEN'
 # Configure API key authorization: client_id
-configuration = psa_connectedcar.Configuration()
+configuration = connected_car_api.Configuration()
 configuration.api_key['client_id'] = 'YOUR_API_KEY'
 # Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
 # configuration.api_key_prefix['client_id'] = 'Bearer'
 # Configure API key authorization: realm
-configuration = psa_connectedcar.Configuration()
+configuration = connected_car_api.Configuration()
 configuration.api_key['x-introspect-realm'] = 'YOUR_API_KEY'
 # Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
 # configuration.api_key_prefix['x-introspect-realm'] = 'Bearer'
 
 # create an instance of the API class
-api_instance = psa_connectedcar.VehiclesApi(psa_connectedcar.ApiClient(configuration))
+api_instance = connected_car_api.VehiclesApi(connected_car_api.ApiClient(configuration))
 id = 'id_example' # str | Results will only be related to this Vehicle *id*.
-timestamps = [psa_connectedcar.TimeRange()] # list[TimeRange] | Array of **\"timestamp\"** ranges. Results will contain results whose timestamps are included in those date-time ranges (see **timestamp** data  model).**\"timestamp\"** items should be expressed as in '[RFC3339](https://www.ietf.org/rfc/rfc3339.txt)'. (optional)
+timestamps = [connected_car_api.TimeRange()] # list[TimeRange] | Array of **\"timestamp\"** ranges. Results will contain results whose timestamps are included in those date-time ranges (see **timestamp** data  model).**\"timestamp\"** items should be expressed as in '[RFC3339](https://www.ietf.org/rfc/rfc3339.txt)'. (optional)
 index_range = '0-' # str | Results indexes will be included in this range (see **indexRange** model).      default: 0-    example: 0-, 0-5 (optional) (default to 0-)
 page_size = 60 # int | The maximum number of results (for a collection results response) to return per page. When not set, at most 60 results will be returned.   (optional) (default to 60)
 page_token = 'page_token_example' # str | Start-Page marker, the token for continuing a previous list request on the next page. It is built and used **only** by the server. (optional)
@@ -499,29 +506,30 @@ OUT OF 1ST RELEASE (R-LEV 1.1) SCOPE
 Returns the Collision that matches the vehicle id and the Collision cid.
 
 ### Example
+
 ```python
 from __future__ import print_function
 import time
-import psa_connectedcar
-from psa_connectedcar.rest import ApiException
+import connected_car_api
+from connected_car_api.rest import ApiException
 from pprint import pprint
 
 # Configure OAuth2 access token for authorization: Vehicle_auth
-configuration = psa_connectedcar.Configuration()
+configuration = connected_car_api.Configuration()
 configuration.access_token = 'YOUR_ACCESS_TOKEN'
 # Configure API key authorization: client_id
-configuration = psa_connectedcar.Configuration()
+configuration = connected_car_api.Configuration()
 configuration.api_key['client_id'] = 'YOUR_API_KEY'
 # Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
 # configuration.api_key_prefix['client_id'] = 'Bearer'
 # Configure API key authorization: realm
-configuration = psa_connectedcar.Configuration()
+configuration = connected_car_api.Configuration()
 configuration.api_key['x-introspect-realm'] = 'YOUR_API_KEY'
 # Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
 # configuration.api_key_prefix['x-introspect-realm'] = 'Bearer'
 
 # create an instance of the API class
-api_instance = psa_connectedcar.VehiclesApi(psa_connectedcar.ApiClient(configuration))
+api_instance = connected_car_api.VehiclesApi(connected_car_api.ApiClient(configuration))
 id = 'id_example' # str | Results will only be related to this Vehicle *id*.
 cid = 'cid_example' # str | Results will only contain the Collision related to this Collision *id*.
 
@@ -563,29 +571,30 @@ Name | Type | Description  | Notes
 Returns the latest Maintenance information for a Vehicle.
 
 ### Example
+
 ```python
 from __future__ import print_function
 import time
-import psa_connectedcar
-from psa_connectedcar.rest import ApiException
+import connected_car_api
+from connected_car_api.rest import ApiException
 from pprint import pprint
 
 # Configure OAuth2 access token for authorization: Vehicle_auth
-configuration = psa_connectedcar.Configuration()
+configuration = connected_car_api.Configuration()
 configuration.access_token = 'YOUR_ACCESS_TOKEN'
 # Configure API key authorization: client_id
-configuration = psa_connectedcar.Configuration()
+configuration = connected_car_api.Configuration()
 configuration.api_key['client_id'] = 'YOUR_API_KEY'
 # Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
 # configuration.api_key_prefix['client_id'] = 'Bearer'
 # Configure API key authorization: realm
-configuration = psa_connectedcar.Configuration()
+configuration = connected_car_api.Configuration()
 configuration.api_key['x-introspect-realm'] = 'YOUR_API_KEY'
 # Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
 # configuration.api_key_prefix['x-introspect-realm'] = 'Bearer'
 
 # create an instance of the API class
-api_instance = psa_connectedcar.VehiclesApi(psa_connectedcar.ApiClient(configuration))
+api_instance = connected_car_api.VehiclesApi(connected_car_api.ApiClient(configuration))
 id = 'id_example' # str | Results will only be related to this Vehicle *id*.
 
 try:
@@ -624,29 +633,30 @@ OUT OF 1ST RELEASE (R-LEV 1.1) SCOPE
 Returns the list of subscribed Monitors for a Vehicle.
 
 ### Example
+
 ```python
 from __future__ import print_function
 import time
-import psa_connectedcar
-from psa_connectedcar.rest import ApiException
+import connected_car_api
+from connected_car_api.rest import ApiException
 from pprint import pprint
 
 # Configure OAuth2 access token for authorization: Vehicle_auth
-configuration = psa_connectedcar.Configuration()
+configuration = connected_car_api.Configuration()
 configuration.access_token = 'YOUR_ACCESS_TOKEN'
 # Configure API key authorization: client_id
-configuration = psa_connectedcar.Configuration()
+configuration = connected_car_api.Configuration()
 configuration.api_key['client_id'] = 'YOUR_API_KEY'
 # Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
 # configuration.api_key_prefix['client_id'] = 'Bearer'
 # Configure API key authorization: realm
-configuration = psa_connectedcar.Configuration()
+configuration = connected_car_api.Configuration()
 configuration.api_key['x-introspect-realm'] = 'YOUR_API_KEY'
 # Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
 # configuration.api_key_prefix['x-introspect-realm'] = 'Bearer'
 
 # create an instance of the API class
-api_instance = psa_connectedcar.VehiclesApi(psa_connectedcar.ApiClient(configuration))
+api_instance = connected_car_api.VehiclesApi(connected_car_api.ApiClient(configuration))
 id = 'id_example' # str | Results will only be related to this Vehicle *id*.
 index_range = '0-' # str | Results indexes will be included in this range (see **indexRange** model).      default: 0-    example: 0-, 0-5 (optional) (default to 0-)
 page_size = 60 # int | The maximum number of results (for a collection results response) to return per page. When not set, at most 60 results will be returned.   (optional) (default to 60)
@@ -692,29 +702,30 @@ OUT OF 1ST RELEASE (R-LEV 1.1) SCOPE
 Returns information about a specific Monitor for a Vehicle.
 
 ### Example
+
 ```python
 from __future__ import print_function
 import time
-import psa_connectedcar
-from psa_connectedcar.rest import ApiException
+import connected_car_api
+from connected_car_api.rest import ApiException
 from pprint import pprint
 
 # Configure OAuth2 access token for authorization: Vehicle_auth
-configuration = psa_connectedcar.Configuration()
+configuration = connected_car_api.Configuration()
 configuration.access_token = 'YOUR_ACCESS_TOKEN'
 # Configure API key authorization: client_id
-configuration = psa_connectedcar.Configuration()
+configuration = connected_car_api.Configuration()
 configuration.api_key['client_id'] = 'YOUR_API_KEY'
 # Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
 # configuration.api_key_prefix['client_id'] = 'Bearer'
 # Configure API key authorization: realm
-configuration = psa_connectedcar.Configuration()
+configuration = connected_car_api.Configuration()
 configuration.api_key['x-introspect-realm'] = 'YOUR_API_KEY'
 # Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
 # configuration.api_key_prefix['x-introspect-realm'] = 'Bearer'
 
 # create an instance of the API class
-api_instance = psa_connectedcar.VehiclesApi(psa_connectedcar.ApiClient(configuration))
+api_instance = connected_car_api.VehiclesApi(connected_car_api.ApiClient(configuration))
 id = 'id_example' # str | Results will only be related to this Vehicle *id*.
 mid = 'mid_example' # str | id of the alert.
 
@@ -756,29 +767,30 @@ Vehicle status.
 Returns the latest vehicle status.
 
 ### Example
+
 ```python
 from __future__ import print_function
 import time
-import psa_connectedcar
-from psa_connectedcar.rest import ApiException
+import connected_car_api
+from connected_car_api.rest import ApiException
 from pprint import pprint
 
 # Configure OAuth2 access token for authorization: Vehicle_auth
-configuration = psa_connectedcar.Configuration()
+configuration = connected_car_api.Configuration()
 configuration.access_token = 'YOUR_ACCESS_TOKEN'
 # Configure API key authorization: client_id
-configuration = psa_connectedcar.Configuration()
+configuration = connected_car_api.Configuration()
 configuration.api_key['client_id'] = 'YOUR_API_KEY'
 # Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
 # configuration.api_key_prefix['client_id'] = 'Bearer'
 # Configure API key authorization: realm
-configuration = psa_connectedcar.Configuration()
+configuration = connected_car_api.Configuration()
 configuration.api_key['x-introspect-realm'] = 'YOUR_API_KEY'
 # Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
 # configuration.api_key_prefix['x-introspect-realm'] = 'Bearer'
 
 # create an instance of the API class
-api_instance = psa_connectedcar.VehiclesApi(psa_connectedcar.ApiClient(configuration))
+api_instance = connected_car_api.VehiclesApi(connected_car_api.ApiClient(configuration))
 id = 'id_example' # str | Results will only be related to this Vehicle *id*.
 extension = ['extension_example'] # list[str] | Additional data set that will be included in embedded field    * _Disclaimer_:  **Enabling ```odometer``` extension will automatically disable ```kinetic``` telemetry message** (optional)
 
@@ -820,29 +832,30 @@ List of vehicules
 Returns the Vehicles associated with the User.
 
 ### Example
+
 ```python
 from __future__ import print_function
 import time
-import psa_connectedcar
-from psa_connectedcar.rest import ApiException
+import connected_car_api
+from connected_car_api.rest import ApiException
 from pprint import pprint
 
 # Configure OAuth2 access token for authorization: Vehicle_auth
-configuration = psa_connectedcar.Configuration()
+configuration = connected_car_api.Configuration()
 configuration.access_token = 'YOUR_ACCESS_TOKEN'
 # Configure API key authorization: client_id
-configuration = psa_connectedcar.Configuration()
+configuration = connected_car_api.Configuration()
 configuration.api_key['client_id'] = 'YOUR_API_KEY'
 # Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
 # configuration.api_key_prefix['client_id'] = 'Bearer'
 # Configure API key authorization: realm
-configuration = psa_connectedcar.Configuration()
+configuration = connected_car_api.Configuration()
 configuration.api_key['x-introspect-realm'] = 'YOUR_API_KEY'
 # Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
 # configuration.api_key_prefix['x-introspect-realm'] = 'Bearer'
 
 # create an instance of the API class
-api_instance = psa_connectedcar.VehiclesApi(psa_connectedcar.ApiClient(configuration))
+api_instance = connected_car_api.VehiclesApi(connected_car_api.ApiClient(configuration))
 index_range = '0-' # str | Results indexes will be included in this range (see **indexRange** model).      default: 0-    example: 0-, 0-5 (optional) (default to 0-)
 page_size = 60 # int | The maximum number of results (for a collection results response) to return per page. When not set, at most 60 results will be returned.   (optional) (default to 60)
 locale = 'locale_example' # str | Locale is used for rendering text, correctly displaying regional monetary values, time and date formats. Respect REGEX \\w(-\\w)? (optional)
@@ -888,18 +901,19 @@ Set a new monitor status. OUT OF 1ST RELEASE (R-LEV 1.1) SCOPE
 Set monitor status.  
 
 ### Example
+
 ```python
 from __future__ import print_function
 import time
-import psa_connectedcar
-from psa_connectedcar.rest import ApiException
+import connected_car_api
+from connected_car_api.rest import ApiException
 from pprint import pprint
 
 # create an instance of the API class
-api_instance = psa_connectedcar.VehiclesApi()
+api_instance = connected_car_api.VehiclesApi()
 id = 'id_example' # str | Results will only be related to this Vehicle *id*.
 mid = 'mid_example' # str | id of the alert.
-body = psa_connectedcar.MonitorStatusSetter() # MonitorStatusSetter |  (optional)
+body = connected_car_api.MonitorStatusSetter() # MonitorStatusSetter |  (optional)
 
 try:
     # Set a new monitor status. OUT OF 1ST RELEASE (R-LEV 1.1) SCOPE
@@ -940,31 +954,32 @@ Create a new Monitor. OUT OF 1ST RELEASE (R-LEV 1.1) SCOPE
 >Create a Monitor for a Vehicle. This is a kind of vehicle monitor that generates an event following the transition state of one of the (monitored) data  of the vehicles. As for example the fuel level, the moving out of a defined geographical area.   >When the the trigger occurs, the built event expressed as a JSON object will be sent over the callback. 
 
 ### Example
+
 ```python
 from __future__ import print_function
 import time
-import psa_connectedcar
-from psa_connectedcar.rest import ApiException
+import connected_car_api
+from connected_car_api.rest import ApiException
 from pprint import pprint
 
 # Configure OAuth2 access token for authorization: Vehicle_auth
-configuration = psa_connectedcar.Configuration()
+configuration = connected_car_api.Configuration()
 configuration.access_token = 'YOUR_ACCESS_TOKEN'
 # Configure API key authorization: client_id
-configuration = psa_connectedcar.Configuration()
+configuration = connected_car_api.Configuration()
 configuration.api_key['client_id'] = 'YOUR_API_KEY'
 # Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
 # configuration.api_key_prefix['client_id'] = 'Bearer'
 # Configure API key authorization: realm
-configuration = psa_connectedcar.Configuration()
+configuration = connected_car_api.Configuration()
 configuration.api_key['x-introspect-realm'] = 'YOUR_API_KEY'
 # Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
 # configuration.api_key_prefix['x-introspect-realm'] = 'Bearer'
 
 # create an instance of the API class
-api_instance = psa_connectedcar.VehiclesApi(psa_connectedcar.ApiClient(configuration))
+api_instance = connected_car_api.VehiclesApi(connected_car_api.ApiClient(configuration))
 id = 'id_example' # str | Results will only be related to this Vehicle *id*.
-body = psa_connectedcar.MonitorParameter() # MonitorParameter |  (optional)
+body = connected_car_api.MonitorParameter() # MonitorParameter |  (optional)
 
 try:
     # Create a new Monitor. OUT OF 1ST RELEASE (R-LEV 1.1) SCOPE
@@ -1004,18 +1019,19 @@ Update and existing Monitor. OUT OF 1ST RELEASE (R-LEV 1.1) SCOPE
 Update an existing ```Monitor``` that has been posted (and accepted previously) for this vehicle. The monitor object (body) provided should be complete because the aggregation is not supported for the update of the ```monitor```. you can retrieve this object using the ```GET /monitor/{mid}``` API then modify it and finally publish it (via this ```PUT API```)  
 
 ### Example
+
 ```python
 from __future__ import print_function
 import time
-import psa_connectedcar
-from psa_connectedcar.rest import ApiException
+import connected_car_api
+from connected_car_api.rest import ApiException
 from pprint import pprint
 
 # create an instance of the API class
-api_instance = psa_connectedcar.VehiclesApi()
+api_instance = connected_car_api.VehiclesApi()
 mid = 'mid_example' # str | id of the alert.
 id = 'id_example' # str | Results will only be related to this Vehicle *id*.
-body = psa_connectedcar.MonitorParameter() # MonitorParameter |  (optional)
+body = connected_car_api.MonitorParameter() # MonitorParameter |  (optional)
 
 try:
     # Update and existing Monitor. OUT OF 1ST RELEASE (R-LEV 1.1) SCOPE

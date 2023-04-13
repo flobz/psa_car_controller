@@ -3,7 +3,7 @@
 [![Codacy Badge](https://app.codacy.com/project/badge/Coverage/f4082f146ad044bb900e1683035a540b)](https://www.codacy.com/gh/flobz/psa_car_controller/dashboard?utm_source=github.com&utm_medium=referral&utm_content=flobz/psa_car_controller&utm_campaign=Badge_Coverage)
 [![Publish Docker image](https://github.com/flobz/psa_car_controller/actions/workflows/Docker_build.yml/badge.svg?branch=master)](https://hub.docker.com/repository/docker/flobz/psa_car_controller)
 [![Donate](https://img.shields.io/badge/Donate-PayPal-blue.svg)](https://www.paypal.com/donate?hosted_button_id=SM652WPXFNCXS)
-### This is a python program to control a psa car with connected_car v4 api. Using android app to retrieve credentials.
+### This is a python program to control and get information from a PSA car.
 I test it with a Peugeot e-208, but it works with others PSA vehicles (Citroen, Opel, Vauxhall, DS).
 
 With this app  you will be able to :
@@ -24,9 +24,6 @@ With this app  you will be able to :
 
 The official api is documented [here](https://developer.groupe-psa.io/webapi/b2c/quickstart/connect/#article) but it is not totally up to date, and contains some errors. 
 
-A video in French was made by vlycop to explain how to use this application : https://youtu.be/XO7-N7G3biU 
-
-For information on configuring the psa_car_controller Docker container [see this page]
 
  ## I. Installation
 - [Installation on Linux or Windows](docs/Install.md)
@@ -59,14 +56,14 @@ For information on configuring the psa_car_controller Docker container [see this
     http://localhost:5000/preconditioning/YOURVIN/1 or 0
     
     2.8 Change charge hour (for example: set it to 22h30)
-    http://127.0.0.1:5000/charge_hour?vin=YOURVIN&hour=22&min=30
+    http://127.0.0.1:5000/charge_hour?vin=YOURVIN&hour=22&minute=30
 
 
 ## III. Use the dashboard
      
 You can add the -r argument to record the position of the vehicle and retrieve this information in a dashboard.
 
-``python3 server.py -f test.json -c charge_config1.json -r``
+``python3 psa-car-controller -f config.json -c charge_config.json -r``
     
 You will be able to visualize your trips, your consumption and some statistics:
     
@@ -94,6 +91,8 @@ You can modify a price manually in the dashboard. It can be useful if you use pu
 
 ## FAQ
 If you have a problem, or a question please check if the answer isn't in the [FAQ](FAQ.md). 
+
+## Contribute
 If you need information to contribute or edit this program go [here](docs/Develop.md).
 
 ## Donation

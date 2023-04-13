@@ -1,0 +1,10 @@
+version: "2"
+
+services:
+  psacc:
+    image: flobz/psa_car_controller:latest
+    restart: unless-stopped
+    ports:
+      - "5000:5000"
+    volumes:
+      - ./config:/config

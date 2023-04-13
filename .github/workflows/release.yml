@@ -1,0 +1,81 @@
+name: Publish Docker image and pypi package
+on:
+  push:
+    tags:
+     - 'v*.*.*'
+  workflow_dispatch:
+jobs:
+  create_release:
+    name: Push to pypi
+    runs-on: ubuntu-latest
+    steps:
+     - uses: actions/checkout@v2
+     - name: Set up Python
+       uses: actions/setup-python@v2
+       with:
+        python-version: '3.10'
+     - name: Install dependencies
+       run: |
+         python -m pip install --upgrade pip
+         pip install poetry
+         sudo apt-get install libblas3 liblapack3 liblapack-dev libblas-dev gfortran libatlas-base-dev
+     - name: Build and publish
+       run: |
+         export PSACC_VERSION=$(git describe --tags --abbrev=0)
+         poetry version ${PSACC_VERSION}
+         poetry build
+         poetry publish --username __token__ --password ${{ secrets.PYPI_TOKEN }}
+         mv dist/psa_car_controller-${PSACC_VERSION:1}-py3-none-any.whl dist/psa_car_controller-0.0.0-py3-none-any.whl
+     - uses: actions/upload-artifact@master
+       with:
+         name: wheel-package
+         path: dist/psa_car_controller-0.0.0-py3-none-any.whl
+  push_to_registry:
+    needs: create_release
+    name: Push Docker image to Docker Hub
+    runs-on: ubuntu-latest
+    steps:
+      - name: Prepare
+        id: prep
+        run: |
+          DOCKER_IMAGE=flobz/psa_car_controller
+          VERSION=edge
+          if [[ $GITHUB_REF == refs/tags/* ]]; then
+            VERSION=${GITHUB_REF#refs/tags/}
+            MINOR_VERSION=${VERSION%.*}
+            MAJOR=${MINOR_VERSION%.*}
+            TAGS="${DOCKER_IMAGE}:${VERSION},${DOCKER_IMAGE}:${MINOR_VERSION},${DOCKER_IMAGE}:${MAJOR},${DOCKER_IMAGE}:latest"
+          else
+            TAGS="${DOCKER_IMAGE}:${VERSION}"
+          fi
+          echo ::set-output name=tags::${TAGS}
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@master
+        with:
+          platforms: all
+      - name: Set up Docker Buildx
+        id: buildx
+        uses: docker/setup-buildx-action@master
+      - name: Check out the repo
+        uses: actions/checkout@v2
+      - uses: actions/download-artifact@master
+        with:
+          name: wheel-package
+          path: dist/psa_car_controller-0.0.0-py3-none-any.whl
+      - name: Login to DockerHub
+        uses: docker/login-action@v1 
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+      -
+        name: Build and push
+        id: docker_build
+        uses: docker/build-push-action@v2
+        with:
+          context: .
+          push: true
+          tags: ${{ steps.prep.outputs.tags }}
+          platforms: linux/amd64,linux/arm64,linux/arm/v7
+      -
+        name: Image digest
+        run: echo ${{ steps.docker_build.outputs.digest }}

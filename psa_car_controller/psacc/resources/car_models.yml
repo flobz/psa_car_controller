@@ -1,3 +1,10 @@
+!ElecModel
+  name: Vivaro-e panel van L1
+  battery_power: 68
+  fuel_capacity: 0
+  abrp_name: opel:vivaroe:22:75:l
+  reg: VXEV1ZKXZN.*
+  max_elec_consumption: 70
 - !ElecModel
   name: e-jumpy
   battery_power: 68

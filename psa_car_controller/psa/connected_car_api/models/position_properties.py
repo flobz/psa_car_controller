@@ -126,7 +126,7 @@ class PositionProperties(object):
         :param type: The type of this PositionProperties.  # noqa: E501
         :type: str
         """
-        allowed_values = ["Estimated", "Acquired", "Estimate", "Aquire"]  # noqa: E501
+        allowed_values = ["Estimated", "Acquired", "Estimate", "Acquire"]  # noqa: E501
         if type not in allowed_values:
             raise ValueError(
                 "Invalid value for `type` ({0}), must be one of {1}"  # noqa: E501

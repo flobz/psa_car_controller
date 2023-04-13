@@ -114,7 +114,7 @@ function updateMap (data, oldFigure, x, y, lastPos) {
     for (trip of trips) {
       const xPos = trip.positions[xLabel]
       figure.data[0].lat.push(...xPos, null)
-      figure.data[0].lon.push(...trip.positions[yLabel[0]])
+      figure.data[0].lon.push(...trip.positions[yLabel[0]], null)
       figure.data[0].hovertext.push(...Array(xPos.length).fill(trip[yLabel[1]]), null)
     }
     if (trip) {

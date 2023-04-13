@@ -1,4 +1,4 @@
-!ElecModel
+- !ElecModel
   name: Vivaro-e panel van L1
   battery_power: 68
   fuel_capacity: 0

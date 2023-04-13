@@ -17,9 +17,9 @@ logger = logging.getLogger(__name__)
 class CarStatus(Status):
     def __init__(self, embedded=None, links=None, battery=None, doors_state=None, energy=None, environment=None,
                  ignition=None, kinetic=None, last_position=None, preconditionning=None, privacy=None, safety=None,
-                 service=None, timed_odometer=None):  # noqa: E501
+                 service=None, odometer=None):  # noqa: E501
         super().__init__(embedded, links, battery, doors_state, energy, environment, ignition, kinetic, last_position,
-                         preconditionning, privacy, safety, service, timed_odometer)
+                         preconditionning, privacy, safety, service, odometer)
         self.correct(False)
 
     def correct(self, electric_car):
@@ -38,8 +38,8 @@ class CarStatus(Status):
         if len(self._energy) == 2 and self._energy[0].type != 'Electric':
             self._energy = self._energy[::-1]
 
-        if self.timed_odometer is None:
-            self.timed_odometer = VehicleOdometer()
+        if self.odometer is None:
+            self.odometer = VehicleOdometer()
         if electric_car:
             self.get_energy("Fuel").level = None
         if self.battery is None:

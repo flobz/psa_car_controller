@@ -31,49 +31,49 @@ class VehicleOdometer(object):
                             and the value is json key in definition.
     """
     swagger_types = {
-        'updated_at': 'datetime',
+        'createdAt': 'datetime',
         'mileage': 'float'
     }
 
     attribute_map = {
-        'updated_at': 'updatedAt',
+        'createdAt': 'createdAt',
         'mileage': 'mileage'
     }
 
-    def __init__(self, updated_at=None, mileage=None):  # noqa: E501
+    def __init__(self, createdAt=None, mileage=None):  # noqa: E501
         """VehicleOdometer - a model defined in Swagger"""  # noqa: E501
 
-        self._updated_at = None
+        self._createdAt = None
         self._mileage = None
         self.discriminator = None
 
-        if updated_at is not None:
-            self.updated_at = updated_at
+        if createdAt is not None:
+            self.createdAt = createdAt
         if mileage is not None:
             self.mileage = mileage
 
     @property
-    def updated_at(self):
-        """Gets the updated_at of this VehicleOdometer.  # noqa: E501
+    def createdAt(self):
+        """Gets the createdAt of this VehicleOdometer.  # noqa: E501
 
         Date when the resource has been updated.  # noqa: E501
 
-        :return: The updated_at of this VehicleOdometer.  # noqa: E501
+        :return: The createdAt of this VehicleOdometer.  # noqa: E501
         :rtype: datetime
         """
-        return self._updated_at
+        return self._createdAt
 
-    @updated_at.setter
-    def updated_at(self, updated_at):
-        """Sets the updated_at of this VehicleOdometer.
+    @createdAt.setter
+    def createdAt(self, createdAt):
+        """Sets the createdAt of this VehicleOdometer.
 
         Date when the resource has been updated.  # noqa: E501
 
-        :param updated_at: The updated_at of this VehicleOdometer.  # noqa: E501
+        :param createdAt: The createdAt of this VehicleOdometer.  # noqa: E501
         :type: datetime
         """
 
-        self._updated_at = updated_at
+        self._createdAt = createdAt
 
     @property
     def mileage(self):

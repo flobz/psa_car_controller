@@ -176,7 +176,7 @@ class PSAClient:
         self._record_enabled = value
 
     def record_info(self, car: Car):  # pylint: disable=too-many-locals
-        mileage = car.status.timed_odometer.mileage
+        mileage = car.status.odometer.mileage
         level = car.status.get_energy('Electric').level
         level_fuel = car.status.get_energy('Fuel').level
         charge_date = car.status.get_energy('Electric').updated_at

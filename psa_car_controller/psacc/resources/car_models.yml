@@ -320,3 +320,11 @@
   reg: VR1F4DGYTM.*
   max_elec_consumption: 70
   max_fuel_consumption: 30
+- !CarModel
+  name: New 308
+  battery_power: 0
+  fuel_capacity: 56
+  abrp_name:
+  reg: VR3FPHNSTN.*
+  max_elec_consumption: 70
+  max_fuel_consumption: 30   

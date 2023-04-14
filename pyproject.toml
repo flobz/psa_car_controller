@@ -13,7 +13,7 @@ include = [
 [tool.poetry.dependencies]
 python = ">=3.7.0, <4.0.0"
 paho-mqtt = ">=1.5.0"
-dash = ">=2"
+dash = ">=2, <2.9.0"
 dash-daq = "^0.5.0"
 plotly = ">=5"
 cryptography = ">=2.6"

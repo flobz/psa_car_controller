@@ -31,20 +31,18 @@ class PreconditioningAirConditioning(object):
                             and the value is json key in definition.
     """
     swagger_types = {
-        'failure_cause': 'str',
-        'programs': 'list[PreconditioningProgram]',
         'status': 'str',
-        'updated_at': 'datetime'
+        'updated_at': 'datetime',
+        'created_at': 'datetime'
     }
 
     attribute_map = {
-        'failure_cause': 'failureCause',
-        'programs': 'programs',
         'status': 'status',
-        'updated_at': 'updatedAt'
+        'updated_at': 'updatedAt',
+        'created_at': 'createdAt',
     }
 
-    def __init__(self, failure_cause=None, programs=None, status=None, updated_at=None):  # noqa: E501
+    def __init__(self, status=None, updated_at=None, created_at=None):  # noqa: E501
         """PreconditioningAirConditioning - a model defined in Swagger"""  # noqa: E501
 
         self._failure_cause = None
@@ -53,14 +51,11 @@ class PreconditioningAirConditioning(object):
         self._updated_at = None
         self.discriminator = None
 
-        if failure_cause is not None:
-            self.failure_cause = failure_cause
-        if programs is not None:
-            self.programs = programs
         if status is not None:
             self.status = status
         if updated_at is not None:
             self.updated_at = updated_at
+        self.created_at = created_at
 
     @property
     def failure_cause(self):

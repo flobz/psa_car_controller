@@ -57,7 +57,7 @@ class Status(object):
         'ignition': 'ignition',
         'kinetic': 'kinetic',
         'last_position': 'lastPosition',
-        'preconditionning': 'preconditionning',
+        'preconditionning': 'preconditioning',
         'privacy': 'privacy',
         'safety': 'safety',
         'service': 'service',

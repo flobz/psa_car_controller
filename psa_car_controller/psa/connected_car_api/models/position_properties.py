@@ -41,7 +41,7 @@ class PositionProperties(object):
         'heading': 'heading',
         'signal_quality': 'signalQuality',
         'type': 'type',
-        'updated_at': 'updatedAt'
+        'updated_at': 'createdAt'
     }
 
     def __init__(self, heading=None, signal_quality=None, type=None, updated_at=None):  # noqa: E501

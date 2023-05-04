@@ -41,7 +41,7 @@ class PositionProperties(object):
         'heading': 'heading',
         'signal_quality': 'signalQuality',
         'type': 'type',
-        'updated_at': 'updatedAt'
+        'updated_at': 'createdAt'
     }
 
     def __init__(self, heading=None, signal_quality=None, type=None, updated_at=None):  # noqa: E501
@@ -126,7 +126,7 @@ class PositionProperties(object):
         :param type: The type of this PositionProperties.  # noqa: E501
         :type: str
         """
-        allowed_values = ["Estimated", "Acquired", "Estimate", "Aquire"]  # noqa: E501
+        allowed_values = ["Estimated", "Acquired", "Estimate", "Acquire"]  # noqa: E501
         if type not in allowed_values:
             raise ValueError(
                 "Invalid value for `type` ({0}), must be one of {1}"  # noqa: E501

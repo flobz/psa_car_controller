@@ -105,8 +105,12 @@ class Cars(list):
         return None
 
     def add(self, car: Car):
-        if self.get_car_by_id(car.vehicle_id) is None:
+        car_with_same_vin = self.get_car_by_vin(car.vin)
+        if not car_with_same_vin:
             self.append(car)
+        elif car_with_same_vin.vehicle_id != car.vehicle_id:
+            logger.warning("Vehicle ID changed !")
+            car_with_same_vin.vehicle_id = car.vehicle_id
 
     @classmethod
     def from_json(cls, data: list):

@@ -42,7 +42,7 @@ class Energy(object):
     }
 
     attribute_map = {
-        'updated_at': 'updatedAt',
+        'updated_at': 'createdAt',
         'autonomy': 'autonomy',
         'battery': 'battery',
         'charging': 'charging',

@@ -90,6 +90,13 @@
   reg: VR3EZZKXZ.*
   max_elec_consumption: 70
 - !ElecModel
+  name: e-Berlingo
+  battery_power: 45
+  fuel_capacity: 0
+  abrp_name: opel:comboe:22:50:citroen
+  reg: VR7EZZKXZ.*
+  max_elec_consumption: 70
+- !ElecModel
   name: ION
   battery_power: 14.5
   fuel_capacity: 0

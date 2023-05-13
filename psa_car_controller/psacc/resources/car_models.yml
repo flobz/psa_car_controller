@@ -334,4 +334,12 @@
   abrp_name:
   reg: VR3FPHNSTN.*
   max_elec_consumption: 70
-  max_fuel_consumption: 30   
+  max_fuel_consumption: 30  
+  - !CarModel
+  name: New 308 SW
+  battery_power: 0
+  fuel_capacity: 56
+  abrp_name:
+  reg: VR3FRHNSTN.*
+  max_elec_consumption: 70
+  max_fuel_consumption: 30  

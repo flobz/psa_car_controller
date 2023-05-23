@@ -343,3 +343,19 @@
   reg: VF3M45GBUK.*
   max_elec_consumption: 70
   max_fuel_consumption: 30
+- !CarModel
+  name: 508 PSE
+  battery_power: 11.5
+  fuel_capacity: 43
+  abrp_name:
+  reg: VR3F35GBTM.*
+  max_elec_consumption: 70
+  max_fuel_consumption: 30
+- !ElecModel
+  name: Combo-e Life
+  battery_power: 50
+  fuel_capacity: 0
+  abrp_name: opel:comboe:22:50
+  reg: W0VEZZKXZN.*
+  max_elec_consumption: 45
+

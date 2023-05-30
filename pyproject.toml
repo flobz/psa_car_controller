@@ -13,7 +13,7 @@ include = [
 [tool.poetry.dependencies]
 python = ">=3.7.0, <4.0.0"
 paho-mqtt = ">=1.5.0"
-dash = ">2.0.0, <2.9.0"
+dash = ">=2.9.0, <3.0.0"
 dash-daq = "^0.5.0"
 plotly = ">=5"
 cryptography = ">=2.6"
@@ -21,7 +21,6 @@ Werkzeug = ">=1.0.0"
 Flask = ">=1.0.4"
 dash-bootstrap-components = ">=1"
 ConfigUpdater = ">=3.0"
-pandas = ">=0.23"
 oauth2-client = "^1.2.1"
 requests = "^2.27.1"
 pytz = "^2021.0"
@@ -35,7 +34,7 @@ pydantic = "^1.9.0"
 certifi = ">=14.05.14"
 six = ">=1.10"
 python-dateutil = ">=2.5.3"
-urllib3 = ">=1.15.1"
+urllib3 = ">=1.15.1 <2.0.0"
 importlib-metadata = {version = ">=1.7.0", python = "<3.8"}
 
 [tool.poetry.dev-dependencies]

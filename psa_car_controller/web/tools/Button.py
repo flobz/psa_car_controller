@@ -18,12 +18,13 @@ class Button:
         self.html_el = self.get_html()
         self._fct = fct
         self._output = Output(self.get_response_id(), 'children')
-        callback_id = create_callback_id(self._output)
+        self.input_button = Input(self.get_button_id(), 'n_clicks')
+        callback_id = create_callback_id(self._output, self.input_button)
         if callback_id not in dash_app.callback_map:
             self._set_callback(prevent_initial_call)
 
     def _set_callback(self, prevent_initial_call):
-        dash_app.callback(self._output, Input(self.get_button_id(), 'n_clicks'),
+        dash_app.callback(self._output, self.input_button,
                           prevent_initial_call=prevent_initial_call)(self.call)
 
     def get_button_id(self):

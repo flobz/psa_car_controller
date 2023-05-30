@@ -51,7 +51,7 @@ class BatteryChargeCurve:
                     start = end
                     speeds = []
             battery_curves.append(BatteryChargeCurve(charge.end_level, 0))
-        else:
+        elif charge.end_level and charge.start_level:
             speed = car.get_charge_speed(charge.end_level - charge.start_level, (stop_at - start_date).total_seconds())
             battery_curves.append(BatteryChargeCurve(charge.start_level, speed))
             battery_curves.append(BatteryChargeCurve(charge.end_level, speed))

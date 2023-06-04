@@ -150,7 +150,7 @@ def askCode(n_clicks):  # pylint: disable=unused-argument
     if ctx.triggered:
         try:
             app.myp.remote_client.get_sms_otp_code()
-            return dbc.Alert("Sms sent", color="success")
+            return dbc.Alert("SMS sent", color="success")
         except Exception as e:
             res = str(e)
             return dbc.Alert(res, color="danger")

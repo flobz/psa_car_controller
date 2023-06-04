@@ -1,4 +1,10 @@
-from pathlib import Path
-from single_source import get_version
+import sys
 
-__version__ = get_version(__name__, Path(__file__), default_return="dev")
+if sys.version_info[:2] >= (3, 8):
+    from importlib import metadata
+else:
+    import importlib_metadata as metadata
+
+__version__ = metadata.version(__package__)
+
+del metadata, sys

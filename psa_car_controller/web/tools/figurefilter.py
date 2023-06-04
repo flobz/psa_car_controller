@@ -113,7 +113,12 @@ class FigureFilter:
         return params
 
     def set_clientside_callback(self, dash_app, config: dict):
-        callback_id = create_callback_id(self.__get_output())
+        output = self.__get_output()
+        inputs = [Input('clientside-data-store', 'data'),
+                  Input('date-slider', 'value'),
+                  Input('clientside-figure-store', 'data'),
+                  *self.__get_table_input_sort_by()]
+        callback_id = create_callback_id(self.__get_output(), inputs)
         if callback_id not in dash_app.callback_map:
             config_str = json.dumps(config)
             if logger.isEnabledFor(DEBUG):
@@ -126,12 +131,7 @@ class FigureFilter:
                             return filterAndSort(data, range, figures, params, logLevel,
                              {self.__gen_sort_dict()}, {config_str})
                           }}"""
-            dash_app.clientside_callback(fct_def,
-                                         *self.__get_output(),
-                                         Input('clientside-data-store', 'data'),
-                                         Input('date-slider', 'value'),
-                                         Input('clientside-figure-store', 'data'),
-                                         *self.__get_table_input_sort_by())
+            dash_app.clientside_callback(fct_def, *output, *inputs)
             return True
         return False
 

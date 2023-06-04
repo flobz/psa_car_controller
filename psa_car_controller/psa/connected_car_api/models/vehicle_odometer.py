@@ -36,7 +36,7 @@ class VehicleOdometer(object):
     }
 
     attribute_map = {
-        'updated_at': 'updatedAt',
+        'updated_at': 'createdAt',
         'mileage': 'mileage'
     }
 

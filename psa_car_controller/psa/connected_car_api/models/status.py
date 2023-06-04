@@ -57,11 +57,11 @@ class Status(object):
         'ignition': 'ignition',
         'kinetic': 'kinetic',
         'last_position': 'lastPosition',
-        'preconditionning': 'preconditionning',
+        'preconditionning': 'preconditioning',
         'privacy': 'privacy',
         'safety': 'safety',
         'service': 'service',
-        'timed_odometer': 'timed.odometer'
+        'timed_odometer': 'odometer'
     }
 
     def __init__(self, embedded=None, links=None, battery=None, doors_state=None, energy=None, environment=None, ignition=None, kinetic=None, last_position=None, preconditionning=None, privacy=None, safety=None, service=None, timed_odometer=None):  # noqa: E501

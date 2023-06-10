@@ -6,6 +6,13 @@
   reg: VXEV1ZKXZN.*
   max_elec_consumption: 70
 - !ElecModel
+  name: e-Berlingo
+  battery_power: 46
+  fuel_capacity: 0
+  abrp_name: Citroen;e-Berlingo;2022+ (alpha)
+  reg: VR7EZZKXZP.*
+  max_elec_consumption: 70
+- !ElecModel
   name: e-jumpy
   battery_power: 68
   fuel_capacity: 0

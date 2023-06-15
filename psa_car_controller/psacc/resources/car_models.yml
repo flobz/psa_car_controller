@@ -358,4 +358,11 @@
   abrp_name: opel:comboe:22:50
   reg: W0VEZZKXZN.*
   max_elec_consumption: 45
-
+- !CarModel
+  name: 5008 II 1.5 HDI GT-Line
+  battery_power: 0
+  fuel_capacity: 43
+  abrp_name:
+  reg: VF3MCYHZRL.*
+  max_elec_consumption: 70
+  max_fuel_consumption: 30

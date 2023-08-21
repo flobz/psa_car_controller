@@ -182,7 +182,8 @@ class Database:
         battery_curves = []
         res = conn.execute("""SELECT date, level, rate, autonomy
                                                 FROM battery_curve
-                                                WHERE start_at=? and date<=? and VIN=?;""",
+                                                WHERE start_at=? and date<=? and VIN=? 
+                                                ORDER BY date asc;""",
                            (start_at, stop_at, vin)).fetchall()
         for row in res:
             battery_curves.append(BatteryCurveDto(**dict_key_to_lower_case(**row)))

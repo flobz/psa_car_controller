@@ -1,0 +1,13 @@
+#battery-table button.export,
+#trips-table button.export {
+  display: none;
+}
+
+div.export-load-anim div.dash-sk-circle {
+  width: 20px;
+  height: 20px;
+}
+
+.dash-table-container .dash-spreadsheet-container .dash-spreadsheet-inner tr:hover > td:not(.focused) {
+  background-image: linear-gradient(#ffeb3b75 0 0);
+}

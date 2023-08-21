@@ -14,6 +14,8 @@ logger = logging.getLogger(__name__)
 
 DEFAULT_CONFIG = """[General]
 currency = €
+# define format for data export, can be csv or xlsx
+export_format = csv
 # minimum trip length in km so it's added to stats and map in website
 minimum trip length =
 # for future use
@@ -83,6 +85,7 @@ class GeneralConfig(BaseModel):
     currency: str = "€"
     length_unit: str = "km"
     minimum_trip_length: float = 10
+    export_format = "csv"
 
 
 class ElectricityPriceConfig(BaseModel):

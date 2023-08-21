@@ -60,14 +60,14 @@ class Charging:
     @staticmethod
     def record_charging(car: Car, charging_status, charge_date: datetime, level, latitude,
                         # pylint: disable=too-many-locals
-                        longitude, country_code, charging_mode, charging_rate, autonomy):
+                        longitude, country_code, charging_mode, charging_rate, autonomy, mileage):
         conn = Database.get_db()
         charge_date = charge_date.replace(microsecond=0)
         if charging_status == "InProgress":
             last_charge = Database.get_last_charge(car.vin)
             if Charging.is_charge_ended(last_charge):
-                conn.execute("INSERT INTO battery(start_at,start_level,charging_mode,VIN) VALUES(?,?,?,?)",
-                             (charge_date, level, charging_mode, car.vin))
+                conn.execute("INSERT INTO battery(start_at,start_level,charging_mode,VIN,mileage) VALUES(?,?,?,?,?)",
+                             (charge_date, level, charging_mode, car.vin, mileage))
                 start_at = charge_date
             else:
                 start_at = last_charge.start_at
@@ -93,6 +93,7 @@ class Charging:
                 last_charge.co2 = co2_per_kw
                 last_charge.kw = consumption_kw
                 last_charge.stop_at = charge_date
+                last_charge.mileage = mileage
                 Charging.update_chargings(conn, last_charge, car)
         conn.commit()
         conn.close()

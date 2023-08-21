@@ -18,7 +18,7 @@ from psa_car_controller.psacc.utils.utils import get_temp
 
 logger = logging.getLogger(__name__)
 
-NEW_BATTERY_COLUMNS = [["price", "INTEGER"], ["charging_mode", "TEXT"]]
+NEW_BATTERY_COLUMNS = [["price", "INTEGER"], ["charging_mode", "TEXT"], ["mileage", "REAL"]]
 NEW_POSITION_COLUMNS = [["level_fuel", "INTEGER"], ["altitude", "INTEGER"]]
 NEW_BATTERY_CURVE_COLUMNS = [["rate", "INTEGER"], ["autonomy", "INTEGER"]]
 
@@ -270,8 +270,7 @@ class Database:
     @staticmethod
     def get_last_charge(vin) -> Charge:
         conn = Database.get_db()
-        res = conn.execute("SELECT start_at, stop_at, vin, start_level, end_level, co2, kw, price, charging_mode "
-                           "FROM battery WHERE VIN=? ORDER BY start_at DESC limit 1", (vin,)).fetchone()
+        res = conn.execute("SELECT * FROM battery WHERE VIN=? ORDER BY start_at DESC limit 1", (vin,)).fetchone()
         if res:
             return Charge(**dict_key_to_lower_case(**res))
         return None
@@ -295,6 +294,8 @@ class Database:
 
     @staticmethod
     def update_charge(charge: Charge):
+        # we don't need to update mileage, since it should be inserted at beginning of charge,
+        # maybe in future this will be supported
         conn = Database.get_db()
         res = conn.execute(
             "UPDATE battery set stop_at=?, end_level=?, co2=?, kw=?, price=? WHERE start_at=? and VIN=?",

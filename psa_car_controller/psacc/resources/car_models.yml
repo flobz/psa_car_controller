@@ -326,6 +326,14 @@
   max_elec_consumption: 70
   max_fuel_consumption: 30
 - !CarModel
+  name: Astra L GSe Hybrid
+  battery_power: 12.4
+  fuel_capacity: 42
+  abrp_name:
+  reg: VXKF3DGYTP.*
+  max_elec_consumption: 70
+  max_fuel_consumption: 30
+- !CarModel
   name: 308 SW Hybrid
   battery_power: 12.4
   fuel_capacity: 40

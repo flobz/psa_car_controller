@@ -388,4 +388,10 @@
   reg: VR7NDDGYPN.*
   max_elec_consumption: 70
   max_fuel_consumption: 30
-
+- !ElecModel
+  name: e-berlingo 2022+
+  battery_power: 46
+  fuel_capacity: 0
+  abrp_name: opel:comboe:22:50:citroen
+  reg: VR7EZZKXZN.*
+  max_elec_consumption: 70

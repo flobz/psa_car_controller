@@ -14,7 +14,7 @@ def get_temp(latitude: str, longitude: str, api_key: str) -> float:
                                                "exclude": "minutely,hourly,daily,alerts",
                                                "appid": api_key,
                                                "units": "metric"})
-            temp = weather_rep.json()["current"]["temp"]
+            temp = weather_rep.json()["main"]["temp"]
             logger.debug("Temperature :%fc", temp)
             return temp
     except ConnectionError:

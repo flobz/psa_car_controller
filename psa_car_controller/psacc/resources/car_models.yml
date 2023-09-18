@@ -388,4 +388,11 @@
   reg: VR7NDDGYPN.*
   max_elec_consumption: 70
   max_fuel_consumption: 30
-
+- !CarModel
+  name: C5 Aircross
+  battery_power: 0
+  fuel_capacity: 45
+  abrp_name:
+  reg: VR7ARHNSSP.*
+  max_elec_consumption: 70
+  max_fuel_consumption: 30

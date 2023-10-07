@@ -2,7 +2,7 @@ doc-warnings: false
 max-line-length: 120
 ignore-paths:
   - tests
-  - connected_car_api
+  - psa_car_controller/psa/connected_car_api
 pycodestyle:
   disable:
     - E722

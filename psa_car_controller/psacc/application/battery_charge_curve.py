@@ -7,6 +7,9 @@ from psa_car_controller.psacc.model.car import Car
 from psa_car_controller.psacc.model.charge import Charge
 from psa_car_controller.psacc.repository.db import Database
 
+DEFAULT_KM_BY_KW = 5.3
+MINIMUM_AUTONOMY_FOR_GOOD_RESULT = 20
+
 
 class BatteryChargeCurve:
     def __init__(self, level, speed):
@@ -23,7 +26,10 @@ class BatteryChargeCurve:
         battery_curves = []
         if len(battery_curves_dto) > 0 and battery_curves_dto[-1].level > 0 and battery_curves_dto[-1].autonomy > 0:
             battery_capacity = battery_curves_dto[-1].level * car.battery_power / 100
-            km_by_kw = 0.8 * battery_curves_dto[-1].autonomy / battery_capacity
+            if battery_curves_dto[-1].autonomy > MINIMUM_AUTONOMY_FOR_GOOD_RESULT:
+                km_by_kw = 0.8 * battery_curves_dto[-1].autonomy / battery_capacity
+            else:
+                km_by_kw = DEFAULT_KM_BY_KW
             start = 0
             speeds = []
 
@@ -51,7 +57,7 @@ class BatteryChargeCurve:
                     start = end
                     speeds = []
             battery_curves.append(BatteryChargeCurve(charge.end_level, 0))
-        elif charge.end_level and charge.start_level:
+        elif charge.end_level and charge.start_level is not None:
             speed = car.get_charge_speed(charge.end_level - charge.start_level, (stop_at - start_date).total_seconds())
             battery_curves.append(BatteryChargeCurve(charge.start_level, speed))
             battery_curves.append(BatteryChargeCurve(charge.end_level, speed))

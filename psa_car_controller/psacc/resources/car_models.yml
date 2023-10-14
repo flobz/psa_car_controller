@@ -388,4 +388,10 @@
   reg: VR7NDDGYPN.*
   max_elec_consumption: 70
   max_fuel_consumption: 30
-
+- !ElecModel
+  name: Combo-e Cargo XL
+  battery_power: 50
+  fuel_capacity: 0
+  abrp_name: 
+  reg: W0VEAZKXZP.*
+  max_elec_consumption: 46

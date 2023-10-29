@@ -33,7 +33,7 @@ def get_control_tabs(config):
         myp: PSAClient = config.myp
         el = []
         buttons_row = []
-        if config.remote_control:
+        if config.remote_control and car.status is not None:
             try:
                 preconditionning_state = car.status.preconditionning.air_conditioning.status != "Disabled"
                 charging_state = car.status.get_energy('Electric').charging.status == "InProgress"

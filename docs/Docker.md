@@ -21,5 +21,16 @@ docker run -d -ti --name psa_car_controller1 \
   --restart unless-stopped \
   flobz/psa_car_controller
 ```
-
 Go to http://127.0.0.1:5000 and follow instruction
+
+### Environment variable:
+You can modify some parameter with docker environment variable:
+
+|variable         | description                     |
+|-----------------|---------------------------------|
+|PSACC_CONFIG_DIR | overide configuration directory |
+|PSACC_PORT       | change port                     |
+|PSACC_OPTIONS    | add cli argurment               |
+
+
+

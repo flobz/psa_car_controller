@@ -1,5 +1,6 @@
 import locale
 import logging
+import sys
 
 import dash_bootstrap_components as dbc
 from flask import Flask
@@ -14,7 +15,10 @@ except ImportError:
     from werkzeug import DispatcherMiddleware
 
 from psa_car_controller.common.mylogger import file_handler
-import importlib
+if sys.version_info >= (3, 8):
+    import importlib
+else:
+    import importlib_metadata as importlib
 
 # pylint: disable=invalid-name
 app = None

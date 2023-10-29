@@ -125,7 +125,7 @@ class RemoteClient:
             except RateLimitException:
                 logger.exception("__keep_mqtt")
         t = threading.Timer(timeout, self.__keep_mqtt)
-        t.setDaemon(True)
+        t.daemon = True
         t.start()
 
     def veh_charge_request(self, vin, hour, minute, charge_type):

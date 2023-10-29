@@ -7,6 +7,7 @@ from dash import dcc, html
 from dash.dependencies import Output, Input, State
 from dash.exceptions import PreventUpdate
 from flask import jsonify, request, Response as FlaskResponse
+import time
 
 from psa_car_controller.common.mylogger import CustomLogger
 from psa_car_controller.psacc.application.car_controller import PSACarController
@@ -125,7 +126,39 @@ def create_callback():  # noqa: MC0001
                 return figures.get_altitude_fig(trips[active_cell["row_id"] - 1]), True
             return "", False
 
+        @dash_app.callback(Output("loading-output-trips", "children"), Input("export-trips-table", "n_clicks"))
+        def export_trips_loading_animation(n_clicks): # pylint: disable=unused-argument
+            time.sleep(3)
+
+        @dash_app.callback(Output("loading-output-battery", "children"), Input("export-battery-table", "n_clicks"))
+        def export_batt_loading_animation(n_clicks): # pylint: disable=unused-argument
+            time.sleep(3)
+        # Emulate click on original Export datatables button, since original button is hard to modify
+        dash_app.clientside_callback(
+            """
+            function(n_clicks) {
+                if (n_clicks > 0)
+                    document.querySelector("#trips-table button.export").click()
+                return ""
+            }
+            """,
+            Output("trips-table", "data-dummy"),
+            [Input("export-trips-table", "n_clicks")]
+        )
+        dash_app.clientside_callback(
+            """
+            function(n_clicks) {
+                if (n_clicks > 0)
+                    document.querySelector("#battery-table button.export").click()
+                return ""
+            }
+            """,
+            Output("battery-table", "data-dummy"),
+            [Input("export-battery-table", "n_clicks")]
+        )
+
         figures.CURRENCY = APP.config.General.currency
+        figures.EXPORT_FORMAT = APP.config.General.export_format
         CALLBACK_CREATED = True
 
 
@@ -343,7 +376,25 @@ def serve_layout():
                 dbc.Tabs([
                     dbc.Tab(label="Summary", tab_id="summary", children=summary_tab),
                     dbc.Tab(label="Trips", tab_id="trips", id="tab_trips",
-                            children=[html.Div(id="tab_trips_fig", children=figures.table_fig),
+                            children=[dbc.Row(
+                                        dbc.Col([
+                                            dcc.Loading(
+                                                id="loading-div-trips",
+                                                children=[html.Div([html.Div(id="loading-output-trips")])],
+                                                type="circle",
+                                                className="export-load-anim"
+                                            ),
+                                            dbc.Button("Export trips data",
+                                                       id="export-trips-table",
+                                                       n_clicks=0,
+                                                       size="sm",
+                                                       color="light",
+                                                       className="m-1 w-200"
+                                            )],
+                                            className="d-grid gap-2 d-md-flex justify-content-md-end"
+                                        )
+                                      ),
+                                      html.Div(id="tab_trips_fig", children=figures.table_fig),
                                       dbc.Modal(
                                           [
                                               dbc.ModalHeader("Altitude"),
@@ -360,7 +411,25 @@ def serve_layout():
                             )
                             ]),
                     dbc.Tab(label="Charge", tab_id="charge", id="tab_charge",
-                            children=[figures.battery_table,
+                            children=[dbc.Row(
+                                        dbc.Col([
+                                            dcc.Loading(
+                                                id="loading-div-battery",
+                                                children=[html.Div([html.Div(id="loading-output-battery")])],
+                                                type="circle",
+                                                className="export-load-anim"
+                                            ),
+                                            dbc.Button("Export charging data",
+                                                       id="export-battery-table",
+                                                       n_clicks=0,
+                                                       size="sm",
+                                                       color="light",
+                                                       className="m-1 w-200"
+                                            )],
+                                            className="d-grid gap-2 d-md-flex justify-content-md-end"
+                                        )
+                                      ),
+                                      figures.battery_table,
                                       dbc.Modal(
                                           [
                                               dbc.ModalHeader(
@@ -399,6 +468,7 @@ try:
         Charging.set_default_price(APP.myp.vehicles_list)
     Database.set_db_callback(update_trips)
     figures.CURRENCY = APP.config.General.currency
+    figures.EXPORT_FORMAT = APP.config.General.export_format
     update_trips()
 except (IndexError, TypeError):
     logger.debug("Failed to get trips, there is probably not enough data yet:", exc_info=True)

@@ -19,10 +19,8 @@ class OpenIdCredentialManager(CredentialManager):
         self.refresh_callbacks = []
 
     def _grant_password_request_realm(self, login: str, password: str, realm: str) -> dict:
-        return dict(grant_type='password',
-                    username=login,
-                    scope=' '.join(self.service_information.scopes),
-                    password=password, realm=realm)
+        return {"grant_type": 'password', "username": login, "scope": ' '.join(self.service_information.scopes),
+                "password": password, "realm": realm}
 
     def init_with_user_credentials_realm(self, login: str, password: str, realm: str):
         self._token_request(self._grant_password_request_realm(login, password, realm), True)

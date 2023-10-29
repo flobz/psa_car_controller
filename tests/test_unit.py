@@ -188,11 +188,12 @@ class TestUnit(unittest.TestCase):
         Charging.elec_price = ConfigRepository.read_config(DATA_DIR + "config.ini").Electricity_config
         start_level = 40
         end_level = 85
-        Charging.record_charging(car, "InProgress", date0, start_level, latitude, longitude, None, "slow", 20, 60)
-        Charging.record_charging(car, "InProgress", date1, 70, latitude, longitude, "FR", "slow", 20, 60)
-        Charging.record_charging(car, "InProgress", date1, 70, latitude, longitude, "FR", "slow", 20, 60)
-        Charging.record_charging(car, "InProgress", date2, 80, latitude, longitude, "FR", "slow", 20, 60)
-        Charging.record_charging(car, "Stopped", date3, end_level, latitude, longitude, "FR", "slow", 20, 60)
+        mileage = 123456789.1
+        Charging.record_charging(car, "InProgress", date0, start_level, latitude, longitude, None, "slow", 20, 60, mileage)
+        Charging.record_charging(car, "InProgress", date1, 70, latitude, longitude, "FR", "slow", 20, 60, mileage)
+        Charging.record_charging(car, "InProgress", date1, 70, latitude, longitude, "FR", "slow", 20, 60, mileage)
+        Charging.record_charging(car, "InProgress", date2, 80, latitude, longitude, "FR", "slow", 20, 60, mileage)
+        Charging.record_charging(car, "Stopped", date3, end_level, latitude, longitude, "FR", "slow", 20, 60, mileage)
         chargings = Charging.get_chargings()
         co2 = chargings[0]["co2"]
         assert isinstance(co2, float)
@@ -204,7 +205,8 @@ class TestUnit(unittest.TestCase):
                                          'co2': co2,
                                          'kw': 20.7,
                                          'price': 4.29,
-                                         'charging_mode': 'slow'}])
+                                         'charging_mode': 'slow',
+                                         'mileage': 123456789.1}])
         assert get_figures(car)
         row = {"start_at": date0.strftime('%Y-%m-%dT%H:%M:%S.000Z'),
                "stop_at": date3.strftime('%Y-%m-%dT%H:%M:%S.000Z'), "start_level": start_level, "end_level": end_level}

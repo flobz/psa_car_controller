@@ -9,27 +9,27 @@ on:
   workflow_dispatch:
 jobs:
   test:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     steps:
       - name: Set up python
         id: setup-python
         uses: actions/setup-python@v2
         with:
           python-version: 3.7
-      - name: Install Poetry
-        uses: snok/install-poetry@v1
-        with:
-          virtualenvs-in-project: true
       - uses: actions/checkout@v2
       - name: Load cached venv
         id: cached-poetry-dependencies
-        uses: actions/cache@v2
+        uses: actions/cache@v3
         with:
           path: .venv
           key: venv-${{ runner.os }}-${{ steps.setup-python.outputs.python-version }}-${{ hashFiles('**/poetry.lock') }}
       - name: Install dependencies
-        if: steps.cached-poetry-dependencies.outputs.cache-hit != 'true'
-        run: poetry install --no-interaction --no-root
+        run: |
+          python -m pip install --upgrade pip
+          pip install poetry
+          sudo apt-get install libblas3 liblapack3 liblapack-dev libblas-dev gfortran libatlas-base-dev
+          poetry config --local virtualenvs.in-project true
+          poetry install --no-interaction
       - name: check quality
         run: |
           source .venv/bin/activate

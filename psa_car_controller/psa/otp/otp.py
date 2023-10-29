@@ -16,6 +16,8 @@ from .load import IWData
 
 # pylint: disable=invalid-name
 CONFIG_NAME = "otp.bin"
+TIMEOUT_IN_S = 10
+
 logger = logging.getLogger(__name__)
 
 
@@ -161,7 +163,8 @@ class Otp:
             },
             params=param,
             proxies=self.proxies,
-            verify=self.proxies is None
+            verify=self.proxies is None,
+            timeout=TIMEOUT_IN_S
         ).text
         try:
             raw_xml = raw_xml[raw_xml.index("?>") + 2:]

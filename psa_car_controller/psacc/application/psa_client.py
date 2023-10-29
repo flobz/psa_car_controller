@@ -86,7 +86,7 @@ class PSAClient:
 
     def set_proxies(self, proxies):
         if proxies is None:
-            proxies = dict(http='', https='')
+            proxies = {"http": '', "https": ''}
             self.api_config.proxy = None
         else:
             self.api_config.proxy = proxies['http']
@@ -117,7 +117,7 @@ class PSAClient:
             if self.refresh_thread and self.refresh_thread.is_alive():
                 logger.debug("refresh_vehicle_info: precedent task still alive")
             self.refresh_thread = threading.Timer(self.info_refresh_rate, self.__refresh_vehicle_info)
-            self.refresh_thread.setDaemon(True)
+            self.refresh_thread.daemon = True
             self.refresh_thread.start()
             try:
                 logger.debug("refresh_vehicle_info")
@@ -162,7 +162,7 @@ class PSAClient:
     def load_config(name="config.json"):
         with open(name, "r", encoding="utf-8") as f:
             config_str = f.read()
-            config = dict(**json.loads(config_str))
+            config = {**json.loads(config_str)}
             if "country_code" not in config:
                 config["country_code"] = input("What is your country code ? (ex: FR, GB, DE, ES...)\n")
             for new_el in ["abrp", "co2_signal_api"]:
@@ -200,7 +200,7 @@ class PSAClient:
             charging_rate = car.status.get_energy('Electric').charging.charging_rate
             autonomy = car.status.get_energy('Electric').autonomy
             Charging.record_charging(car, charging_status, charge_date, level, latitude, longitude, self.country_code,
-                                     charging_mode, charging_rate, autonomy)
+                                     charging_mode, charging_rate, autonomy, mileage)
             logger.debug("charging_status:%s ", charging_status)
         except AttributeError as ex:
             logger.error("charging status not available from api")

@@ -171,11 +171,11 @@ class RemoteClient:
                     bad_remote_token = True
             if bad_remote_token:
                 otp_code = self.get_otp_code()
-                res = self.get_remote_access_token(otp_code)
+                self._get_remote_access_token(otp_code)
             self.remote_token_last_update = datetime.now()
             self.mqtt_client.username_pw_set("IMA_OAUTH_ACCESS_TOKEN", self.remoteCredentials.access_token)
             return True
-        except (RequestException, RateLimitException) as e:
+        except (RequestException, RateLimitException, KeyError) as e:
             logger.exception("Can't refresh remote token %s", e)
             time.sleep(60)
             return False
@@ -198,19 +198,14 @@ class RemoteClient:
         save_otp(self.otp)
         return otp_code
 
-    def get_remote_access_token(self, password):
-        try:
-            res = self.manager.post(REMOTE_URL + self.account_info.client_id,
-                                    json={"grant_type": "password", "password": password},
-                                    headers=self.headers)
-            data = res.json()
-            self.remoteCredentials.access_token = data["access_token"]
-            self.remoteCredentials.refresh_token = data["refresh_token"]
-            return res
-        except RequestException as e:
-            logger.error("Can't refresh remote token %s", e)
-            time.sleep(60)
-        return None
+    def _get_remote_access_token(self, password):
+        res = self.manager.post(REMOTE_URL + self.account_info.client_id,
+                                json={"grant_type": "password", "password": password},
+                                headers=self.headers)
+        data = res.json()
+        self.remoteCredentials.access_token = data["access_token"]
+        self.remoteCredentials.refresh_token = data["refresh_token"]
+        return res
 
     def horn(self, vin, count):
         msg = self.mqtt_request(vin, {"nb_horn": count, "action": "activate"}, "/Horn")

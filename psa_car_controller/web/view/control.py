@@ -47,9 +47,10 @@ def get_control_tabs(config):
                                      "src": "assets/images/mileage.svg"}
                          }
                 el.append(dbc.Container(dbc.Row(children=create_card(cards)), fluid=True))
+                refresh_date = car.status.get_energy('Electric').updated_at.astimezone().strftime("%X %x")
                 buttons_row.extend([Button(REFRESH_SWITCH, car.vin,
                                            html.Div([html.Img(src="assets/images/sync.svg", width="50px"),
-                                                     car.status.get_energy('Electric').updated_at.strftime("%X %x")]),
+                                                     refresh_date]),
                                            myp.remote_client.wakeup).get_html(),
                                     Switch(CHARGE_SWITCH, car.vin, "Charge", myp.remote_client.charge_now,
                                            charging_state).get_html(),

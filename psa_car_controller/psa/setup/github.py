@@ -4,10 +4,12 @@ from hashlib import sha1
 import requests
 
 logger = logging.getLogger(__name__)
+TIMEOUT_IN_S = 10
 
 
 def get_github_sha_from_file(user, repo, directory, filename):
-    res = requests.get("https://api.github.com/repos/{}/{}/git/trees/main:{}".format(user, repo, directory)).json()
+    res = requests.get("https://api.github.com/repos/{}/{}/git/trees/main:{}".format(user, repo, directory),
+                       timeout=TIMEOUT_IN_S).json()
     try:
         file_info = next((file for file in res["tree"] if file['path'] == filename))
     except KeyError as e:
@@ -36,12 +38,14 @@ def github_file_need_to_be_downloaded(user, repo, directory, filename):
 def urlretrieve_from_github(user, repo, directory, filename, branch="main"):
     if github_file_need_to_be_downloaded(user, repo, directory, filename):
         with open(filename, 'wb') as f:
-            r = requests.get("https://github.com/{}/{}/raw/{}/{}{}".format(user, repo, branch, directory, filename),
+            url = "https://github.com/{}/{}/raw/{}/{}{}".format(user, repo, branch, directory, filename)
+            r = requests.get(url,
                              headers={
                                  "Accept": "application/vnd.github.VERSION.raw"
-            },
-                stream=True
-            )
+                             },
+                             stream=True,
+                             timeout=TIMEOUT_IN_S
+                             )
 
             r.raise_for_status()
             for chunk in r.iter_content(1024):

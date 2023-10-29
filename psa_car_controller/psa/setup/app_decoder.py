@@ -16,6 +16,7 @@ logger = logging.getLogger(__name__)
 APP_VERSION = "1.33.0"
 GITHUB_USER = "flobz"
 GITHUB_REPO = "psa_apk"
+TIMEOUT_IN_S = 10
 
 
 def get_content_from_apk(filename: str, country_code: str) -> ApkParser:
@@ -42,7 +43,8 @@ def firstLaunchConfig(package_name, client_email, client_password, country_code,
                                  "fields": {"USR_EMAIL": {"value": client_email},
                                             "USR_PASSWORD": {"value": client_password}}
                                  }
-                            )}
+                            )},
+                            timeout=TIMEOUT_IN_S
                             )
 
         token = res.json()["accessToken"]
@@ -54,7 +56,7 @@ def firstLaunchConfig(package_name, client_email, client_password, country_code,
         except BaseException:
             pass
         logger.error(msg)
-        raise Exception(msg) from ex
+        raise ConnectionError(msg) from ex
     try:
         res2 = requests.post(
             f"https://mw-{BRAND[package_name]['brand_code'].lower()}-m2c.mym.awsmpsa.com/api/v1/user",
@@ -73,6 +75,7 @@ def firstLaunchConfig(package_name, client_email, client_password, country_code,
                 "Version": APP_VERSION
             },
             cert=("certs/public.pem", "certs/private.pem"),
+            timeout=TIMEOUT_IN_S
         )
 
         res_dict = res2.json()["success"]
@@ -84,7 +87,7 @@ def firstLaunchConfig(package_name, client_email, client_password, country_code,
         except BaseException:
             pass
         logger.error(msg)
-        raise Exception(msg) from ex
+        raise ConnectionError(msg) from ex
     # Psacc
     psacc = PSAClient(None, apk_parser.client_id, apk_parser.client_secret,
                       None, customer_id, BRAND[package_name]["realm"],
@@ -94,7 +97,7 @@ def firstLaunchConfig(package_name, client_email, client_password, country_code,
     res = psacc.get_vehicles()
 
     if len(res) == 0:
-        Exception("No vehicle in your account is compatible with this API, you vehicle is probably too old...")
+        raise ValueError("No vehicle in your account is compatible with this API, you vehicle is probably too old...")
 
     for vehicle in res_dict["vehicles"]:
         car = psacc.vehicles_list.get_car_by_vin(vehicle["vin"])

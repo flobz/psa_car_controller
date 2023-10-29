@@ -8,6 +8,7 @@ import requests
 from psa_car_controller.psacc.model.car import Car
 
 logger = logging.getLogger(__name__)
+TIMEOUT_IN_S = 10
 
 
 class Abrp:
@@ -47,7 +48,7 @@ class Abrp:
                     tlm["ext_temp"] = ext_temp
                 params = {"tlm": json.dumps(tlm), "token": self.token, "api_key": self.api_key}
                 response = requests.request("POST", self.url, params=params, proxies=self.proxies,
-                                            verify=self.proxies is None)
+                                            verify=self.proxies is None, timeout=TIMEOUT_IN_S)
                 logger.debug(response.text)
                 try:
                     return json.loads(response.text)["status"] == "ok"

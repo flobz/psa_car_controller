@@ -101,7 +101,7 @@ class ChargeControl:
                         if next_in_second < self.psacc.info_refresh_rate:
                             periodicity = next_in_second
                             thread = threading.Timer(periodicity, self.process)
-                            thread.setDaemon(True)
+                            thread.daemon = True
                             thread.start()
             elif status == STOPPED and has_threshold and hit_threshold and self.__is_approaching_scheduled_time(now):
                 logger.info("Approaching scheduled charging time, but should not charge. Postponing charge hour!")

@@ -69,6 +69,7 @@ class PSACarController(metaclass=Singleton):
                 logger.error("start_remote_control failed redo otp config")
 
     def load_app(self) -> bool:
+        # pylint: disable=too-many-branches
         my_logger(handler_level=int(self.args.debug))
         if self.args.config:
             self.config_name = self.args.config
@@ -99,7 +100,10 @@ class PSACarController(metaclass=Singleton):
                     self.is_good = True
                 else:
                     self.is_good = False
-                    logger.error("Please reconnect by going to config web page")
+                    if self.args.web_conf:
+                        logger.error("Please reconnect by going to config web page")
+                    else:
+                        logger.error("Connection need to be updated, Please redo authentication process.")
             if self.args.refresh:
                 self.myp.info_refresh_rate = self.args.refresh * 60
                 if self.is_good:

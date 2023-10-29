@@ -4,6 +4,7 @@ import socket
 import requests
 
 logger = logging.getLogger(__name__)
+TIMEOUT_IN_S = 10
 
 
 def get_temp(latitude: str, longitude: str, api_key: str) -> float:
@@ -13,7 +14,8 @@ def get_temp(latitude: str, longitude: str, api_key: str) -> float:
                                        params={"lat": latitude, "lon": longitude,
                                                "exclude": "minutely,hourly,daily,alerts",
                                                "appid": api_key,
-                                               "units": "metric"})
+                                               "units": "metric"},
+                                       timeout=TIMEOUT_IN_S)
             temp = weather_rep.json()["current"]["temp"]
             logger.debug("Temperature :%fc", temp)
             return temp

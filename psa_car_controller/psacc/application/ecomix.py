@@ -12,7 +12,7 @@ from requests import RequestException
 
 CO2_SIGNAL_REQ_INTERVAL = 600
 CO2_SIGNAL_URL = "https://api.co2signal.com"
-
+TIMEOUT_IN_S = 10
 logger = logging.getLogger(__name__)
 
 
@@ -31,7 +31,8 @@ class Ecomix:
                 headers={
                     "Origin": "https://www.rte-france.com",
                     "Referer": "https://www.rte-france.com/eco2mix/les-emissions-de-co2-par-kwh-produit-en-france",
-                }
+                },
+                timeout=TIMEOUT_IN_S
             )
         except RequestException:
             logger.exception("get_data_france: ")
@@ -71,7 +72,8 @@ class Ecomix:
                     return False
                 res = requests.get(CO2_SIGNAL_URL + "/v1/latest",
                                    headers={"auth-token": Ecomix.co2_signal_key},
-                                   params={"countryCode": country_code})
+                                   params={"countryCode": country_code},
+                                   timeout=TIMEOUT_IN_S)
                 data = res.json()
                 value = data["data"]["carbonIntensity"]
                 assert isinstance(value, numbers.Number)

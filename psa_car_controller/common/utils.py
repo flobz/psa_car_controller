@@ -3,6 +3,7 @@ from threading import Semaphore, Timer
 from typing import List
 
 import requests
+TIMEOUT_IN_S = 10
 
 
 def rate_limit(limit, every):
@@ -16,7 +17,7 @@ def rate_limit(limit, every):
                     return func(*args, **kwargs)
                 finally:  # don't catch but ensure semaphore release
                     timer = Timer(every, semaphore.release)
-                    timer.setDaemon(True)
+                    timer.daemon = True
                     timer.start()
             else:
                 raise RateLimitException
@@ -56,5 +57,6 @@ def get_positions(locations):
         locations_str += str(line[latitude]) + "," + str(line[longitude]) + "|"
     locations_str = locations_str[:-1]
     res = requests.get("https://api.opentopodata.org/v1/srtm30m",
-                       params={"locations": locations_str})
+                       params={"locations": locations_str},
+                       timeout=TIMEOUT_IN_S)
     return res.json()["results"]

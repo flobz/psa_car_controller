@@ -47,11 +47,11 @@ def record_position():
 
 
 def record_charging():
-    Charging.record_charging(car, "InProgress", date0, 50, latitude, longitude, "FR", "slow", 20, 60)
-    Charging.record_charging(car, "InProgress", date1, 75, latitude, longitude, "FR", "slow", 20, 60)
-    Charging.record_charging(car, "InProgress", date2, 85, latitude, longitude, "FR", "slow", 20, 60)
-    Charging.record_charging(car, "InProgress", date3, 90, latitude, longitude, "FR", "slow", 20, 60)
-    Charging.record_charging(car, "Stopped", date4, 91, latitude, longitude, "FR", "slow", 20, 60)
+    Charging.record_charging(car, "InProgress", date0, 50, latitude, longitude, "FR", "slow", 20, 60, 123456789.1)
+    Charging.record_charging(car, "InProgress", date1, 75, latitude, longitude, "FR", "slow", 20, 60, 123456789.1)
+    Charging.record_charging(car, "InProgress", date2, 85, latitude, longitude, "FR", "slow", 20, 60, 123456789.1)
+    Charging.record_charging(car, "InProgress", date3, 90, latitude, longitude, "FR", "slow", 20, 60, 123456789.1)
+    Charging.record_charging(car, "Stopped", date4, 91, latitude, longitude, "FR", "slow", 20, 60, 123456789.1)
 
 
 def get_date(offset):

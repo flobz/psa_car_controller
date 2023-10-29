@@ -9,8 +9,15 @@
   name: e-berlingo 2022+
   battery_power: 46
   fuel_capacity: 0
-  abrp_name: opel:comboe:22:50:citroen
+  abrp_name: Citroen;e-Berlingo;2022+ (alpha)
   reg: VR7EZZKXZP.*
+  max_elec_consumption: 70
+- !ElecModel
+  name: e-berlingo 2022+
+  battery_power: 46
+  fuel_capacity: 0
+  abrp_name: Citroen;e-Berlingo;2022+ (alpha)
+  reg: VR7EZZKXZN.*
   max_elec_consumption: 70
 - !ElecModel
   name: e-jumpy
@@ -271,7 +278,7 @@
   reg: VF72RHNPXK.*
   max_elec_consumption: 70
   max_fuel_consumption: 30
-  - !CarModel
+- !CarModel
   name: "C3 Aircross 2022+"
   battery_power: 0
   fuel_capacity: 45
@@ -343,6 +350,14 @@
   max_elec_consumption: 70
   max_fuel_consumption: 30
 - !CarModel
+  name: Astra L Hybrid
+  battery_power: 12.4
+  fuel_capacity: 42
+  abrp_name:
+  reg: VXKF3DGXTP.*
+  max_elec_consumption: 70
+  max_fuel_consumption: 30
+- !CarModel
   name: 308 SW Hybrid
   battery_power: 12.4
   fuel_capacity: 40
@@ -397,3 +412,50 @@
   abrp_name: opel:comboe:22:50
   reg: W0VEZZKXZN.*
   max_elec_consumption: 45 
+- !CarModel
+  name: New 308 SW
+  battery_power: 0
+  fuel_capacity: 56
+  abrp_name:
+  reg: VR3FRHNSTN.*
+  max_elec_consumption: 70
+  max_fuel_consumption: 30
+- !CarModel
+  name: 5008 II 1.5 HDI GT-Line
+  battery_power: 0
+  fuel_capacity: 56
+  abrp_name:
+  reg: VF3MCYHZRL.*
+  max_elec_consumption: 70
+  max_fuel_consumption: 30
+- !CarModel
+  name: 5008 GT-LINE 1.5L
+  battery_power: 0
+  fuel_capacity: 60
+  abrp_name:
+  reg: VF3MCYHZRJ.*
+  max_elec_consumption: 70
+  max_fuel_consumption: 30
+- !CarModel
+  name: 308 SW Hybrid
+  battery_power: 12.4
+  fuel_capacity: 40
+  abrp_name:
+  reg: VR3F4DGYTP.*
+  max_elec_consumption: 70
+  max_fuel_consumption: 30
+- !CarModel
+  name: C5 Aircross
+  battery_power: 0
+  fuel_capacity: 45
+  abrp_name:
+  reg: VR7ARHNSSP.*
+  max_elec_consumption: 70
+  max_fuel_consumption: 30
+- !ElecModel
+  name: Combo-e Cargo XL
+  battery_power: 50
+  fuel_capacity: 0
+  abrp_name:
+  reg: W0VEAZKXZP.*
+  max_elec_consumption: 46

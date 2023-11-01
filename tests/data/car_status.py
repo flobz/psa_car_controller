@@ -37,3 +37,21 @@ ELECTRIC_CAR_STATUS = {
         "vehicles": {
             "href": "https://api.groupe-psa.com/connectedcar/v4/user/vehicles/aa"}},
     "odometer": {"createdAt": None, "mileage": 3196.5}, "updatedAt": "2022-03-26T11:02:54Z"}
+ELECTRIC_CAR_STATUS_V2 = {
+    "lastPosition": {"type": "Feature", "geometry": {"type": "Point", "coordinates": [-1.59008, 47.274, 30]},
+                     "properties": {"updatedAt": "2021-03-29T06:22:51Z", "type": "Acquire", "signalQuality": 9}},
+    "preconditionning": {"airConditioning": {"updatedAt": "2022-03-26T10:52:11Z", "status": "Disabled"}},
+    "energy": [{"createdAt": "2021-09-14T20:39:06Z", "type": "Fuel", "level": 0},
+               {"createdAt": "2022-03-26T11:02:54Z", "type": "Electric", "level": 59, "autonomy": 122,
+                "charging": {"plugged": False, "status": "Disconnected", "remainingTime": "PT0S", "chargingRate": 0,
+                             "chargingMode": "No", "nextDelayedTime": "PT22H31M"},
+                "battery": {"health": {"resistance": 90}}}],
+    "createdAt": "2022-03-26T11:02:54Z",
+    "battery": {"voltage": 83.5, "current": 0, "createdAt": "2022-03-26T10:52:11Z"},
+    "kinetic": {"createdAt": "2021-03-29T06:22:51Z", "moving": True},
+    "privacy": {"createdAt": "2022-03-26T11:02:53Z", "state": "None"},
+    "service": {"type": "Electric", "createdAt": "2022-03-26T11:02:54Z"}, "_links": {"self": {
+        "href": "https://api.groupe-psa.com/connectedcar/v4/user/vehicles/aa/status"},
+        "vehicles": {
+            "href": "https://api.groupe-psa.com/connectedcar/v4/user/vehicles/aa"}},
+    "odometer": {"createdAt": None, "mileage": 3196.5}, "updatedAt": "2022-03-26T11:02:54Z"}

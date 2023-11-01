@@ -5,6 +5,7 @@ from datetime import timedelta, datetime
 from unittest.mock import MagicMock
 
 import pytz
+from deepdiff import DeepDiff
 
 from psa_car_controller.psa.RemoteClient import RemoteClient
 from psa_car_controller.psa.connected_car_api import Vehicles
@@ -62,3 +63,10 @@ def get_rc() -> RemoteClient:
     account_info = MagicMock()
     account_info.realm = ""
     return RemoteClient(account_info, Vehicles, None, None)
+
+
+def compare_dict(result, expected):
+    diff = DeepDiff(expected, result)
+    if diff != {}:
+        raise AssertionError(str(diff))
+    return True

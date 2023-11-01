@@ -30,19 +30,10 @@ from psa_car_controller.psacc.repository.config_repository import ConfigReposito
 from psa_car_controller.psacc.repository.db import Database
 from psa_car_controller.psacc.repository.trips import Trips
 from psa_car_controller.psacc.utils.utils import get_temp
-from tests.data.car_status import FUEL_CAR_STATUS, ELECTRIC_CAR_STATUS
+from tests.data.car_status import FUEL_CAR_STATUS, ELECTRIC_CAR_STATUS, ELECTRIC_CAR_STATUS_V2
 from tests.utils import DATA_DIR, record_position, latitude, longitude, date0, date1, date2, date3, record_charging, \
     vehicule_list, get_new_test_db, get_date, date4
 from psa_car_controller.web.figures import get_figures, get_battery_curve_fig, get_altitude_fig
-from deepdiff import DeepDiff
-
-
-def compare_dict(result, expected):
-    diff = DeepDiff(expected, result)
-    if diff != {}:
-        raise AssertionError(str(diff))
-    return True
-
 
 dummy_value = 0
 
@@ -164,6 +155,37 @@ class TestUnit(unittest.TestCase):
                            True)
         self.assertEqual(db_record_position_arg, expected_result)
 
+    @patch("psa_car_controller.psacc.repository.db.Database.record_battery_soh")
+    @patch("psa_car_controller.psacc.repository.db.Database.record_position")
+    def test_electric_record_info_v2(self, mock_db, moock_soh):
+        api = ApiClient()
+        status: psa.connected_car_api.models.status.Status = api._ApiClient__deserialize(
+            ELECTRIC_CAR_STATUS_V2, "Status")
+        get_new_test_db()
+        car = self.vehicule_list[0]
+        car.status = status
+        myp = PSAClient.load_config(DATA_DIR + "config.json")
+        myp.record_info(car)
+        db_record_position_arg = mock_db.call_args_list[0][0]
+        expected_result = (None, 'VR3UHZKX', 3196.5, 47.274, -1.59008, 30,
+                           datetime(2022, 3, 26, 11, 2, 54, tzinfo=tzutc()),
+                           59.0,
+                           None,
+                           True)
+        self.assertEqual(db_record_position_arg, expected_result)
+        self.assertEqual(
+            ('VR3UHZKX',
+             datetime(
+                 2022,
+                 3,
+                 26,
+                 11,
+                 2,
+                 54,
+                 tzinfo=tzutc()),
+                90),
+            moock_soh.call_args_list[0][0])
+
     def test_record_position_charging(self):
         get_new_test_db()
         config_repository.CONFIG_FILENAME = DATA_DIR + "config.ini"
@@ -189,7 +211,18 @@ class TestUnit(unittest.TestCase):
         start_level = 40
         end_level = 85
         mileage = 123456789.1
-        Charging.record_charging(car, "InProgress", date0, start_level, latitude, longitude, None, "slow", 20, 60, mileage)
+        Charging.record_charging(
+            car,
+            "InProgress",
+            date0,
+            start_level,
+            latitude,
+            longitude,
+            None,
+            "slow",
+            20,
+            60,
+            mileage)
         Charging.record_charging(car, "InProgress", date1, 70, latitude, longitude, "FR", "slow", 20, 60, mileage)
         Charging.record_charging(car, "InProgress", date1, 70, latitude, longitude, "FR", "slow", 20, 60, mileage)
         Charging.record_charging(car, "InProgress", date2, 80, latitude, longitude, "FR", "slow", 20, 60, mileage)

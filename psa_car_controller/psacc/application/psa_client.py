@@ -3,6 +3,7 @@ import threading
 from datetime import datetime, timedelta, timezone
 from json import JSONEncoder
 from hashlib import md5
+from sqlite3.dbapi2 import IntegrityError
 
 from oauth2_client.credentials_manager import ServiceInformation
 from urllib3.exceptions import InvalidHeader
@@ -194,17 +195,27 @@ class PSAClient:
         Database.record_position(self.weather_api, car.vin, mileage, latitude, longitude, altitude, date, level,
                                  level_fuel, moving)
         self.abrp.call(car, Database.get_last_temp(car.vin))
-        try:
-            charging_status = car.status.get_energy('Electric').charging.status
-            charging_mode = car.status.get_energy('Electric').charging.charging_mode
-            charging_rate = car.status.get_energy('Electric').charging.charging_rate
-            autonomy = car.status.get_energy('Electric').autonomy
-            Charging.record_charging(car, charging_status, charge_date, level, latitude, longitude, self.country_code,
-                                     charging_mode, charging_rate, autonomy, mileage)
-            logger.debug("charging_status:%s ", charging_status)
-        except AttributeError as ex:
-            logger.error("charging status not available from api")
-            logger.debug(ex)
+        if car.has_battery():
+            electric_energy_status = car.status.get_energy('Electric')
+            try:
+                charging_status = electric_energy_status.charging.status
+                charging_mode = electric_energy_status.charging.charging_mode
+                charging_rate = electric_energy_status.charging.charging_rate
+                autonomy = electric_energy_status.autonomy
+                Charging.record_charging(car, charging_status, charge_date, level, latitude, longitude,
+                                         self.country_code,
+                                         charging_mode, charging_rate, autonomy, mileage)
+                logger.debug("charging_status:%s ", charging_status)
+            except AttributeError as ex:
+                logger.error("charging status not available from api")
+                logger.debug(ex)
+            try:
+                soh = electric_energy_status.battery.health.resistance
+                Database.record_battery_soh(car.vin, charge_date, soh)
+            except IntegrityError:
+                logger.debug("SOH already recorded")
+            except AttributeError as ex:
+                logger.debug("Failed to record SOH: %s", ex)
 
     def __iter__(self):
         for key, value in self.__dict__.items():

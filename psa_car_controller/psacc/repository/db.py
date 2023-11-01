@@ -13,6 +13,7 @@ from geojson import dumps as geo_dumps
 
 from psa_car_controller.common import utils
 from psa_car_controller.psacc.model.battery_curve import BatteryCurveDto
+from psa_car_controller.psacc.model.battery_soh import BatterySoh
 from psa_car_controller.psacc.model.charge import Charge
 from psa_car_controller.psacc.utils.utils import get_temp
 
@@ -103,6 +104,8 @@ class Database:
                      "start_level INTEGER, end_level INTEGER, co2 INTEGER, kw INTEGER);")
         conn.execute("""CREATE TABLE IF NOT EXISTS battery_curve (start_at DATETIME, VIN TEXT, date DATETIME,
                         level INTEGER, UNIQUE(start_at, VIN, level));""")
+        conn.execute("""CREATE TABLE IF NOT EXISTS
+                        battery_soh(date DATETIME, VIN TEXT, level FLOAT, UNIQUE(VIN, level));""")
         table_to_update = [["position", NEW_POSITION_COLUMNS],
                            ["battery", NEW_BATTERY_COLUMNS],
                            ["battery_curve", NEW_BATTERY_CURVE_COLUMNS]]
@@ -182,7 +185,7 @@ class Database:
         battery_curves = []
         res = conn.execute("""SELECT date, level, rate, autonomy
                                                 FROM battery_curve
-                                                WHERE start_at=? and date<=? and VIN=? 
+                                                WHERE start_at=? and date<=? and VIN=?
                                                 ORDER BY date asc;""",
                            (start_at, stop_at, vin)).fetchall()
         for row in res:
@@ -266,6 +269,32 @@ class Database:
             conn.close()
             logger.debug("position already saved")
         return False
+
+    @staticmethod
+    def record_battery_soh(vin: str, date: datetime, level: float):
+        conn = Database.get_db()
+        conn.execute("INSERT INTO battery_soh(date, VIN, level) VALUES(?,?,?)", (date, vin, level))
+        conn.commit()
+        conn.close()
+
+    @staticmethod
+    def get_soh_by_vin(vin) -> BatterySoh:
+        conn = Database.get_db()
+        res = conn.execute("SELECT date, level FROM battery_soh WHERE  VIN=? ORDER BY date", (vin,)).fetchall()
+        dates = []
+        levels = []
+        for row in res:
+            dates.append(row[0])
+            levels.append(row[1])
+        return BatterySoh(vin, dates, levels)
+
+    @staticmethod
+    def get_last_soh_by_vin(vin) -> float:
+        conn = Database.get_db()
+        res = conn.execute("SELECT level FROM battery_soh WHERE  VIN=? ORDER BY date DESC LIMIT 1", (vin,)).fetchall()
+        if res:
+            return res[0][0]
+        return None
 
     @staticmethod
     def get_last_charge(vin) -> Charge:

@@ -5,6 +5,7 @@ import unittest
 from datetime import datetime, timedelta
 from unittest.mock import MagicMock, patch
 
+import pytz
 import reverse_geocode
 from dateutil.tz import tzutc
 from greenery.lego import parse, charclass
@@ -32,7 +33,7 @@ from psa_car_controller.psacc.repository.trips import Trips
 from psa_car_controller.psacc.utils.utils import get_temp
 from tests.data.car_status import FUEL_CAR_STATUS, ELECTRIC_CAR_STATUS, ELECTRIC_CAR_STATUS_V2
 from tests.utils import DATA_DIR, record_position, latitude, longitude, date0, date1, date2, date3, record_charging, \
-    vehicule_list, get_new_test_db, get_date, date4
+    vehicule_list, get_new_test_db, get_date, date4, compare_dict
 from psa_car_controller.web.figures import get_figures, get_battery_curve_fig, get_altitude_fig
 
 dummy_value = 0
@@ -63,13 +64,18 @@ class TestUnit(unittest.TestCase):
 
     def test_mypsacc(self):
         if self.test_online:
-            myp = PSAClient.load_config("config.json")
-            myp.refresh_token()
+            myp = PSAClient.load_config("./config/config.json")
+            myp.manager.refresh_token_now()
+            myp.save_config()
             myp.get_vehicles()
             car = myp.vehicles_list[0]
             myp.abrp.abrp_enable_vin.add(car.vin)
             myp.get_vehicle_info(myp.vehicles_list[0].vin)
             myp.abrp.call(car, 22.1)
+
+    def test_open_weather_api(self):
+        if self.test_online:
+            myp = PSAClient.load_config("./config/config.json")
             assert isinstance(get_temp(str(latitude), str(longitude), myp.weather_api), float)
 
     def test_car_model(self):
@@ -90,13 +96,12 @@ class TestUnit(unittest.TestCase):
 
     def test_c02_signal(self):
         if self.test_online:
-            key = "d186c74bfbcd1da8"
-            Ecomix.co2_signal_key = key
+            PSAClient.load_config("./config/config.json")
             def_country = "FR"
             Ecomix.get_data_from_co2_signal(latitude, longitude, def_country)
             res = Ecomix.get_co2_from_signal_cache(datetime.utcnow().replace(tzinfo=UTC) - timedelta(minutes=5),
-                                                   datetime.now(), def_country)
-            assert isinstance(res, float)
+                                                   datetime.utcnow().replace(tzinfo=UTC), def_country)
+            self.assertIsInstance(res, (int, float))
 
     def test_charge_control(self):
         charge_control = ChargeControls()
@@ -183,7 +188,7 @@ class TestUnit(unittest.TestCase):
                  2,
                  54,
                  tzinfo=tzutc()),
-                90),
+             90),
             moock_soh.call_args_list[0][0])
 
     def test_record_position_charging(self):

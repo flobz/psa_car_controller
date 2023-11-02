@@ -42,7 +42,7 @@ class PSAClient:
                                                       realm_info[self.realm]['oauth_url'],
                                                       client_id,
                                                       client_secret,
-                                                      SCOPE, False)
+                                                      SCOPE, True)
         self.client_id = client_id
         self.manager = OpenIdCredentialManager(self.service_information)
         self.api_config = Oauth2PSACCApiConfig()
@@ -53,7 +53,7 @@ class PSAClient:
         self.vehicles_list = Cars.load_cars(CARS_FILE)
         self.customer_id = customer_id
         self._config_hash = None
-        self.api_config.verify_ssl = False
+        self.api_config.verify_ssl = True
         self.api_config.api_key['client_id'] = self.client_id
         self.api_config.api_key['x-introspect-realm'] = self.realm
         self.remote_token_last_update = None

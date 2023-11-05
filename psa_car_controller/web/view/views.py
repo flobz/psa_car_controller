@@ -1,4 +1,5 @@
 import json
+from datetime import datetime
 from typing import List
 from urllib.parse import parse_qs, urlparse
 
@@ -92,7 +93,7 @@ def create_callback():  # noqa: MC0001
             for changed_line in diff_data:
                 if changed_line['column_name'] == 'price':
                     conn = Database.get_db()
-                    charge = Charge(changed_line['start_at'])
+                    charge = Charge(datetime.utcfromtimestamp(changed_line['start_at']/1000))
                     charge.price = changed_line['current_value']
                     charge.vin = get_default_car().vin
                     if not Database.set_chargings_price(conn, charge):

@@ -34,6 +34,11 @@ class Abrp:
                 logger.debug("No abrp token provided")
             elif car.vin in self.abrp_enable_vin:
                 energy = car.status.get_energy('Electric')
+
+                if energy.level is None:
+                    logger.debug("No energy level available")
+                    return False
+
                 tlm = {"utc": int(datetime.timestamp(energy.updated_at)),
                        "soc": energy.level,
                        "speed": getattr(car.status.kinetic, "speed", None),

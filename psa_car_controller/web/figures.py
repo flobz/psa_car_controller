@@ -115,6 +115,7 @@ def get_figures(car: Car):
     consumption_fig = px.histogram(x=[0], y=[1], title='Consumption of the car',
                                    histfunc="avg")
     consumption_fig.update_layout(yaxis_title="Consumption kWh/100Km", xaxis_title="date")
+    consumption_fig.update_xaxes(type="date", tickformat="%d/%m/%Y")
 
     consumption_fig_by_speed = px.histogram(data_frame=[{"start_at": 1, "speed_average": 2}], x="start_at",
                                             y="speed_average", histfunc="avg",

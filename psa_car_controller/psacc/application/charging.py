@@ -20,10 +20,10 @@ class Charging:
 
     @staticmethod
     def get_chargings() -> List[dict]:
-        conn = Database.get_db()
-        res = conn.execute("select * from battery ORDER BY start_at").fetchall()
-        conn.close()
-        return list(map(dict, res))
+        charge_db = Database.get_all_charge()
+        charge_list = list(map(dict, charge_db))
+        Charging._calculated_fields(charge_list)
+        return charge_list
 
     @staticmethod
     def get_battery_curve(conn, charge, car) -> List[BatteryChargeCurve]:
@@ -97,3 +97,15 @@ class Charging:
                 Charging.update_chargings(conn, last_charge, car)
         conn.commit()
         conn.close()
+
+    @staticmethod
+    def _calculated_fields(charge_list: list):
+        for c in charge_list:
+            if c.get("stop_at") and c.get("start_at"):
+                c.update(
+                    {
+                        "duration_min": (c.get("stop_at") - c.get("start_at")).seconds
+                        / 60,
+                        "duration_str": str((c.get("stop_at") - c.get("start_at"))),
+                    }
+                )

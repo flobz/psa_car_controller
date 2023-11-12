@@ -322,6 +322,13 @@ class Database:
         return charges
 
     @staticmethod
+    def get_all_charge() -> List[Charge]:
+        conn = Database.get_db()
+        res = conn.execute("select * from battery ORDER BY start_at").fetchall()
+        conn.close()      
+        return res
+    
+    @staticmethod
     def update_charge(charge: Charge):
         # we don't need to update mileage, since it should be inserted at beginning of charge,
         # maybe in future this will be supported

@@ -33,7 +33,7 @@ from psa_car_controller.psacc.repository.trips import Trips
 from psa_car_controller.psacc.utils.utils import get_temp
 from tests.data.car_status import FUEL_CAR_STATUS, ELECTRIC_CAR_STATUS, ELECTRIC_CAR_STATUS_V2
 from tests.utils import DATA_DIR, record_position, latitude, longitude, date0, date1, date2, date3, record_charging, \
-    vehicule_list, get_new_test_db, get_date, date4, compare_dict
+    vehicule_list, get_new_test_db, get_date, date4, compare_dict, duration_min, duration_str
 from psa_car_controller.web.figures import get_figures, get_battery_curve_fig, get_altitude_fig
 
 dummy_value = 0
@@ -237,6 +237,8 @@ class TestUnit(unittest.TestCase):
         assert isinstance(co2, float)
         assert compare_dict(chargings, [{'start_at': date0,
                                          'stop_at': date3,
+                                         'duration_str': duration_str,
+                                         'duration_min' :duration_min,
                                          'VIN': 'VR3UHZKX',
                                          'start_level': 40,
                                          'end_level': 85,

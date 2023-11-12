@@ -7,8 +7,9 @@ class DashCustom(Dash):
         self.requests_pathname_external_prefix = self.config.requests_pathname_prefix
 
     def _config(self):
+        config = super()._config()
         # pieces of config needed by the front end
-        config = {
+        config.update({
             "url_base_pathname": self.config.url_base_pathname,
             "requests_pathname_prefix": self.requests_pathname_external_prefix,
             "ui": self._dev_tools.ui,
@@ -16,7 +17,7 @@ class DashCustom(Dash):
             "show_undo_redo": self.config.show_undo_redo,
             "suppress_callback_exceptions": self.config.suppress_callback_exceptions,
             "update_title": self.config.update_title,
-        }
+        })
         if self._dev_tools.hot_reload:
             config["hot_reload"] = {
                 # convert from seconds to msec as used by js `setInterval`

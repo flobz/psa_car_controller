@@ -21,6 +21,8 @@ date2 = date3 - timedelta(minutes=20)
 date1 = date3 - timedelta(minutes=40)
 date0 = date3 - timedelta(minutes=60)
 date4 = date3 + timedelta(minutes=1)
+duration_min = (date3 - date0).seconds / 60
+duration_str = str(date3 - date0)
 
 vehicule_list = Cars()
 vehicule_list.extend(

@@ -43,6 +43,7 @@ numpy = [{version = ">=1.24.0", python = ">=3.11"},
 scipy = [{version = ">=1.9.2", python = ">=3.11"},
          {version = "<1.11.0", python = "<3.8"},
          {version = "<1.8.0", python = "<3.8"}]
+ipython = "^7.0.0"
 
 [tool.poetry.dev-dependencies]
 prospector = "1.10.3"

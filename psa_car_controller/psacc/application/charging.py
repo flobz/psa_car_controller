@@ -104,7 +104,7 @@ class Charging:
             if c.get("stop_at") and c.get("start_at"):
                 c.update(
                     {
-                        "duration_min": (c.get("stop_at") - c.get("start_at")).seconds
+                        "duration_min": (c.get("stop_at") - c.get("start_at")).total_seconds()
                         / 60,
                         "duration_str": str((c.get("stop_at") - c.get("start_at"))),
                     }

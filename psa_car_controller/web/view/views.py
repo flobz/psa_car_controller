@@ -30,6 +30,7 @@ from psa_car_controller.web.view.config_views import log_layout, config_layout
 from psa_car_controller.web.tools.figurefilter import FigureFilter
 from psa_car_controller.web.view.control import get_control_tabs
 
+from psa_car_controller import __version__
 logger = CustomLogger.getLogger(__name__)
 
 EMPTY_DIV = "empty-div"
@@ -46,11 +47,21 @@ def get_default_car() -> Car:
 
 
 def add_header(el):
+    version = "v" + __version__
+    github_url= "https://github.com/flobz/psa_car_controller/releases/tag/"+version
+    dbc_version = dbc.Button(html.I(version, className="m-1"),
+                             size='sm',
+                             color="secondary", 
+                             className="me-1 bi bi-github",
+                             external_link =True, href=github_url)
     return dbc.Row([dbc.Col(dcc.Link(html.H1('My car info'), href=dash_app.requests_pathname_external_prefix,
                                      style={"TextDecoration": "none"})),
-                    dbc.Col(dcc.Link(html.Img(src="assets/images/settings.svg", width="30veh"),
+                    dbc.Col(html.Div([dbc_version,
+                                    dcc.Link(html.Img(src="assets/images/settings.svg", width="30veh"),
                                      href=dash_app.requests_pathname_external_prefix + "config",
-                                     className="float-end"))]), el
+                                     className="float-end")],
+                                     className="d-grid gap-2 d-md-flex justify-content-md-end",))],
+                                     className='align-items-center'), el
 
 
 @dash_app.callback(Output('page-content', 'children'),

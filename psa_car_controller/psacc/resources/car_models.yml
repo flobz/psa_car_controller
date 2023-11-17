@@ -167,6 +167,14 @@
   max_elec_consumption: 70
   max_fuel_consumption: 30
 - !CarModel
+  name: '2008 MK1'
+  battery_power: 0
+  fuel_capacity: 44
+  abrp_name:
+  reg: VF3CUBHY6F.*
+  max_elec_consumption: 70
+  max_fuel_consumption: 30
+- !CarModel
   name: 2008 II
   battery_power: 0
   fuel_capacity: 45

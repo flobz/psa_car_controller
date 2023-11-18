@@ -459,3 +459,21 @@
   abrp_name:
   reg: W0VEAZKXZP.*
   max_elec_consumption: 46
+- !CarModel
+  name: C4 SpaceTourer Shine Edition (2018)
+  battery_power: 0
+  fuel_capacity: 55
+  abrp_name:
+  reg: VF73DHNSPJ.*
+- !CarModel
+  name: C3 Feel Edition (2016)
+  battery_power: 0
+  fuel_capacity: 45
+  abrp_name:
+  reg: VF7SCHMZ6F.*
+- !CarModel
+  name: C5 Aircross Hybrid E Series
+  battery_power: 13.2
+  fuel_capacity: 53
+  abrp_name:
+  reg: VR7ARHPYEP.*

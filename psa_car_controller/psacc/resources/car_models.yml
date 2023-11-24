@@ -462,8 +462,8 @@
 - !CarModel
   name: Peugeot Rifter
   battery_power: 0
-  fuel_capacity: 45
+  fuel_capacity: 50
   abrp_name:
   reg: VR3ECYHYCK.*
   max_elec_consumption: 0
-  max_fuel_consumption: 50
+  max_fuel_consumption: 30

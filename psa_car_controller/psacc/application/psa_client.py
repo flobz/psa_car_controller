@@ -102,7 +102,7 @@ class PSAClient:
         else:
             for _ in range(0, 2):
                 try:
-                    res = self.api().get_vehicle_status(car.vehicle_id, extension=["odometer"])
+                    res = self.api().get_vehicle_status(car.vehicle_id)
                     if res is not None:
                         car.status = res
                         if self._record_enabled:

@@ -134,7 +134,7 @@
   reg: VF3L35GG.*
   max_elec_consumption: 70
   max_fuel_consumption: 30
-  - !CarModel
+- !CarModel
   name: '308SW 2018'
   battery_power: 0
   fuel_capacity: 46

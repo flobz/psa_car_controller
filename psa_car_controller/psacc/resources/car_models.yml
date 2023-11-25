@@ -135,6 +135,14 @@
   max_elec_consumption: 70
   max_fuel_consumption: 30
 - !CarModel
+  name: '308SW 2018'
+  battery_power: 0
+  fuel_capacity: 46
+  abrp_name:
+  reg: VF3LCBHZHJ.*
+  max_elec_consumption: 70
+  max_fuel_consumption: 30
+- !CarModel
   name: '208'
   battery_power: 0
   fuel_capacity: 44

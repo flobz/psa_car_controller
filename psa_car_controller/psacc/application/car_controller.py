@@ -15,6 +15,7 @@ from psa_car_controller.psacc.utils.utils import Singleton
 from .psa_client import PSAClient
 from psa_car_controller.common.mylogger import my_logger
 from psa_car_controller.psa.otp.otp import CONFIG_NAME as OTP_CONFIG_NAME, ConfigException
+from psa_car_controller import __version__
 
 DEFAULT_NAME = "config.json"
 
@@ -75,6 +76,8 @@ class PSACarController(metaclass=Singleton):
     def load_app(self) -> bool:
         # pylint: disable=too-many-branches
         my_logger(handler_level=int(self.args.debug))
+        
+        logger.info("App version %s", __version__)
         if self.args.config:
             self.config_name = self.args.config
         if path.isfile(self.config_name):

@@ -509,3 +509,11 @@
   reg: VR3ECYHYCK.*
   max_elec_consumption: 0
   max_fuel_consumption: 30
+- !CarModel
+  name: SUV 3008 II 2021
+  battery_power: 0
+  fuel_capacity: 53
+  abrp_name:
+  reg: VF3M45GFUL.*
+  max_elec_consumption: 70
+  max_fuel_consumption: 30

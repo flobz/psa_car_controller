@@ -76,7 +76,7 @@ class PSACarController(metaclass=Singleton):
     def load_app(self) -> bool:
         # pylint: disable=too-many-branches
         my_logger(handler_level=int(self.args.debug))
-        
+
         logger.info("App version %s", __version__)
         if self.args.config:
             self.config_name = self.args.config

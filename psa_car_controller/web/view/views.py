@@ -48,20 +48,20 @@ def get_default_car() -> Car:
 
 def add_header(el):
     version = "v" + __version__
-    github_url= "https://github.com/flobz/psa_car_controller/releases/tag/"+version
+    github_url = "https://github.com/flobz/psa_car_controller/releases/tag/" + version
     dbc_version = dbc.Button(html.I(version, className="m-1"),
                              size='sm',
-                             color="secondary", 
+                             color="secondary",
                              className="me-1 bi bi-github",
-                             external_link =True, href=github_url)
+                             external_link=True, href=github_url)
     return dbc.Row([dbc.Col(dcc.Link(html.H1('My car info'), href=dash_app.requests_pathname_external_prefix,
                                      style={"TextDecoration": "none"})),
                     dbc.Col(html.Div([dbc_version,
-                                    dcc.Link(html.Img(src="assets/images/settings.svg", width="30veh"),
-                                     href=dash_app.requests_pathname_external_prefix + "config",
-                                     className="float-end")],
+                                      dcc.Link(html.Img(src="assets/images/settings.svg", width="30veh"),
+                                               href=dash_app.requests_pathname_external_prefix + "config",
+                                               className="float-end")],
                                      className="d-grid gap-2 d-md-flex justify-content-md-end",))],
-                                     className='align-items-center'), el
+                   className='align-items-center'), el
 
 
 @dash_app.callback(Output('page-content', 'children'),
@@ -104,7 +104,7 @@ def create_callback():  # noqa: MC0001
             for changed_line in diff_data:
                 if changed_line['column_name'] == 'price':
                     conn = Database.get_db()
-                    charge = Charge(datetime.utcfromtimestamp(changed_line['start_at']/1000))
+                    charge = Charge(datetime.utcfromtimestamp(changed_line['start_at'] / 1000))
                     charge.price = changed_line['current_value']
                     charge.vin = get_default_car().vin
                     if not Database.set_chargings_price(conn, charge):
@@ -139,11 +139,11 @@ def create_callback():  # noqa: MC0001
             return "", False
 
         @dash_app.callback(Output("loading-output-trips", "children"), Input("export-trips-table", "n_clicks"))
-        def export_trips_loading_animation(n_clicks): # pylint: disable=unused-argument
+        def export_trips_loading_animation(n_clicks):  # pylint: disable=unused-argument
             time.sleep(3)
 
         @dash_app.callback(Output("loading-output-battery", "children"), Input("export-battery-table", "n_clicks"))
-        def export_batt_loading_animation(n_clicks): # pylint: disable=unused-argument
+        def export_batt_loading_animation(n_clicks):  # pylint: disable=unused-argument
             time.sleep(3)
         # Emulate click on original Export datatables button, since original button is hard to modify
         dash_app.clientside_callback(
@@ -268,75 +268,75 @@ def serve_layout():
                     dbc.Tab(label="Summary", tab_id="summary", children=summary_tab),
                     dbc.Tab(label="Trips", tab_id="trips", id="tab_trips",
                             children=[dbc.Row(
-                                        dbc.Col([
-                                            dcc.Loading(
-                                                id="loading-div-trips",
-                                                children=[html.Div([html.Div(id="loading-output-trips")])],
-                                                type="circle",
-                                                className="export-load-anim"
-                                            ),
-                                            dbc.Button("Export trips data",
-                                                       id="export-trips-table",
-                                                       n_clicks=0,
-                                                       size="sm",
-                                                       color="light",
-                                                       className="m-1 w-200"
-                                            )],
-                                            className="d-grid gap-2 d-md-flex justify-content-md-end"
-                                        )
-                                      ),
-                                      html.Div(id="tab_trips_fig", children=figures.table_fig),
-                                      dbc.Modal(
-                                          [
-                                              dbc.ModalHeader("Altitude"),
-                                              dbc.ModalBody(html.Div(
+                                dbc.Col([
+                                    dcc.Loading(
+                                        id="loading-div-trips",
+                                        children=[html.Div([html.Div(id="loading-output-trips")])],
+                                        type="circle",
+                                        className="export-load-anim"
+                                    ),
+                                    dbc.Button("Export trips data",
+                                               id="export-trips-table",
+                                               n_clicks=0,
+                                               size="sm",
+                                               color="light",
+                                               className="m-1 w-200"
+                                               )],
+                                    className="d-grid gap-2 d-md-flex justify-content-md-end"
+                                )
+                            ),
+                                html.Div(id="tab_trips_fig", children=figures.table_fig),
+                                dbc.Modal(
+                                [
+                                    dbc.ModalHeader("Altitude"),
+                                    dbc.ModalBody(html.Div(
                                                   id="tab_trips_popup_graph")),
-                                              dbc.ModalFooter(
-                                                  dbc.Button("Close",
-                                                             id="tab_trips_popup-close",
-                                                             className="ml-auto")
-                                              ),
-                                          ],
-                                          id="tab_trips_popup",
-                                          size="xl",
+                                    dbc.ModalFooter(
+                                        dbc.Button("Close",
+                                                   id="tab_trips_popup-close",
+                                                   className="ml-auto")
+                                    ),
+                                ],
+                                id="tab_trips_popup",
+                                size="xl",
                             )
                             ]),
                     dbc.Tab(label="Charge", tab_id="charge", id="tab_charge",
                             children=[dbc.Row(
-                                        dbc.Col([
-                                            dcc.Loading(
-                                                id="loading-div-battery",
-                                                children=[html.Div([html.Div(id="loading-output-battery")])],
-                                                type="circle",
-                                                className="export-load-anim"
-                                            ),
-                                            dbc.Button("Export charging data",
-                                                       id="export-battery-table",
-                                                       n_clicks=0,
-                                                       size="sm",
-                                                       color="light",
-                                                       className="m-1 w-200"
-                                            )],
-                                            className="d-grid gap-2 d-md-flex justify-content-md-end"
-                                        )
-                                      ),
-                                      figures.battery_table,
-                                      dbc.Modal(
-                                          [
-                                              dbc.ModalHeader(
-                                                  "Charging speed"),
-                                              dbc.ModalBody(html.Div(
+                                dbc.Col([
+                                    dcc.Loading(
+                                        id="loading-div-battery",
+                                        children=[html.Div([html.Div(id="loading-output-battery")])],
+                                        type="circle",
+                                        className="export-load-anim"
+                                    ),
+                                    dbc.Button("Export charging data",
+                                               id="export-battery-table",
+                                               n_clicks=0,
+                                               size="sm",
+                                               color="light",
+                                               className="m-1 w-200"
+                                               )],
+                                    className="d-grid gap-2 d-md-flex justify-content-md-end"
+                                )
+                            ),
+                                figures.battery_table,
+                                dbc.Modal(
+                                [
+                                    dbc.ModalHeader(
+                                        "Charging speed"),
+                                    dbc.ModalBody(html.Div(
                                                   id="tab_battery_popup_graph")),
-                                              dbc.ModalFooter(
-                                                  dbc.Button("Close",
-                                                             id="tab_battery_popup-close",
-                                                             className="ml-auto")
-                                              ),
-                                          ],
-                                          id="tab_battery_popup",
-                                          size="xl",
-                                      )
-                                      ]),
+                                    dbc.ModalFooter(
+                                        dbc.Button("Close",
+                                                   id="tab_battery_popup-close",
+                                                   className="ml-auto")
+                                    ),
+                                ],
+                                id="tab_battery_popup",
+                                size="xl",
+                            )
+                            ]),
                     dbc.Tab(label="Map", tab_id="map", children=[maps]),
                     dbc.Tab(label="Control", tab_id="control", children=html.Iframe(
                         src=request.url_root + "control?header=false",

@@ -34,6 +34,7 @@ jobs:
         run: |
           source .venv/bin/activate
           prospector
+          pre-commit run -a
       - name: test app
         env:
           CODACY_PROJECT_TOKEN: ${{ secrets.CODACY_PROJECT_TOKEN }}

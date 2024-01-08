@@ -238,7 +238,7 @@ class TestUnit(unittest.TestCase):
         assert compare_dict(chargings, [{'start_at': date0,
                                          'stop_at': date3,
                                          'duration_str': duration_str,
-                                         'duration_min' :duration_min,
+                                         'duration_min': duration_min,
                                          'VIN': 'VR3UHZKX',
                                          'start_level': 40,
                                          'end_level': 85,

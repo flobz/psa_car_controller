@@ -76,8 +76,8 @@ def config_flask(title, base_path, debug: bool, host, port, reloader=False,  # p
     else:
         application = DispatcherMiddleware(Flask('dummy_app'), {base_path: app})
         requests_pathname_prefix = base_path + "/"
-    dash_app = DashCustom(external_stylesheets=[dbc.themes.BOOTSTRAP, dbc.icons.BOOTSTRAP], 
-    external_scripts=locale_url, title=title,
+    dash_app = DashCustom(external_stylesheets=[dbc.themes.BOOTSTRAP, dbc.icons.BOOTSTRAP],
+                          external_scripts=locale_url, title=title,
                           server=app, requests_pathname_prefix=requests_pathname_prefix,
                           suppress_callback_exceptions=True, serve_locally=False)
     dash_app.enable_dev_tools(debug)

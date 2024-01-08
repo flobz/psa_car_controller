@@ -29,6 +29,7 @@ def get_vehicle_info(vin):
     )
     return response
 
+
 @app.route("/style.json")
 def get_style():
     global STYLE_CACHE

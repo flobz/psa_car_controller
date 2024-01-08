@@ -1,13 +1,30 @@
+import logging
+
 from flask import jsonify, request, Response as FlaskResponse
 from pydantic import BaseModel
 
 from psa_car_controller.common.utils import RateLimitException
 from psa_car_controller.psacc.application.car_controller import PSACarController
+from psa_car_controller.psacc.repository.db import Database
 from psa_car_controller.web.app import app
 
 import json
+
+from psa_car_controller.web.tools.utils import convert_to_number_if_number_else_return_str
+
+logger = logging.getLogger(__name__)
+
 STYLE_CACHE = None
 APP = PSACarController()
+
+
+def json_response(json: str, status=200):
+    return app.response_class(
+        response=json,
+        status=status,
+        mimetype='application/json'
+    )
+
 
 @app.route('/get_vehicles')
 def get_vehicules():
@@ -149,3 +166,19 @@ def lock_door(vin, lock):
         return jsonify(APP.myp.remote_client.lock_door(vin, lock))
     except RateLimitException:
         return jsonify({"error": "Locks rate limit exceeded"})
+
+
+@app.route('/settings/<string:section>')
+def settings_section(section: str):
+    config_section: BaseModel = getattr(APP.config, section.capitalize())
+    for key, value in request.args.items():
+        typed_value = convert_to_number_if_number_else_return_str(value)
+        setattr(config_section, key, typed_value)
+        APP.config.write_config()
+    return json_response(config_section.json())
+
+
+@app.route('/settings')
+def settings():
+    return json_response(APP.config.json())
+

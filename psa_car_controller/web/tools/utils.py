@@ -1,3 +1,4 @@
+import typing
 from datetime import datetime, timedelta
 
 import dash_bootstrap_components as dbc
@@ -88,3 +89,12 @@ def diff_dashtable(data, data_previous, row_id_name="row_id"):
                 }
             )
     return changes
+
+
+def convert_to_number_if_number_else_return_str(value: str) -> typing.Union[float, int, str]:
+    if value.isnumeric():
+        return int(value)
+    try:
+        return float(value)
+    except ValueError:
+        return value

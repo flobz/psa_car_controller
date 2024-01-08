@@ -46,3 +46,13 @@
 12. Lock (1)/Unlock (0) the doors
    
    http://localhost:5000/lock_door/YOURVIN/1 or 0
+
+13. Get config
+
+   http://localhost:5000/settings
+
+14. Change config parameter in config.ini (you need to restart the app after)
+
+   http://localhost:5000/settings/electricity_config?night_price=0.2
+
+   http://127.0.0.1:5000/settings/general?currency=%C2%A3

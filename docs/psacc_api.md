@@ -55,4 +55,8 @@
 
    http://localhost:5000/settings/electricity_config?night_price=0.2
 
-   http://127.0.0.1:5000/settings/general?currency=%C2%A3
+   http://localhost:5000/settings/general?currency=%C2%A3
+
+15. Get battery SOH
+
+   http://localhost:5000/battery/soh/<vin>

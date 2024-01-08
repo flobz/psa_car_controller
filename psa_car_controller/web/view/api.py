@@ -182,3 +182,8 @@ def settings_section(section: str):
 def settings():
     return json_response(APP.config.json())
 
+
+@app.route('/battery/soh/<string:vin>')
+def db(vin: str):
+    soh = Database.get_last_soh_by_vin(vin)
+    return jsonify({"soh": soh})

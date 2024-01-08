@@ -31,44 +31,9 @@ The official API is documented [here](https://developer.groupe-psa.io/webapi/b2c
 - [Installation as Home Assistant addon](https://github.com/flobz/psacc-ha/blob/main/psacc-ha/README.md)  
 - [Installation in Docker](docs/Docker.md)
 - [Installation on Raspberry Pi with docker-compose (external Tutorial)](https://return2.net/opel-peugeot-electric-vehicle-set-charging-threshold-limit/)
- ## II. Use the app
+ ## II. Use the API
 
-    2.1 Get the car state
-    http://localhost:5000/get_vehicleinfo/YOURVIN
-    
-    2.2 Get the car state from cache to avoid to use PSA API too much
-    http://localhost:5000/get_vehicleinfo/YOURVIN?from_cache=1
-    
-    2.2 Stop charge
-    http://localhost:5000/charge_now/YOURVIN/0
-    
-    2.3 Set hour to stop the charge to 6 am
-    http://localhost:5000/charge_control?vin=YOURVIN&hour=6&minute=0 
-    
-    2.4 Change car charge threshold to 80%
-    http://localhost:5000/charge_control?vin=YOURVIN&percentage=80 
-    
-    2.5 See the dashboard (only if record is enabled)
-    http://localhost:5000
-    
-    2.6 Refresh car state (ask car to send its state):
-    http://localhost:5000/wakeup/YOURVIN
-    
-    2.7 Start (1)/Stop (0) preconditioning
-    http://localhost:5000/preconditioning/YOURVIN/1 or 0
-    
-    2.8 Change charge hour (for example: set it to 22h30)
-    http://localhost:5000/charge_hour?vin=YOURVIN&hour=22&minute=30
-
-    2.9 Honk the horn
-    http://localhost:5000/horn/YOURVIN/count
-
-    2.10 Flash the lights (Duration is always roughly 10 seconds, regardless of set duration)
-    http://localhost:5000/lights/YOURVIN/duration
-
-    2.11 Lock (1)/Unlock (0) the doors
-    http://localhost:5000/lock_door/YOURVIN/1 or 0
-
+Look at [API documentation](./docs/psa_api.md)
 
 ## III. Use the dashboard
 

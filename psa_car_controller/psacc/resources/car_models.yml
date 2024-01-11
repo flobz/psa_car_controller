@@ -42,6 +42,14 @@
   max_elec_consumption: 70
   max_fuel_consumption: 0
 - !ElecModel
+  name: e2008 Facelift 2023+
+  battery_power: 50
+  fuel_capacity: 0
+  abrp_name:
+  reg: VR3UKZKW.*
+  max_elec_consumption: 70
+  max_fuel_consumption: 0
+- !ElecModel
   name: e-Spacetourer
   battery_power: 46
   fuel_capacity: 0

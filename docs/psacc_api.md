@@ -59,4 +59,4 @@
 
 15. Get battery SOH
 
-   http://localhost:5000/battery/soh/<vin>
+   http://localhost:5000/battery/soh/YOURVIN

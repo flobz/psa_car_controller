@@ -129,6 +129,15 @@ class Database:
         Database.db_initialized = True
 
     @staticmethod
+    def check_db_access() -> bool:
+        try:
+            Database.get_db()
+            return True
+        except sqlite3.OperationalError:
+            logger.fatal("Can't access to db file check permission")
+        return False
+
+    @staticmethod
     def get_db(db_file=None, update_callback=True) -> CustomSqliteConnection:
         if db_file is None:
             db_file = Database.DEFAULT_DB_FILE

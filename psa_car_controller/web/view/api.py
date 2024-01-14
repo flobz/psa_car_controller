@@ -106,15 +106,19 @@ def get_position(vin):
 def get_charge_control():
     logger.info(request)
     vin = request.args['vin']
-    charge_control = APP.chc.get(vin)
-    if charge_control is None:
-        return jsonify("error: VIN not in list")
-    if 'hour' in request.args and 'minute' in request.args:
-        charge_control.set_stop_hour([int(request.args["hour"]), int(request.args["minute"])])
-    if 'percentage' in request.args:
-        charge_control.percentage_threshold = int(request.args['percentage'])
-    APP.chc.save_config()
-    return jsonify(charge_control.get_dict())
+    if APP.chc:
+        charge_control = APP.chc.get(vin)
+        if charge_control is None:
+            return jsonify({"error": "VIN not in list"})
+        if 'hour' in request.args and 'minute' in request.args:
+            charge_control.set_stop_hour([int(request.args["hour"]), int(request.args["minute"])])
+        if 'percentage' in request.args:
+            charge_control.percentage_threshold = int(request.args['percentage'])
+        APP.chc.save_config()
+        return jsonify(charge_control.get_dict())
+    error = "Charge control not setup check your PSACC configuration and logs"
+    logger.error(error)
+    return jsonify({"error": error})
 
 
 @app.route('/positions')

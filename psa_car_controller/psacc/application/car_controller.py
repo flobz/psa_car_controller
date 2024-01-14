@@ -48,7 +48,7 @@ class PSACarController(metaclass=Singleton):
     def __init__(self):
         self.args = parse_args()
         self.myp: PSAClient
-        self.chc: ChargeControls
+        self.chc: ChargeControls = None
         self.config_name = DEFAULT_NAME
         self.is_good: bool = True
         self.offline = self.args.offline

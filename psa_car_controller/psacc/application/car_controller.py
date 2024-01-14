@@ -2,6 +2,7 @@ import argparse
 import atexit
 import logging
 import socket
+import sys
 import threading
 from os import environ, path
 
@@ -11,6 +12,7 @@ from oauth2_client.credentials_manager import OAuthError
 from .charge_control import ChargeControls
 from .charging import Charging
 from psa_car_controller.psacc.repository.config_repository import ConfigRepository
+from psa_car_controller.psacc.repository.db import Database
 from psa_car_controller.psacc.utils.utils import Singleton
 from .psa_client import PSAClient
 from psa_car_controller.common.mylogger import my_logger
@@ -88,6 +90,8 @@ class PSACarController(metaclass=Singleton):
             return False
         else:
             raise FileNotFoundError(self.config_name)
+        if not Database.check_db_access():
+            sys.exit(1)
         atexit.register(self.save_config)
         self.myp.set_record(self.args.record)
         Charging.elec_price = self.config.Electricity_config

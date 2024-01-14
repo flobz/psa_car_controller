@@ -108,7 +108,7 @@ class Ecomix:
             location = reverse_geocode.search([(latitude, longitude)])[0]
             country_code = location["country_code"]
             return country_code
-        except (UnicodeDecodeError, IndexError):
+        except (UnicodeDecodeError, IndexError, ValueError):
             logger.error("Can't find country for %s %s", latitude, longitude)
             # return None
             country_code = country_code_default

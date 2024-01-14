@@ -37,18 +37,20 @@ AVG_CONSUM_PRICE = "avg_consum_price"
 CURRENCY = "€"
 EXPORT_FORMAT = "csv"
 
-SUMMARY_CARDS = {"Average consumption": {"text": [card_value_div(AVG_CONSUM_KW, "kWh/100km"),
-                                                  card_value_div(AVG_CONSUM_PRICE, f"{CURRENCY}/100km")],
-                                         "src": "assets/images/consumption.svg"},
-                 "Average emission": {"text": [card_value_div(AVG_EMISSION_KM, " g/km"),
-                                               card_value_div(AVG_EMISSION_KW, "g/kWh")],
-                                      "src": "assets/images/pollution.svg"},
-                 "Average charge speed": {"text": [card_value_div(AVG_CHARGE_SPEED, " kW")],
-                                          "src": "assets/images/battery-charge-line.svg"},
-                 "Electricity consumption": {"text": [card_value_div(ELEC_CONSUM_KW, "kWh"),
-                                                      card_value_div(ELEC_CONSUM_PRICE, CURRENCY)],
-                                             "src": "assets/images/electricity bill.svg"}
-                 }
+
+def get_summary_cards():
+    return {"Average consumption": {"text": [card_value_div(AVG_CONSUM_KW, "kWh/100km"),
+                                             card_value_div(AVG_CONSUM_PRICE, f"{CURRENCY}/100km")],
+                                    "src": "assets/images/consumption.svg"},
+            "Average emission": {"text": [card_value_div(AVG_EMISSION_KM, " g/km"),
+                                          card_value_div(AVG_EMISSION_KW, "g/kWh")],
+                                 "src": "assets/images/pollution.svg"},
+            "Average charge speed": {"text": [card_value_div(AVG_CHARGE_SPEED, " kW")],
+                                     "src": "assets/images/battery-charge-line.svg"},
+            "Electricity consumption": {"text": [card_value_div(ELEC_CONSUM_KW, "kWh"),
+                                                 card_value_div(ELEC_CONSUM_PRICE, CURRENCY)],
+                                        "src": "assets/images/electricity bill.svg"}
+            }
 
 
 def get_figures(car: Car):

@@ -12,6 +12,8 @@ from psa_car_controller.psacc.repository.db import Database
 
 logger = CustomLogger.getLogger(__name__)
 
+MAX_SPEED = 150
+
 
 class Trips(list):
     def __init__(self, *args):
@@ -30,13 +32,22 @@ class Trips(list):
 
     def check_and_append(self, trip: Trip):
         if trip.consumption_km <= trip.car.max_elec_consumption and \
-                trip.consumption_fuel_km <= trip.car.max_fuel_consumption:
+                trip.consumption_fuel_km <= trip.car.max_fuel_consumption and \
+                trip.speed_average < MAX_SPEED:
             trip.id = self.trip_num
             self.trip_num += 1
             self.append(trip)
             return True
         logger.debugv("trip discarded")
         return False
+
+    @staticmethod
+    def get_speed_average(distance, duration):
+        try:
+            speed_average = distance / duration
+        except ZeroDivisionError:
+            speed_average = 0
+        return speed_average
 
     @staticmethod  # noqa: MC0001
     def get_trips(vehicles_list: Cars) -> Dict[str, "Trips"]:
@@ -69,10 +80,7 @@ class Trips(list):
                     except TypeError:
                         logger.debug("Bad mileage value in DB")
                     duration = (end["Timestamp"] - start["Timestamp"]).total_seconds() / 3600
-                    try:
-                        speed_average = distance / duration
-                    except ZeroDivisionError:
-                        speed_average = 0
+                    speed_average = Trips.get_speed_average(distance, duration)
 
                     if TripParser.is_low_speed(speed_average, duration) or trip_parser.is_refuel(start, end, distance):
                         start = end
@@ -82,10 +90,7 @@ class Trips(list):
                     else:
                         distance = next_point["mileage"] - end["mileage"]  # km
                         duration = (next_point["Timestamp"] - end["Timestamp"]).total_seconds() / 3600
-                        try:
-                            speed_average = distance / duration
-                        except ZeroDivisionError:
-                            speed_average = 0
+                        speed_average = Trips.get_speed_average(distance, duration)
                         end_trip = False
                         if trip_parser.is_refuel(end, next_point, distance) or \
                                 TripParser.is_low_speed(speed_average, duration):
@@ -109,7 +114,7 @@ class Trips(list):
                                 if end["temperature"] is not None and start["temperature"] is not None:
                                     trip.add_temperature(end["temperature"])
                                 trip.duration = (end["Timestamp"] - start["Timestamp"]).total_seconds() / 3600
-                                trip.speed_average = trip.distance / trip.duration
+                                trip.speed_average = Trips.get_speed_average(trip.distance, trip.duration)
                                 diff_level, diff_level_fuel = trip_parser.get_level_consumption(start, end)
                                 trip.set_altitude_diff(start["altitude"], end["altitude"])
                                 trip.car = car

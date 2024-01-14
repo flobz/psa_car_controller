@@ -169,8 +169,6 @@ def create_callback():  # noqa: MC0001
             [Input("export-battery-table", "n_clicks")]
         )
 
-        figures.CURRENCY = APP.config.General.currency
-        figures.EXPORT_FORMAT = APP.config.General.export_format
         CALLBACK_CREATED = True
 
 
@@ -237,9 +235,11 @@ def serve_layout():
                 marks=marks,
                 value=[min_millis, max_millis],
             )
+            figures.CURRENCY = APP.config.General.currency
+            figures.EXPORT_FORMAT = APP.config.General.export_format
             summary_tab = [
                 dbc.Container(dbc.Row(id="summary-cards",
-                                      children=create_card(figures.SUMMARY_CARDS)), fluid=True),
+                                      children=create_card(figures.get_summary_cards())), fluid=True),
                 fig_filter.add_graph(dcc.Graph(id="consumption_fig"), "start_at", ["consumption_km"],
                                      figures.consumption_fig),
                 fig_filter.add_graph(dcc.Graph(id="consumption_fig_by_speed"), "speed_average",

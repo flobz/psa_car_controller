@@ -350,6 +350,14 @@
   reg: VF73ABHZMJ.*
   max_elec_consumption: 70
   max_fuel_consumption: 30
+- !CarModel
+  name: C4 2021
+  battery_power: 0
+  fuel_capacity: 50
+  abrp_name:
+  reg: VR7BAHNSAM.*
+  max_elec_consumption: 0
+  max_fuel_consumption: 30
 - !ElecModel
   name: Combo-e Cargo
   battery_power: 50

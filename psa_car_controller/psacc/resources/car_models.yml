@@ -525,3 +525,9 @@
   reg: VF3M45GFUL.*
   max_elec_consumption: 70
   max_fuel_consumption: 30
+- !CarModel
+  name: C3 Saint james edition
+  battery_power: 0
+  fuel_capacity: 42
+  abrp_name:
+  reg: VF7SXHNP.*

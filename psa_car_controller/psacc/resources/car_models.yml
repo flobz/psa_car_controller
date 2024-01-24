@@ -31,7 +31,7 @@
   battery_power: 46
   fuel_capacity: 0
   abrp_name: peugeot:e208:20:50
-  reg: VR3UHZKX.*
+  reg: VR3UHZK[WX].*
   max_elec_consumption: 70
 - !ElecModel
   name: e-2008

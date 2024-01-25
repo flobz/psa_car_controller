@@ -525,3 +525,11 @@
   reg: VF3M45GFUL.*
   max_elec_consumption: 70
   max_fuel_consumption: 30
+- !CarModel
+  name: 508 (R8) 2.0 HDI
+  battery_power: 0
+  fuel_capacity: 55
+  abrp_name:
+  reg: VR3FHEHYRK.*
+  max_elec_consumption: 0
+  max_fuel_consumption: 30

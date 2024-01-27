@@ -9,7 +9,7 @@ TIMEOUT_IN_S = 10
 
 def get_temp(latitude: str, longitude: str, api_key: str) -> float:
     try:
-        if not (latitude is None or longitude is None or api_key is None):
+        if latitude and longitude and api_key:
             weather_rep = requests.get("https://api.openweathermap.org/data/2.5/onecall",
                                        params={"lat": latitude, "lon": longitude,
                                                "exclude": "minutely,hourly,daily,alerts",
@@ -17,7 +17,7 @@ def get_temp(latitude: str, longitude: str, api_key: str) -> float:
                                                "units": "metric"},
                                        timeout=TIMEOUT_IN_S)
             weather_res_json = weather_rep.json()
-            temp = weather_res_json.get("current", weather_res_json.get("main"))["temp"]
+            temp = weather_res_json.get("current", weather_res_json["main"])["temp"]
             logger.debug("Temperature :%fc", temp)
             return temp
     except ConnectionError:

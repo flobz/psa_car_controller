@@ -29,7 +29,7 @@ class OpenIdCredentialManager(CredentialManager):
 
     def generate_sha256_pkce(self, length: int) -> Tuple[str, str]:
         if not (43 <= length <= 128):
-            raise ValueError("Invalid length: " % str(length))
+            raise ValueError("Invalid length: %s", str(length))
         verifier = secrets.token_urlsafe(length)
         encoded = base64.urlsafe_b64encode(hashlib.sha256(verifier.encode('ascii')).digest())
         challenge = encoded.decode('ascii')[:-1]
@@ -43,7 +43,7 @@ class OpenIdCredentialManager(CredentialManager):
 
         ret = ""
         while len(ret) != 36:
-            logger.info("Now login to this URL in a browser: " + url)
+            logger.info("Now login to this URL in a browser: %s", url)
             ret = input("\nCopy+paste the resulting mymop-code (in F12 > Network" \
                 "when you hit the final OK button, 36 chars, UUID format): ")
 

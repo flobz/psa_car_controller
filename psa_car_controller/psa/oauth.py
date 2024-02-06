@@ -44,10 +44,11 @@ class OpenIdCredentialManager(CredentialManager):
         ret = ""
         while len(ret) != 36:
             logger.info("Now login to this URL in a browser: " + url)
-            ret = input("\nCopy+paste the resulting mymop-code (in F12 > Network when you hit the final OK button, 36 chars, UUID format): ")
+            ret = input("\nCopy+paste the resulting mymop-code (in F12 > Network" \
+                "when you hit the final OK button, 36 chars, UUID format): ")
 
         self._token_request({ "grant_type": 'authorization_code', "code": ret,
-            "redirect_uri": redir_uri, "code_verifier": code_verifier), False)
+            "redirect_uri": redir_uri, "code_verifier": code_verifier}, False)
 
     @staticmethod
     def _is_token_expired(response: Response) -> bool:

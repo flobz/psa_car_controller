@@ -31,8 +31,8 @@ logger = CustomLogger.getLogger(__name__)
 
 
 class PSAClient:
-    def connect(self, user, password):
-        self.manager.init_with_user_credentials_realm(user, password, self.realm)
+    def connect(self, country_code):
+        self.manager.init_with_user_credentials_realm(country_code, self.realm)
 
     # pylint: disable=too-many-arguments
     def __init__(self, refresh_token, client_id, client_secret, remote_refresh_token, customer_id, realm, country_code,

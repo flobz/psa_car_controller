@@ -1,4 +1,9 @@
 import logging
+import hashlib
+import secrets
+import base64
+from typing import Tuple
+
 from http import HTTPStatus
 from typing import Optional
 
@@ -22,8 +27,25 @@ class OpenIdCredentialManager(CredentialManager):
         return {"grant_type": 'password', "username": login, "scope": ' '.join(self.service_information.scopes),
                 "password": password, "realm": realm}
 
-    def init_with_user_credentials_realm(self, login: str, password: str, realm: str):
-        self._token_request(self._grant_password_request_realm(login, password, realm), True)
+    def generate_sha256_pkce(self, length: int) -> Tuple[str, str]:
+        if not (43 <= length <= 128):
+            raise Exception("Invalid length: " % str(length))
+        verifier = secrets.token_urlsafe(length)
+        encoded = base64.urlsafe_b64encode(hashlib.sha256(verifier.encode('ascii')).digest())
+        challenge = encoded.decode('ascii')[:-1]
+        return verifier, challenge
+
+    def init_with_user_credentials_realm(self, country_code: str, realm: str):
+        redir_uri = "mymop://oauth2redirect/" + country_code.lower()
+        code_verifier, code_challenge = self.generate_sha256_pkce(64)
+        url = self.generate_authorize_url(redir_uri, secrets.token_urlsafe(16), code_challenge=code_challenge, code_challenge_method="S256")
+
+        ret = ""
+        while len(ret) != 36:
+            logger.info("Now login to this URL in a browser: " + url)
+            ret = input("\nCopy+paste the resulting mymop-code (in F12 > Network when you hit the final OK button, 36 chars, UUID format): ")
+
+        self._token_request(dict(grant_type='authorization_code', code=ret, redirect_uri=redir_uri, code_verifier=code_verifier), False)
 
     @staticmethod
     def _is_token_expired(response: Response) -> bool:

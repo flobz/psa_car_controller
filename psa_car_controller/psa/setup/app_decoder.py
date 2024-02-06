@@ -92,7 +92,7 @@ def firstLaunchConfig(package_name, client_email, client_password, country_code,
     psacc = PSAClient(None, apk_parser.client_id, apk_parser.client_secret,
                       None, customer_id, BRAND[package_name]["realm"],
                       country_code)
-    psacc.connect(client_email, client_password)
+    psacc.connect(country_code)
     psacc.save_config(name=config_prefix + "config.json")
     res = psacc.get_vehicles()
 

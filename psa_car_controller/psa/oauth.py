@@ -29,7 +29,7 @@ class OpenIdCredentialManager(CredentialManager):
 
     def generate_sha256_pkce(self, length: int) -> Tuple[str, str]:
         if not (43 <= length <= 128):
-            raise ValueError("Invalid length: %s", str(length))
+            raise ValueError("Invalid length: %d" % length)
         verifier = secrets.token_urlsafe(length)
         encoded = base64.urlsafe_b64encode(hashlib.sha256(verifier.encode('ascii')).digest())
         challenge = encoded.decode('ascii')[:-1]

@@ -35,7 +35,7 @@ class OpenIdCredentialManager(CredentialManager):
         challenge = encoded.decode('ascii')[:-1]
         return verifier, challenge
 
-    def init_with_user_credentials_realm(self, country_code: str):
+    def init_with_country_code(self, country_code: str):
         redir_uri = "mymop://oauth2redirect/" + country_code.lower()
         code_verifier, code_challenge = self.generate_sha256_pkce(64)
         url = self.generate_authorize_url(redir_uri, secrets.token_urlsafe(16),

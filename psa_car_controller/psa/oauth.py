@@ -45,7 +45,7 @@ class OpenIdCredentialManager(CredentialManager):
 
         ret = ""
         while len(ret) != 36:
-            ret = input("\nCopy+paste the resulting mymop-code (in F12 > Network, " \
+            ret = input("\nCopy+paste the resulting mymXX-code (in F12 > Network, " \
                 "when you hit the final OK button, 36 chars, UUID format): ")
 
         self._token_request({ "grant_type": 'authorization_code', "code": ret,

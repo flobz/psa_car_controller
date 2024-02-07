@@ -38,7 +38,7 @@ class PSAClient:
     def __init__(self, refresh_token, client_id, client_secret, remote_refresh_token, customer_id, realm, country_code,
                  proxies=None, weather_api=None, abrp=None, co2_signal_api=None):
         self.realm = realm
-        self.service_information = ServiceInformation(AUTHORIZE_SERVICE,
+        self.service_information = ServiceInformation(AUTHORIZE_SERVICE[self.realm],
                                                       realm_info[self.realm]['oauth_url'],
                                                       client_id,
                                                       client_secret,

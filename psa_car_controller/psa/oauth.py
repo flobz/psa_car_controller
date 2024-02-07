@@ -41,10 +41,11 @@ class OpenIdCredentialManager(CredentialManager):
         url = self.generate_authorize_url(redir_uri, secrets.token_urlsafe(16),
             code_challenge=code_challenge, code_challenge_method="S256")
 
+        logger.info("Now login to this URL in a browser: %s", url)
+
         ret = ""
         while len(ret) != 36:
-            logger.info("Now login to this URL in a browser: %s", url)
-            ret = input("\nCopy+paste the resulting mymop-code (in F12 > Network" \
+            ret = input("\nCopy+paste the resulting mymop-code (in F12 > Network, " \
                 "when you hit the final OK button, 36 chars, UUID format): ")
 
         self._token_request({ "grant_type": 'authorization_code', "code": ret,

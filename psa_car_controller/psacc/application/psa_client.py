@@ -31,14 +31,14 @@ logger = CustomLogger.getLogger(__name__)
 
 
 class PSAClient:
-    def connect(self, user, password):
-        self.manager.init_with_user_credentials_realm(user, password, self.realm)
+    def connect(self):
+        self.manager.init_with_brand_country_code(self.brand, self.country_code)
 
     # pylint: disable=too-many-arguments
     def __init__(self, refresh_token, client_id, client_secret, remote_refresh_token, customer_id, realm, country_code,
-                 proxies=None, weather_api=None, abrp=None, co2_signal_api=None):
+                 brand=None, proxies=None, weather_api=None, abrp=None, co2_signal_api=None):
         self.realm = realm
-        self.service_information = ServiceInformation(AUTHORIZE_SERVICE,
+        self.service_information = ServiceInformation(AUTHORIZE_SERVICE[self.realm],
                                                       realm_info[self.realm]['oauth_url'],
                                                       client_id,
                                                       client_secret,
@@ -60,6 +60,7 @@ class PSAClient:
         self._record_enabled = False
         self.weather_api = weather_api
         self.country_code = country_code
+        self.brand = brand
         self.info_callback = []
         self.info_refresh_rate = 120
         if abrp is None:

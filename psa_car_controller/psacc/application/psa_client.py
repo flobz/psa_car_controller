@@ -32,7 +32,7 @@ logger = CustomLogger.getLogger(__name__)
 
 class PSAClient:
     def connect(self):
-        self.manager.init_with_brand_country_code(self.brand, self.country_code)
+        self.manager.init_with_oauth2_redirect(realm_info[self.realm]["scheme"], self.country_code)
 
     # pylint: disable=too-many-arguments
     def __init__(self, refresh_token, client_id, client_secret, remote_refresh_token, customer_id, realm, country_code,

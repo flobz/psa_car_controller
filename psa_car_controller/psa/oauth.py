@@ -7,7 +7,7 @@ from typing import Tuple
 from http import HTTPStatus
 from typing import Optional
 
-from oauth2_client.credentials_manager import CredentialManager, ServiceInformation
+from oauth2_client.credentials_manager import CredentialManager, ServiceInformation, OAuthError
 from requests import Response, RequestException
 
 from psa_car_controller.common.utils import rate_limit
@@ -35,21 +35,28 @@ class OpenIdCredentialManager(CredentialManager):
         challenge = encoded.decode('ascii')[:-1]
         return verifier, challenge
 
-    def init_with_brand_country_code(self, brand: str, country_code: str):
-        redir_uri = "mym" + brand.lower() + "://oauth2redirect/" + country_code.lower()
-        code_verifier, code_challenge = self.generate_sha256_pkce(64)
-        url = self.generate_authorize_url(redir_uri, secrets.token_urlsafe(16),
-            code_challenge=code_challenge, code_challenge_method="S256")
-
-        logger.info("Now login to this URL in a browser: %s", url)
-
+    def init_with_oauth2_redirect(self, scheme: str, country_code: str):
         ret = ""
-        while len(ret) != 36:
-            ret = input("\nCopy+paste the resulting mymXX-code (in F12 > Network, " \
-                "when you hit the final OK button, 36 chars, UUID format): ")
+        while True:
+            redir_uri = scheme + "://oauth2redirect/" + country_code.lower()
+            code_verifier, code_challenge = self.generate_sha256_pkce(64)
+            url = self.generate_authorize_url(redir_uri, secrets.token_urlsafe(16),
+                                              code_challenge=code_challenge, code_challenge_method="S256")
 
-        self._token_request({ "grant_type": 'authorization_code', "code": ret,
-            "redirect_uri": redir_uri, "code_verifier": code_verifier}, False)
+            logger.info("Now login to this URL in a browser: %s", url)
+
+            try:
+                ret = input("\nCopy+paste the resulting mymXX-code (in F12 > Network, "
+                            "when you hit the final OK button, 36 chars, UUID format): ")
+                logger.info("Try getting a token with code %s", ret)
+                assert len(ret) == 36, "Invalid code length"
+                self._token_request({"grant_type": 'authorization_code', "code": ret,
+                                     "redirect_uri": redir_uri, "code_verifier": code_verifier}, False)
+            except (OAuthError, AssertionError):
+                logger.exception("Failed to get a token")
+                if input("Retry ? yes/NO") == "yes":
+                    continue
+            break
 
     @staticmethod
     def _is_token_expired(response: Response) -> bool:

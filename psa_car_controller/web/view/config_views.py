@@ -61,10 +61,16 @@ login_config_layout = dbc.Row(dbc.Col(md=12, lg=2, className="m-3", children=[
                     color="secondary",
                 )]),
             dbc.Row(dbc.Button("Submit", color="primary", id="submit-form")),
-            dbc.Row(
-                dbc.FormText(
-                    "After submit be patient it can take some time...",
-                    color="secondary")),
+            html.Div(html.P([
+                "1. After submit switch back to the CLI and wait for the login URL to be shown", html.Br(),
+                "2. Open that URL in a browser", html.Br(),
+                "3. Complete the login procedure there too", html.Br(),
+                "4. Open your browser's DevTools (F12) and then the 'Network' tab", html.Br(),
+                "5. Hit the final 'OK' button, under 'LOGIN SUCCESSFUL'", html.Br(),
+                "6. Find xxxx://oauth2redirect....?code=<copy this part>&scope=openid... "
+                "in the DevTools and paste it into the command line interface", html.Br(),
+                "7. Switch back to the browser and do the OTP config", html.Br()]
+            )),
             dcc.Loading(
                 id="loading-2",
                 children=[html.Div([html.Div(id="form_result")])],

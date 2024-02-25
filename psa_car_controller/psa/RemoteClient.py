@@ -96,7 +96,9 @@ class RemoteClient:
                     # fix a psa server bug where charge beginning without status api being properly updated
                     logger.warning("charge begin but API isn't updated")
                     time.sleep(60)
-                    self.wakeup(vin)
+                    #fre42: commented out since psa cloud sends wrong infos sometimes which causes psacc waking up endlessly
+                    # until the car goes to eco mode and blocks any connection
+                    #self.wakeup(vin)
             except (IndexError, AttributeError, RateLimitException):
                 logger.exception("on_mqtt_message:")
 
@@ -217,7 +219,8 @@ class RemoteClient:
         logger.info(msg)
         self.publish(msg)
 
-    @rate_limit(6, 60 * 20)
+    #@rate_limit(6, 60 * 20) // 6 times in 20 minutes is too often and will cause the car (at least the Opel Corsa) to go to eco mode
+    @rate_limit(4, 60 * 60)
     def wakeup(self, vin):
         logger.info("ask wakeup to %s", vin)
         msg = self.mqtt_request(vin, {"action": "state"}, "/VehCharge/state")

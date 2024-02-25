@@ -22,4 +22,5 @@ RUN  apt-get install -y --no-install-recommends $PYTHON_DEP && \
      apt-get clean ; \
      rm -rf /var/lib/apt/lists/*
 COPY /docker_files/init.sh /init.sh
+RUN chmod 755 /init.sh
 CMD /init.sh

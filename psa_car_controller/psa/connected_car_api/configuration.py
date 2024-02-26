@@ -72,7 +72,7 @@ class Configuration(object):
         # Debug file location
         self.logger_file = None
         # Debug switch
-        self.debug = False
+        self.debug = True
 
         # SSL/TLS verification
         # Set this to false to skip verifying SSL certificate when calling API

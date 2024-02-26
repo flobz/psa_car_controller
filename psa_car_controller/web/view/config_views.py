@@ -1,4 +1,5 @@
 import logging
+from urllib import parse
 
 from dash import callback_context, html, dcc
 from dash.exceptions import PreventUpdate
@@ -6,7 +7,7 @@ from flask import request
 
 from psa_car_controller.psa.otp.otp import new_otp_session
 from psa_car_controller.psacc.application.car_controller import PSACarController
-from psa_car_controller.psa.setup.app_decoder import firstLaunchConfig
+from psa_car_controller.psa.setup.app_decoder import InitialSetup
 from psa_car_controller.common.mylogger import LOG_FILE
 from psa_car_controller.web.app import dash_app
 import dash_bootstrap_components as dbc
@@ -15,7 +16,9 @@ from dash.dependencies import Output, Input, State
 logger = logging.getLogger(__name__)
 
 app = PSACarController()
-login_config_layout = dbc.Row(dbc.Col(md=12, lg=2, className="m-3", children=[
+INITIAL_SETUP: InitialSetup = None
+
+setup_config_layout = dbc.Row(dbc.Col(md=12, lg=2, className="m-3", children=[
     dbc.Row(html.H2('Config')),
     dbc.Row(className="ms-2", children=[
         dbc.Form([
@@ -61,10 +64,9 @@ login_config_layout = dbc.Row(dbc.Col(md=12, lg=2, className="m-3", children=[
                     color="secondary",
                 )]),
             dbc.Row(dbc.Button("Submit", color="primary", id="submit-form")),
-            dbc.Row(
-                dbc.FormText(
-                    "After submit be patient it can take some time...",
-                    color="secondary")),
+            dbc.Row(dbc.FormText(
+                "After submit be patient it can take some time...",
+                color="secondary")),
             dcc.Loading(
                 id="loading-2",
                 children=[html.Div([html.Div(id="form_result")])],
@@ -115,7 +117,7 @@ def log_layout():
 def config_layout(activeTabs="log"):
     return dbc.Tabs(active_tab=activeTabs, children=[
         dbc.Tab([log_layout()], label="Log", tab_id="log"),
-        dbc.Tab([login_config_layout], label="User config", tab_id="login"),
+        dbc.Tab([setup_config_layout], label="User config", tab_id="login"),
         dbc.Tab([config_otp_layout], label="OTP config", tab_id="otp")])
 
 
@@ -129,11 +131,14 @@ def config_layout(activeTabs="log"):
 def connectPSA(n_clicks, app_name, email, password, countrycode):  # pylint: disable=unused-argument
     ctx = callback_context
     if ctx.triggered:
+        logger.info("Initial setup...")
         try:
-            res = firstLaunchConfig(app_name, email, password, countrycode)
-            app.load_app()
-            app.start_remote_control()
-            return dbc.Alert([res, html.A(" Go to otp config", href=request.url_root + "config_otp")], color="success")
+            global INITIAL_SETUP
+            INITIAL_SETUP = InitialSetup(app_name, email, password, countrycode)
+            redirect_uri = parse.quote(INITIAL_SETUP.psacc.manager.generate_redirect_url())
+            return dbc.Alert(["Success !", html.A(" Go to login",
+                                                  href=f"{request.url_root}config_connect?url={redirect_uri}")],
+                             color="success")
         except Exception as e:
             res = str(e)
             logger.exception(e)

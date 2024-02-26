@@ -33,7 +33,7 @@ The official API is documented [here](https://developer.groupe-psa.io/webapi/b2c
 - [Installation on Raspberry Pi with docker-compose (external Tutorial)](https://return2.net/opel-peugeot-electric-vehicle-set-charging-threshold-limit/)
  ## II. Use the API
 
-Look at [API documentation](./docs/psacc_api)
+Look at [API documentation](./docs/psacc_api.md)
 
 ## III. Use the dashboard
 

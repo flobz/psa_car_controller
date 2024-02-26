@@ -4,7 +4,7 @@ import logging
 import socket
 import sys
 import threading
-from os import environ, path
+from os import path
 
 import psa_car_controller
 from oauth2_client.credentials_manager import OAuthError
@@ -35,8 +35,6 @@ def parse_args():
     parser.add_argument("-p", "--port", help="change server listen port", default="5000")
     parser.add_argument("-r", "--record", help="save vehicle data to db", action='store_true')
     parser.add_argument("-R", "--refresh", help="refresh vehicles status every x min", type=int)
-    parser.add_argument("-m", "--mail", default=environ.get('USER_EMAIL', None), help="set the email address")
-    parser.add_argument("-P", "--password", default=environ.get('USER_PASSWORD', None), help="set the password")
     parser.add_argument("--remote-disable", help="disable remote control", action='store_true')
     parser.add_argument("--offline", help="offline limited mode", action='store_true')
     parser.add_argument("--web-conf", help="ignore if config files not existing yet", action='store_true')
@@ -76,7 +74,6 @@ class PSACarController(metaclass=Singleton):
                 logger.error("start_remote_control failed redo otp config")
 
     def load_app(self) -> bool:
-        # pylint: disable=too-many-branches
         my_logger(handler_level=int(self.args.debug))
 
         logger.info("App version %s", __version__)
@@ -105,16 +102,11 @@ class PSACarController(metaclass=Singleton):
                 if self.is_good:
                     logger.info(str(self.myp.get_vehicles()))
             except OAuthError:
-                if self.args.mail and self.args.password:
-                    self.myp.connect(self.args.mail, self.args.password)
-                    logger.info(str(self.myp.get_vehicles()))
-                    self.is_good = True
+                self.is_good = False
+                if self.args.web_conf:
+                    logger.error("Please reconnect by going to config web page")
                 else:
-                    self.is_good = False
-                    if self.args.web_conf:
-                        logger.error("Please reconnect by going to config web page")
-                    else:
-                        logger.error("Connection need to be updated, Please redo authentication process.")
+                    logger.error("Connection need to be updated, Please redo authentication process.")
             if self.args.refresh:
                 self.myp.info_refresh_rate = self.args.refresh * 60
                 if self.is_good:

@@ -22,6 +22,7 @@ from psa_car_controller.web import figures
 from psa_car_controller.web.app import dash_app
 from psa_car_controller.psacc.repository.db import Database
 from psa_car_controller.web.tools.utils import diff_dashtable, unix_time_millis, get_marks_from_start_end, create_card
+from psa_car_controller.web.view.config_oauth import get_oauth_config_layout
 from psa_car_controller.web.view.config_views import log_layout, config_layout
 
 # pylint: disable=invalid-name
@@ -75,6 +76,8 @@ def display_page(pathname, search):
         page = config_layout()
     elif pathname == "/config_login":
         page = config_layout("login")
+    elif pathname == "/config_connect":
+        page = get_oauth_config_layout(query_params["url"])
     elif pathname == "/log":
         page = log_layout()
     elif not APP.is_good:

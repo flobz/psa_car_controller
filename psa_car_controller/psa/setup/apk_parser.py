@@ -1,4 +1,5 @@
 import json
+import logging
 import os
 
 from androguard.core.bytecodes.apk import APK
@@ -7,6 +8,8 @@ from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.serialization import pkcs12
 
 from psa_car_controller.psa.constants import BRAND
+
+logging.getLogger("androguard").setLevel(logging.ERROR)
 
 
 class ApkParser:

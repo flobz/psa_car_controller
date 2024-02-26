@@ -266,17 +266,19 @@ class Otp:
     def get_otp_code(self):
         self.mode = Otp.OTP_MODE
         otp_code = None
-        if self.activation_start():
-            res = self.activation_finalyze()
-            if res != Otp.NOK:
-                if res == Otp.OTP_TWICE:
-                    self.mode = Otp.OTP_MODE
-                    self.activation_start()
-                    self.activation_finalyze()
-                otp_code = self._get_otp_code()
-                logger.debug("otp code: %s", otp_code)
-        if otp_code is None:
-            raise ConfigException("Can't get otp code")
+        try:
+            if self.activation_start():
+                res = self.activation_finalyze()
+                if res != Otp.NOK:
+                    if res == Otp.OTP_TWICE:
+                        self.mode = Otp.OTP_MODE
+                        self.activation_start()
+                        assert self.activation_finalyze() == Otp.OK
+                    otp_code = self._get_otp_code()
+                    assert otp_code is not None
+                    logger.debug("otp code: %s", otp_code)
+        except AssertionError as e:
+            raise ConfigException("Can't get otp code") from e
         return otp_code
 
     def __getstate__(self):

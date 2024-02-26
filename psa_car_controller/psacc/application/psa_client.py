@@ -31,20 +31,22 @@ logger = CustomLogger.getLogger(__name__)
 
 
 class PSAClient:
-    def connect(self, user, password):
-        self.manager.init_with_user_credentials_realm(user, password, self.realm)
+    def connect(self, code: str):
+        self.manager.connect_with_code(code)
 
     # pylint: disable=too-many-arguments
     def __init__(self, refresh_token, client_id, client_secret, remote_refresh_token, customer_id, realm, country_code,
-                 proxies=None, weather_api=None, abrp=None, co2_signal_api=None):
+                 brand=None, proxies=None, weather_api=None, abrp=None, co2_signal_api=None):
         self.realm = realm
-        self.service_information = ServiceInformation(AUTHORIZE_SERVICE,
+        self.service_information = ServiceInformation(AUTHORIZE_SERVICE[self.realm],
                                                       realm_info[self.realm]['oauth_url'],
                                                       client_id,
                                                       client_secret,
                                                       SCOPE, True)
         self.client_id = client_id
-        self.manager = OpenIdCredentialManager(self.service_information)
+        self.country_code = country_code
+        self.manager = OpenIdCredentialManager.create(self.service_information,
+                                                      realm_info[self.realm]["scheme"], self.country_code)
         self.api_config = Oauth2PSACCApiConfig()
         self.api_config.set_refresh_callback(self.manager.refresh_token_now)
         self.manager.refresh_token = refresh_token
@@ -59,7 +61,7 @@ class PSAClient:
         self.remote_token_last_update = None
         self._record_enabled = False
         self.weather_api = weather_api
-        self.country_code = country_code
+        self.brand = brand
         self.info_callback = []
         self.info_refresh_rate = 120
         if abrp is None:

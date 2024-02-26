@@ -1,4 +1,9 @@
 import logging
+import hashlib
+import secrets
+import base64
+from typing import Tuple
+
 from http import HTTPStatus
 from typing import Optional
 
@@ -13,17 +18,43 @@ from psa_car_controller.psa.connected_car_api.rest import ApiException
 logger = logging.getLogger(__name__)
 
 
+def generate_sha256_pkce(length: int) -> Tuple[str, str]:
+    if not (43 <= length <= 128):
+        raise ValueError("Invalid length: %d" % length)
+    verifier = secrets.token_urlsafe(length)
+    encoded = base64.urlsafe_b64encode(hashlib.sha256(verifier.encode('ascii')).digest())
+    challenge = encoded.decode('ascii')[:-1]
+    return verifier, challenge
+
+
 class OpenIdCredentialManager(CredentialManager):
+    @staticmethod
+    def create(service_information: ServiceInformation, scheme: str, country_code: str,
+               proxies: Optional[dict] = None):
+        manager = OpenIdCredentialManager(service_information, proxies)
+        manager.redirect_uri = scheme + "://oauth2redirect/" + country_code.lower()
+        return manager
+
     def __init__(self, service_information: ServiceInformation, proxies: Optional[dict] = None):
         super().__init__(service_information, proxies)
         self.refresh_callbacks = []
+        self.code_verifier = None
+        self.redirect_uri = None
 
     def _grant_password_request_realm(self, login: str, password: str, realm: str) -> dict:
         return {"grant_type": 'password', "username": login, "scope": ' '.join(self.service_information.scopes),
                 "password": password, "realm": realm}
 
-    def init_with_user_credentials_realm(self, login: str, password: str, realm: str):
-        self._token_request(self._grant_password_request_realm(login, password, realm), True)
+    def generate_redirect_url(self):
+        self.code_verifier, code_challenge = generate_sha256_pkce(64)
+        return self.generate_authorize_url(self.redirect_uri, secrets.token_urlsafe(16),
+                                           code_challenge=code_challenge, code_challenge_method="S256")
+
+    def connect_with_code(self, code: str):
+        assert len(code) == 36, "Invalid code length"
+        self._token_request({"grant_type": 'authorization_code', "code": code,
+                             "redirect_uri": self.redirect_uri, "code_verifier": self.code_verifier},
+                            False)
 
     @staticmethod
     def _is_token_expired(response: Response) -> bool:

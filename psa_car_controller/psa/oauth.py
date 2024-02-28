@@ -7,7 +7,7 @@ from typing import Tuple
 from http import HTTPStatus
 from typing import Optional
 
-from oauth2_client.credentials_manager import CredentialManager, ServiceInformation, OAuthError
+from oauth2_client.credentials_manager import CredentialManager, ServiceInformation
 from requests import Response, RequestException
 
 from psa_car_controller.common.utils import rate_limit
@@ -18,45 +18,43 @@ from psa_car_controller.psa.connected_car_api.rest import ApiException
 logger = logging.getLogger(__name__)
 
 
+def generate_sha256_pkce(length: int) -> Tuple[str, str]:
+    if not (43 <= length <= 128):
+        raise ValueError("Invalid length: %d" % length)
+    verifier = secrets.token_urlsafe(length)
+    encoded = base64.urlsafe_b64encode(hashlib.sha256(verifier.encode('ascii')).digest())
+    challenge = encoded.decode('ascii')[:-1]
+    return verifier, challenge
+
+
 class OpenIdCredentialManager(CredentialManager):
+    @staticmethod
+    def create(service_information: ServiceInformation, scheme: str, country_code: str,
+               proxies: Optional[dict] = None):
+        manager = OpenIdCredentialManager(service_information, proxies)
+        manager.redirect_uri = scheme + "://oauth2redirect/" + country_code.lower()
+        return manager
+
     def __init__(self, service_information: ServiceInformation, proxies: Optional[dict] = None):
         super().__init__(service_information, proxies)
         self.refresh_callbacks = []
+        self.code_verifier = None
+        self.redirect_uri = None
 
     def _grant_password_request_realm(self, login: str, password: str, realm: str) -> dict:
         return {"grant_type": 'password', "username": login, "scope": ' '.join(self.service_information.scopes),
                 "password": password, "realm": realm}
 
-    def generate_sha256_pkce(self, length: int) -> Tuple[str, str]:
-        if not (43 <= length <= 128):
-            raise ValueError("Invalid length: %d" % length)
-        verifier = secrets.token_urlsafe(length)
-        encoded = base64.urlsafe_b64encode(hashlib.sha256(verifier.encode('ascii')).digest())
-        challenge = encoded.decode('ascii')[:-1]
-        return verifier, challenge
+    def generate_redirect_url(self):
+        self.code_verifier, code_challenge = generate_sha256_pkce(64)
+        return self.generate_authorize_url(self.redirect_uri, secrets.token_urlsafe(16),
+                                           code_challenge=code_challenge, code_challenge_method="S256")
 
-    def init_with_oauth2_redirect(self, scheme: str, country_code: str):
-        ret = ""
-        while True:
-            redir_uri = scheme + "://oauth2redirect/" + country_code.lower()
-            code_verifier, code_challenge = self.generate_sha256_pkce(64)
-            url = self.generate_authorize_url(redir_uri, secrets.token_urlsafe(16),
-                                              code_challenge=code_challenge, code_challenge_method="S256")
-
-            logger.info("Now login to this URL in a browser: %s", url)
-
-            try:
-                ret = input("\nCopy+paste the resulting mymXX-code (in F12 > Network, "
-                            "when you hit the final OK button, 36 chars, UUID format): ")
-                logger.info("Try getting a token with code %s", ret)
-                assert len(ret) == 36, "Invalid code length"
-                self._token_request({"grant_type": 'authorization_code', "code": ret,
-                                     "redirect_uri": redir_uri, "code_verifier": code_verifier}, False)
-            except (OAuthError, AssertionError):
-                logger.exception("Failed to get a token")
-                if input("Retry ? yes/NO") == "yes":
-                    continue
-            break
+    def connect_with_code(self, code: str):
+        assert len(code) == 36, "Invalid code length"
+        self._token_request({"grant_type": 'authorization_code', "code": code,
+                             "redirect_uri": self.redirect_uri, "code_verifier": self.code_verifier},
+                            False)
 
     @staticmethod
     def _is_token_expired(response: Response) -> bool:

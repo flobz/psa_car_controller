@@ -17,6 +17,13 @@
   battery_power: 46
   fuel_capacity: 0
   abrp_name: Citroen;e-Berlingo;2022+ (alpha)
+  reg: VR7EZZKXZM.*
+  max_elec_consumption: 70
+- !ElecModel
+  name: e-berlingo 2022+
+  battery_power: 46
+  fuel_capacity: 0
+  abrp_name: Citroen;e-Berlingo;2022+ (alpha)
   reg: VR7EZZKXZN.*
   max_elec_consumption: 70
 - !ElecModel
@@ -31,7 +38,7 @@
   battery_power: 46
   fuel_capacity: 0
   abrp_name: peugeot:e208:20:50
-  reg: VR3UHZKX.*
+  reg: VR3UHZK[WX].*
   max_elec_consumption: 70
 - !ElecModel
   name: e-2008
@@ -279,6 +286,14 @@
   max_elec_consumption: 70
   max_fuel_consumption: 30
 - !CarModel
+  name: 508 BlueHDI 130
+  battery_power: 0
+  fuel_capacity: 55
+  abrp_name:
+  reg: VR3FBYHZ.*
+  max_elec_consumption: 0
+  max_fuel_consumption: 30
+- !CarModel
   name: Grandland X Hybrid
   battery_power: 13.2
   fuel_capacity: 43
@@ -349,6 +364,14 @@
   abrp_name:
   reg: VF73ABHZMJ.*
   max_elec_consumption: 70
+  max_fuel_consumption: 30
+- !CarModel
+  name: C4 2021
+  battery_power: 0
+  fuel_capacity: 50
+  abrp_name:
+  reg: VR7BAHNSAM.*
+  max_elec_consumption: 0
   max_fuel_consumption: 30
 - !ElecModel
   name: Combo-e Cargo
@@ -525,3 +548,10 @@
   reg: VF3M45GFUL.*
   max_elec_consumption: 70
   max_fuel_consumption: 30
+- !CarModel
+  name: C4 Shine 2023
+  battery_power: 0
+  fuel_capacity: 50
+  abrp_name:
+  reg: VR7BAHNSBP.*
+  

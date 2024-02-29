@@ -8,6 +8,11 @@ from psa_car_controller.psacc.application.car_controller import PSACarController
 from psa_car_controller.psacc.repository.db import Database
 from psa_car_controller.web.app import app
 
+from psa_car_controller.psacc.repository.trips import Trips
+
+from psa_car_controller.psacc.application.charging import Charging
+from psa_car_controller.psacc.model.charge import Charge
+
 import json
 
 from psa_car_controller.web.tools.utils import convert_to_number_if_number_else_return_str
@@ -181,6 +186,27 @@ def settings_section(section: str):
         APP.config.write_config()
     return json_response(config_section.json())
 
+@app.route('/get_vehicletrips')
+def get_trips():
+    try:
+        car = APP.myp.vehicles_list[0]
+        trips_by_vin = Trips.get_trips(Cars([car]))
+        trips = trips_by_vin[car.vin]
+        trips_as_dict = trips.get_trips_as_dict()
+        return FlaskResponse(json.dumps(trips_as_dict, default=str), mimetype='application/json')
+    except (IndexError, TypeError):
+        logger.debug("Failed to get trips, there is probably not enough data yet:", exc_info=True)
+        return FlaskResponse(json.dumps([]), mimetype='application/json')
+
+
+@app.route('/get_vehiclechargings')
+def get_chargings():
+    try:
+        chargings = Charging.get_chargings()
+        return FlaskResponse (json.dumps(chargings, default=str), mimetype='application/json')
+    except (IndexError, TypeError):
+        logger.debug("Failed to get chargings, there is probably not enough data yet:", exc_info=True)
+        return FlaskResponse(json.dumps([]), mimetype='application/json')
 
 @app.route('/settings')
 def settings():

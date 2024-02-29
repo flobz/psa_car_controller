@@ -60,3 +60,11 @@
 15. Get battery SOH
 
    http://localhost:5000/battery/soh/YOURVIN
+
+16. Get the vehicle charging sessions
+   
+   http://localhost:5000/get_vehiclechargings
+
+17. Get the vehicle trips:
+   
+   http://localhost:5000/get_vehicletrips

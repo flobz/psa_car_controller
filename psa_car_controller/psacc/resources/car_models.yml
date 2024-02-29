@@ -52,7 +52,7 @@
   name: e2008 Facelift 2023+
   battery_power: 50
   fuel_capacity: 0
-  abrp_name:
+  abrp_name: peugeot:e2008:23:54
   reg: VR3UKZKW.*
   max_elec_consumption: 70
   max_fuel_consumption: 0

@@ -8,10 +8,10 @@ from psa_car_controller.psacc.application.car_controller import PSACarController
 from psa_car_controller.psacc.repository.db import Database
 from psa_car_controller.web.app import app
 
+from psa_car_controller.psacc.model.car import Cars, Car
 from psa_car_controller.psacc.repository.trips import Trips
 
 from psa_car_controller.psacc.application.charging import Charging
-from psa_car_controller.psacc.model.charge import Charge
 
 import json
 

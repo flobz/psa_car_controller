@@ -67,7 +67,9 @@ class ChargeControl:
             wakeup_timeout = self.wakeup_timeout
         if (datetime.utcnow().replace(tzinfo=pytz.UTC) - last_update).total_seconds() > 60 * wakeup_timeout:
             try:
-                self.psacc.remote_client.wakeup(self.vin)
+                pass
+    #fre42: commented out since psa cloud does not update the "updated_at" field
+   #             self.psacc.remote_client.wakeup(self.vin)
             except RateLimitException:
                 logger.exception("force_update:")
 

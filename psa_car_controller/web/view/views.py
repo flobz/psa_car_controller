@@ -77,7 +77,7 @@ def display_page(pathname, search):
     elif pathname == "/config_login":
         page = config_layout("login")
     elif pathname == "/config_connect":
-        page = get_oauth_config_layout(query_params["url"])
+        page = get_oauth_config_layout(query_params["url"][0])
     elif pathname == "/log":
         page = log_layout()
     elif not APP.is_good:

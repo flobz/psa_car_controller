@@ -527,6 +527,12 @@
   abrp_name:
   reg: VF7SCHMZ6F.*
 - !CarModel
+  name: Vauxhall Corsa (2020)
+  battery_power: 0
+  fuel_capacity: 44
+  abrp_name:
+  reg: VXKUPHNEKM.*
+- !CarModel
   name: C5 Aircross Hybrid E Series
   battery_power: 13.2
   fuel_capacity: 53

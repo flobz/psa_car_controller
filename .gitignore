@@ -152,3 +152,4 @@ certs/
 *.log.*
 
 .vscode/
+psa-car-controller-fre.tgz

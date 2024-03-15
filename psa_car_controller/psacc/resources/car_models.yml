@@ -566,3 +566,11 @@
   fuel_capacity: 50
   abrp_name:
   reg: VR7BAHNSBP.*
+- !CarModel
+  name: C5 Aircross Hybrid 2024
+  battery_power: 13.2
+  fuel_capacity: 43
+  abrp_name:
+  reg: VR7A4DGL.*
+  max_elec_consumption: 70
+  max_fuel_consumption: 30

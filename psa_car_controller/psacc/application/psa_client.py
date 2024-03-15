@@ -83,7 +83,7 @@ class PSAClient:
         return realm_info[self.realm]['app_name']
 
     def api(self) -> VehiclesApi:
-        self.api_config.access_token = self.manager.acceschs_token
+        self.api_config.access_token = self.manager.access_token
         api_instance = VehiclesApi(OauthAPIClient(self.api_config))
         return api_instance
 

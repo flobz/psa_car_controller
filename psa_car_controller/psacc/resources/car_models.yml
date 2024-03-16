@@ -1,4 +1,12 @@
 - !ElecModel
+  name: e-Expert
+  battery_power: 46
+  fuel_capacity: 0
+  abrp_name: 
+  reg: VF3V1ZKXZM.*
+  max_elec_consumption: 70
+  max_fuel_consumption: 30
+- !ElecModel
   name: Vivaro-e panel van L1
   battery_power: 68
   fuel_capacity: 0

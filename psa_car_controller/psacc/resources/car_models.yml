@@ -476,6 +476,14 @@
   max_elec_consumption: 70
   max_fuel_consumption: 30
 - !CarModel
+  name: New 308 SW PureTech 130 EAT8
+  battery_power: 0
+  fuel_capacity: 52
+  abrp_name:
+  reg: VR3FRHNSTP.*
+  max_elec_consumption: 70
+  max_fuel_consumption: 30
+- !CarModel
   name: 5008 II 1.5 HDI GT-Line
   battery_power: 0
   fuel_capacity: 56

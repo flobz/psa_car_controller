@@ -577,6 +577,18 @@
   max_elec_consumption: 70
   max_fuel_consumption: 30
 - !CarModel
+  name: 508 (R8) 2.0 HDI
+  battery_power: 0
+  fuel_capacity: 55
+  abrp_name:
+  reg: VR3FHEHYRK.*
+- !CarModel
+  name: Citroen C3 Flair (2019)
+  battery_power: 0
+  fuel_capacity: 45
+  abrp_name:
+  reg: VF7SXHMRPK.*
+- !CarModel
   name: C3 Saint james edition
   battery_power: 0
   fuel_capacity: 42

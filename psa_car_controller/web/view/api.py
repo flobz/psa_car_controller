@@ -186,27 +186,27 @@ def settings_section(section: str):
         APP.config.write_config()
     return json_response(config_section.json())
 
-@app.route('/get_vehicletrips')
+@app.route('/vehicles/trips')
 def get_trips():
     try:
         car = APP.myp.vehicles_list[0]
         trips_by_vin = Trips.get_trips(Cars([car]))
         trips = trips_by_vin[car.vin]
         trips_as_dict = trips.get_trips_as_dict()
-        return FlaskResponse(json.dumps(trips_as_dict, default=str), mimetype='application/json')
+        return jsonify(trips_as_dict)
     except (IndexError, TypeError):
         logger.debug("Failed to get trips, there is probably not enough data yet:", exc_info=True)
-        return FlaskResponse(json.dumps([]), mimetype='application/json')
+        return jsonify([])
 
 
-@app.route('/get_vehiclechargings')
+@app.route('/vehicles/chargings')
 def get_chargings():
     try:
         chargings = Charging.get_chargings()
-        return FlaskResponse (json.dumps(chargings, default=str), mimetype='application/json')
+        return jsonify(chargings)
     except (IndexError, TypeError):
         logger.debug("Failed to get chargings, there is probably not enough data yet:", exc_info=True)
-        return FlaskResponse(json.dumps([]), mimetype='application/json')
+        return jsonify([])
 
 @app.route('/settings')
 def settings():

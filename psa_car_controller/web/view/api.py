@@ -186,6 +186,7 @@ def settings_section(section: str):
         APP.config.write_config()
     return json_response(config_section.json())
 
+
 @app.route('/vehicles/trips')
 def get_trips():
     try:
@@ -207,6 +208,7 @@ def get_chargings():
     except (IndexError, TypeError):
         logger.debug("Failed to get chargings, there is probably not enough data yet:", exc_info=True)
         return jsonify([])
+
 
 @app.route('/settings')
 def settings():

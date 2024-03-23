@@ -63,8 +63,8 @@
 
 16. Get the vehicle charging sessions
    
-   http://localhost:5000/get_vehiclechargings
+   http://localhost:5000/vehicles/chargings
 
 17. Get the vehicle trips:
    
-   http://localhost:5000/get_vehicletrips
+   http://localhost:5000/vehicles/trips

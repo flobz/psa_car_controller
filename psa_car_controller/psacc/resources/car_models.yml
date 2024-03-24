@@ -404,7 +404,7 @@
   reg: VXKF3DGXTP.*
   max_elec_consumption: 70
   max_fuel_consumption: 30
-  - !CarModel
+- !CarModel
   name: Astra L ST Hybrid
   battery_power: 12.4
   fuel_capacity: 42

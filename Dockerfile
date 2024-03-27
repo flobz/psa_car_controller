@@ -2,12 +2,14 @@ ARG PYTHON_DEP='python3 python3-wheel python3-typing-extensions python3-pandas p
 ARG DEBIAN_FRONTEND=noninteractive
 FROM debian:bullseye-slim AS builder
 ARG PSACC_VERSION="0.0.0"
+WORKDIR /psa_car_controller
 ARG PYTHON_DEP
 RUN  BUILD_DEP='python3-pip python3-setuptools python3-dev libblas-dev liblapack-dev gfortran libffi-dev libxml2-dev libxslt1-dev make automake gcc g++ subversion' ; \
      apt-get update && apt-get install -y --no-install-recommends $BUILD_DEP $PYTHON_DEP;
-RUN pip3 install --upgrade pip && mkdir psa-car-controller && pip3 install poetry
-COPY ./dist/psa_car_controller-${PSACC_VERSION}-py3-none-any.whl .
-RUN pip3 install --no-cache-dir psa_car_controller-${PSACC_VERSION}-py3-none-any.whl
+RUN pip3 install --upgrade pip build poetry
+ADD ./ .
+RUN python3 -m build
+RUN pip3 install --no-cache-dir dist/psa_car_controller-${PSACC_VERSION}-py3-none-any.whl
 EXPOSE 5000
 
 FROM debian:bullseye-slim

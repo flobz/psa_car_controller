@@ -405,7 +405,7 @@
   max_fuel_consumption: 30
 - !ElecModel
   name: Astra L Electric GS
-  battery_poewr: 51
+  battery_power: 51
   fuel_capacity: 0
   abrp_name: opel:astrae:23:54
   reg: VXKFMZKWZP.*

@@ -18,7 +18,7 @@ COPY --from=builder /var/lib/apt /var/lib/apt
 COPY --from=builder /var/cache/apt/ /var/cache/apt/
 COPY --from=builder /usr/local/lib /usr/local/lib
 COPY --from=builder /usr/local/bin/  /usr/local/bin/
-RUN  apt-get install -y --no-install-recommends $PYTHON_DEP && \
+RUN  apt-get install -y --no-install-recommends $PYTHON_DEP curl && \
      apt-get clean ; \
      rm -rf /var/lib/apt/lists/*
 COPY /docker_files/init.sh /init.sh

@@ -50,12 +50,12 @@ def replace_key_underscore_by_space(obj, key):
     return new_obj
 
 
-class Hour:
-    reg = re.compile(r"([0-9]{1,2})h([0-9]{1,2})")
+HOUR_REGEX = re.compile(r"([0-9]{1,2})h([0-9]{1,2})")
 
-    def __init__(self, hours: int, minutes: int):
-        self.hours = hours
-        self.minutes = minutes
+
+class Hour(str):
+    hours: int
+    minutes: int
 
     @classmethod
     def __get_validators__(cls):
@@ -68,10 +68,13 @@ class Hour:
         if len(v) == 0:
             return None
 
-        m = Hour.reg.fullmatch(v.lower())
+        m = HOUR_REGEX.fullmatch(v.lower())
         if not m:
             raise ValueError('invalid hour format')
-        return cls(int(m.group(1)), int(m.group(2)))
+        hour = cls(v)
+        hour.hours = int(m.group(1))
+        hour.minutes = int(m.group(2))
+        return hour
 
     def __repr__(self):
         return '{}h{}'.format(self.hours, self.minutes)
@@ -188,6 +191,8 @@ class ConfigRepository(BaseModel):
     def write_config(self, name=None):
         if name is None:
             name = CONFIG_FILENAME
+        self.validate(self)
+        ConfigRepository(**self.dict())  # validate property before write
         config_to_write = ConfigRepository.get_default_config()
         self.config_dto_to_config_file(config_to_write)
         self._write(name, config_to_write)

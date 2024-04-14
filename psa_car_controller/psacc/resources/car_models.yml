@@ -1,4 +1,11 @@
 - !ElecModel
+  name: Vivaro-e panel van L3
+  battery_power: 68
+  fuel_capacity: 0
+  abrp_name: opel:vivaroe:22:75:l
+  reg: VXEV1ZKXZM.*
+  max_elec_consumption: 70
+- !ElecModel
   name: Vivaro-e panel van L1
   battery_power: 68
   fuel_capacity: 0
@@ -396,6 +403,13 @@
   reg: VXKF3DGYTP.*
   max_elec_consumption: 70
   max_fuel_consumption: 30
+- !ElecModel
+  name: Astra L Electric GS
+  battery_power: 51
+  fuel_capacity: 0
+  abrp_name: opel:astrae:23:54
+  reg: VXKFMZKWZP.*
+  max_elec_consumption: 70
 - !CarModel
   name: Astra L Hybrid
   battery_power: 12.4
@@ -473,6 +487,14 @@
   fuel_capacity: 56
   abrp_name:
   reg: VR3FRHNSTN.*
+  max_elec_consumption: 70
+  max_fuel_consumption: 30
+- !CarModel
+  name: New 308 SW PureTech 130 EAT8
+  battery_power: 0
+  fuel_capacity: 52
+  abrp_name:
+  reg: VR3FRHNSTP.*
   max_elec_consumption: 70
   max_fuel_consumption: 30
 - !CarModel
@@ -555,6 +577,18 @@
   max_elec_consumption: 70
   max_fuel_consumption: 30
 - !CarModel
+  name: 508 (R8) 2.0 HDI
+  battery_power: 0
+  fuel_capacity: 55
+  abrp_name:
+  reg: VR3FHEHYRK.*
+- !CarModel
+  name: Citroen C3 Flair (2019)
+  battery_power: 0
+  fuel_capacity: 45
+  abrp_name:
+  reg: VF7SXHMRPK.*
+- !CarModel
   name: C3 Saint james edition
   battery_power: 0
   fuel_capacity: 42
@@ -566,3 +600,11 @@
   fuel_capacity: 50
   abrp_name:
   reg: VR7BAHNSBP.*
+- !CarModel
+  name: C5 Aircross Hybrid 2024
+  battery_power: 13.2
+  fuel_capacity: 43
+  abrp_name:
+  reg: VR7A4DGL.*
+  max_elec_consumption: 70
+  max_fuel_consumption: 30

@@ -111,6 +111,14 @@
   max_elec_consumption: 70
   max_fuel_consumption: 0
 - !ElecModel
+  name: Zafira-e Life L3
+  battery_power: 46.3
+  fuel_capacity: 0
+  abrp_name: peugeot:etraveler:21:50:opel
+  reg: VXEVZZKXZM.*
+  max_elec_consumption: 70
+  max_fuel_consumption: 0
+- !ElecModel
   name: E-C4
   battery_power: 46
   fuel_capacity: 0

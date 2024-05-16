@@ -164,8 +164,9 @@ class RemoteClient:
                 logger.debug("refresh_remote_token: %s", data)
                 if "access_token" in data:
                     self.remoteCredentials.access_token = data["access_token"]
-                    self.remoteCredentials.refresh_token = data["refresh_token"]
                     bad_remote_token = False
+                    if "refresh_token" in data:
+                        self.remoteCredentials.refresh_token = data["refresh_token"]
                 else:
                     logger.error("can't refresh_remote_token: %s\n Create a new one", data)
                     bad_remote_token = True

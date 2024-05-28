@@ -119,6 +119,14 @@
   max_elec_consumption: 70
   max_fuel_consumption: 0
 - !ElecModel
+  name: E-C4 54 kWh
+  battery_power: 50.8
+  fuel_capacity: 0
+  abrp_name: citroen:ec4:23:54
+  reg: VR7BCZKW.*
+  max_elec_consumption: 70
+  max_fuel_consumption: 0
+- !ElecModel
   name: e-Rifter
   battery_power: 45
   fuel_capacity: 0

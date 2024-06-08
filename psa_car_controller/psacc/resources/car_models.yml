@@ -403,6 +403,14 @@
   reg: VXKF3DGYTP.*
   max_elec_consumption: 70
   max_fuel_consumption: 30
+- !CarModel
+  name: Astra L Sports Tourer GSe Hybrid
+  battery_power: 12.4
+  fuel_capacity: 42
+  abrp_name:
+  reg: VXKF4DGYTN.*
+  max_elec_consumption: 70
+  max_fuel_consumption: 30
 - !ElecModel
   name: Astra L Electric GS
   battery_power: 51
@@ -416,6 +424,14 @@
   fuel_capacity: 42
   abrp_name:
   reg: VXKF3DGXTP.*
+  max_elec_consumption: 70
+  max_fuel_consumption: 30
+- !CarModel
+  name: Astra L ST Hybrid
+  battery_power: 12.4
+  fuel_capacity: 42
+  abrp_name:
+  reg: VXKF4DGXTP.*
   max_elec_consumption: 70
   max_fuel_consumption: 30
 - !CarModel
@@ -440,6 +456,14 @@
   fuel_capacity: 56
   abrp_name:
   reg: VR3FPHNSTN.*
+  max_elec_consumption: 70
+  max_fuel_consumption: 30   
+- !CarModel
+  name: New 308
+  battery_power: 0
+  fuel_capacity: 52
+  abrp_name:
+  reg: VR3FPHNSLN.*
   max_elec_consumption: 70
   max_fuel_consumption: 30   
 - !CarModel
@@ -608,3 +632,9 @@
   reg: VR7A4DGL.*
   max_elec_consumption: 70
   max_fuel_consumption: 30
+- !CarModel
+  name: 408 GT 1.3 Petrol
+  battery_power: 0
+  fuel_capacity: 52
+  abrp_name:
+  reg: VR3FPHNSTP.*

@@ -213,6 +213,14 @@
   max_elec_consumption: 70
   max_fuel_consumption: 30
 - !CarModel
+  name: 2008 II Hybrid
+  battery_power: 6.3
+  fuel_capacity: 45
+  abrp_name:
+  reg: VR3USHPY.*
+  max_elec_consumption: 70
+  max_fuel_consumption: 30
+- !CarModel
   name: SUV 5008 II
   battery_power: 0
   fuel_capacity: 56

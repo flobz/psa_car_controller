@@ -119,6 +119,14 @@
   max_elec_consumption: 70
   max_fuel_consumption: 0
 - !ElecModel
+  name: E-C4x
+  battery_power: 46
+  fuel_capacity: 0
+  abrp_name: citroen:ec4x:23:50
+  reg: VR7BFZKX.*
+  max_elec_consumption: 70
+  max_fuel_consumption: 0
+- !ElecModel
   name: e-Rifter
   battery_power: 45
   fuel_capacity: 0

@@ -638,3 +638,10 @@
   fuel_capacity: 52
   abrp_name:
   reg: VR3FPHNSTP.*
+- !CarModel
+  name: E-308 SW
+  battery_power: 50.8
+  fuel_capacity: 0
+  abrp_name: peugeot:e308:23:54
+  reg: VR3FNZKW4R.*
+  max_elec_consumption: 70

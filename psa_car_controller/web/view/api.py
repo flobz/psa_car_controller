@@ -190,7 +190,7 @@ def settings_section(section: str):
 @app.route('/vehicles/trips')
 def get_trips():
     try:
-    homeassistant = request.args.get('homeassistant', None)
+        homeassistant = request.args.get('homeassistant', None)
         car = APP.myp.vehicles_list[0]
         trips_by_vin = Trips.get_trips(Cars([car]))
         trips = trips_by_vin[car.vin]
@@ -210,11 +210,18 @@ def get_trips():
 @app.route('/vehicles/chargings')
 def get_chargings():
     try:
+        homeassistant = request.args.get('homeassistant', None)
         chargings = Charging.get_chargings()
-        return jsonify(chargings)
+        if homeassistant is not None:
+            return jsonify({"chargings": chargings})
+        else:
+            return jsonify(chargings)
     except (IndexError, TypeError):
         logger.debug("Failed to get chargings, there is probably not enough data yet:", exc_info=True)
-        return jsonify([])
+        if homeassistant is not None:
+            return jsonify({"chargings": [])
+        else:
+            return jsonify([])
 
 
 @app.route('/settings')

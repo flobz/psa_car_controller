@@ -202,7 +202,7 @@ def get_trips():
     except (IndexError, TypeError):
         logger.debug("Failed to get trips, there is probably not enough data yet:", exc_info=True)
         if homeassistant is not None:
-            return jsonify({"trips": [])
+            return jsonify({"trips": []})
         else:
             return jsonify([])
 
@@ -219,7 +219,7 @@ def get_chargings():
     except (IndexError, TypeError):
         logger.debug("Failed to get chargings, there is probably not enough data yet:", exc_info=True)
         if homeassistant is not None:
-            return jsonify({"chargings": [])
+            return jsonify({"chargings": []})
         else:
             return jsonify([])
 

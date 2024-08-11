@@ -638,3 +638,9 @@
   fuel_capacity: 52
   abrp_name:
   reg: VR3FPHNSTP.*
+- !CarModel
+  name: 408 GT Hybrid 225
+  battery_power: 12.4
+  fuel_capacity: 40
+  abrp_name:
+  reg: VR3F3DGY2R.*

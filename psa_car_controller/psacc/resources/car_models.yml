@@ -503,7 +503,7 @@
   battery_power: 50
   fuel_capacity: 0
   abrp_name: opel:comboe:22:50
-  reg: W0VEZZKXZN.*
+  reg: W0VEZZKXZ.*
   max_elec_consumption: 45 
 - !CarModel
   name: New 308 SW

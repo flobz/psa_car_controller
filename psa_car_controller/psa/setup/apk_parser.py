@@ -2,7 +2,7 @@ import json
 import logging
 import os
 
-from androguard.core.bytecodes.apk import APK
+from androguard.core.apk import APK
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.serialization import pkcs12

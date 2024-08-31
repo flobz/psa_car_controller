@@ -1,6 +1,6 @@
 import json
-import logging
 import os
+import sys
 
 from androguard.core.apk import APK
 from cryptography.hazmat.backends import default_backend
@@ -9,7 +9,9 @@ from cryptography.hazmat.primitives.serialization import pkcs12
 
 from psa_car_controller.psa.constants import BRAND
 
-logging.getLogger("androguard").setLevel(logging.ERROR)
+from androguard.core.axml import logger as androguard_logger
+androguard_logger.remove()
+androguard_logger.add(sys.stderr, level="ERROR")
 
 
 class ApkParser:

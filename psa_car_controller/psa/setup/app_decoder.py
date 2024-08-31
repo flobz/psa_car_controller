@@ -14,16 +14,16 @@ from psa_car_controller.psacc.application.charge_control import ChargeControl, C
 
 logger = logging.getLogger(__name__)
 
-APP_VERSION = "1.48.1"
-GITHUB_USER = "HansUweRempler" #"flobz" temporary replaced till flobz updated his own
+APP_VERSION = "1.48.2"
+GITHUB_USER = "flobz"
 GITHUB_REPO = "psa_apk"
 TIMEOUT_IN_S = 10
 app = PSACarController()
 
 
 def get_content_from_apk(filename: str, country_code: str) -> ApkParser:
+    urlretrieve_from_github(GITHUB_USER, GITHUB_REPO, "", filename)
     apk_parser = ApkParser(filename, country_code)
-    urlretrieve_from_github(GITHUB_USER, GITHUB_REPO, "", apk_parser.filename)
     apk_parser.retrieve_content_from_apk()
     return apk_parser
 

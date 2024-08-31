@@ -1,5 +1,7 @@
+import bz2
 import logging
 from hashlib import sha1
+from os import path
 
 import requests
 
@@ -36,9 +38,10 @@ def github_file_need_to_be_downloaded(user, repo, directory, filename):
 
 
 def urlretrieve_from_github(user, repo, directory, filename, branch="main"):
-    if github_file_need_to_be_downloaded(user, repo, directory, filename):
-        with open(filename, 'wb') as f:
-            url = "https://github.com/{}/{}/raw/{}/{}{}".format(user, repo, branch, directory, filename)
+    archive_name = filename + ".bz2"
+    if github_file_need_to_be_downloaded(user, repo, directory, archive_name) or not path.isfile(filename):
+        with open(archive_name, 'wb') as f:
+            url = "https://github.com/{}/{}/raw/{}/{}{}".format(user, repo, branch, directory, archive_name)
             r = requests.get(url,
                              headers={
                                  "Accept": "application/vnd.github.VERSION.raw"
@@ -50,3 +53,5 @@ def urlretrieve_from_github(user, repo, directory, filename, branch="main"):
             r.raise_for_status()
             for chunk in r.iter_content(1024):
                 f.write(chunk)
+        with bz2.BZ2File(archive_name, 'rb') as file, open(filename, 'wb') as out_file:
+            out_file.write(file.read())

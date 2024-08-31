@@ -5,7 +5,6 @@ import unittest
 from datetime import datetime, timedelta
 from unittest.mock import MagicMock, patch
 
-import pytz
 import reverse_geocode
 from dateutil.tz import tzutc
 from greenery.lego import parse, charclass
@@ -337,10 +336,10 @@ class TestUnit(unittest.TestCase):
         except FileNotFoundError:
             pass
         assert get_content_from_apk(filename, "FR")
-        assert github_file_need_to_be_downloaded(GITHUB_USER, GITHUB_REPO, "", filename) is False
+        assert github_file_need_to_be_downloaded(GITHUB_USER, GITHUB_REPO, "", filename + ".bz2") is False
 
     def test_file_need_to_be_updated(self):
-        filename = "mypeugeot.apk"
+        filename = "mypeugeot.apk.bz2"
         with open(filename, "w") as f:
             f.write(" ")
         assert github_file_need_to_be_downloaded(GITHUB_USER, GITHUB_REPO, "", filename) is True

@@ -14,11 +14,12 @@ class CustomLogger(logging.Logger):
              exc_info=None,
              extra=None,
              stack_info=False,
+             stacklevel=1,
              exc_info_debug=False,
              **kwargs):
         if exc_info_debug and self.isEnabledFor(logging.DEBUG):
             exc_info = True
-        super()._log(level, msg, args, exc_info, extra, stack_info)
+        super()._log(level, msg, args, exc_info, extra, stack_info, stacklevel)
 
     def __new_style_log(self, level, msg, args, exc_info=None, extra=None,  # pylint: disable=too-many-arguments
                         stack_info=False, **kwargs):

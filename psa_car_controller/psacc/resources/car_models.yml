@@ -88,6 +88,14 @@
   max_elec_consumption: 70
   max_fuel_consumption: 0
 - !ElecModel
+  name: corsa-e
+  battery_power: 46.3
+  fuel_capacity: 0
+  abrp_name: vauxhall:corsae:20:50
+  reg: VXKUHZKX0R
+  max_elec_consumption: 70
+  max_fuel_consumption: 0
+- !ElecModel
   name: DS3 Crossback e-tense
   battery_power: 46
   fuel_capacity: 0

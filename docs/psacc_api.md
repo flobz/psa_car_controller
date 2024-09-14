@@ -41,25 +41,25 @@
 
 11. Flash the lights (Duration is always roughly 10 seconds, regardless of set duration)
 
-   http://localhost:5000/lights/YOURVIN/duration
+    http://localhost:5000/lights/YOURVIN/duration
 
 12. Lock (1)/Unlock (0) the doors
    
-   http://localhost:5000/lock_door/YOURVIN/1 or 0
+    http://localhost:5000/lock_door/YOURVIN/1 or 0
 
 13. Get config
 
-   http://localhost:5000/settings
+    http://localhost:5000/settings
 
 14. Change config parameter in config.ini (you need to restart the app after)
 
-   http://localhost:5000/settings/electricity_config?night_price=0.2
+    http://localhost:5000/settings/electricity_config?night_price=0.2
 
-   http://localhost:5000/settings/general?currency=%C2%A3
+    http://localhost:5000/settings/general?currency=%C2%A3
 
 15. Get battery SOH
 
-   http://localhost:5000/battery/soh/YOURVIN
+    http://localhost:5000/battery/soh/YOURVIN
 
 16. Get the vehicle charging sessions
    

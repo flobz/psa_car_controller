@@ -119,6 +119,14 @@
   max_elec_consumption: 70
   max_fuel_consumption: 0
 - !ElecModel
+  name: E-C4X
+  battery_power: 54
+  fuel_capacity: 0
+  abrp_name: citroen:ec4x:24:54
+  reg: VR7BFZKW1R.*
+  max_elec_consumption: 70
+  max_fuel_consumption: 0
+- !ElecModel
   name: e-Rifter
   battery_power: 45
   fuel_capacity: 0
@@ -592,6 +600,14 @@
   reg: VR3ECYHYCK.*
   max_elec_consumption: 0
   max_fuel_consumption: 30
+- !ElecModel
+  name: e3008
+  battery_power: 73
+  fuel_capacity: 0
+  abrp_name: peugeot:e3008:24:77
+  reg: VR3KCZKZ5R.*
+  max_elec_consumption: 77
+  max_fuel_consumption: 0
 - !CarModel
   name: SUV 3008 II 2021
   battery_power: 0

@@ -68,3 +68,7 @@
 17. Get the vehicle trips:
    
    http://localhost:5000/vehicles/trips
+
+18. Get vehicle doors state
+
+   http://localhost:5000/get_doors_state/YOURVIN

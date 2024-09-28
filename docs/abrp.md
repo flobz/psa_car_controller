@@ -17,9 +17,9 @@ ABRP will optimize your itinerary with these parameters.
 ![](abrp.png)
 3. Click on Generic Link
 4. Click on copy
-5. Open the following url after replacing YOURTOKEN by the value you just copied:
+5. Open the following url after replacing YOURTOKEN by the value you just copied and including the VIN from your car:
 ```
-http://localhost:5000/abrp?token=YOURTOKEN
+http://localhost:5000/abrp?token=YOURTOKEN&vin=YOURVIN
 ```
 7. Go to [http://localhost:5000](http://localhost:5000)
 8. Click on control tab

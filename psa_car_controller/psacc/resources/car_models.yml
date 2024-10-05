@@ -661,3 +661,15 @@
   fuel_capacity: 52
   abrp_name:
   reg: VR3FPHNSTP.*
+- !CarModel
+  name: Opel Corsa F
+  battery_power: 0
+  fuel_capacity: 44
+  abrp_name:
+  reg: VXKUPHNSSP.*
+- !CarModel
+  name: Opel Astra L
+  battery_power: 0
+  fuel_capacity: 52
+  abrp_name:
+  reg: VXKFPHNS2R.*

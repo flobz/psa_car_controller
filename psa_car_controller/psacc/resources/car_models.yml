@@ -661,3 +661,11 @@
   fuel_capacity: 52
   abrp_name:
   reg: VR3FPHNSTP.*
+  - !ElecModel
+  name: corsa f electric
+  battery_power: 48.1
+  fuel_capacity: 0
+  abrp_name: opel:corsae:23:54
+  reg: VXKUHZKWZP.*
+  max_elec_consumption: 70
+  max_fuel_consumption: 0

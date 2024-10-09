@@ -661,3 +661,10 @@
   fuel_capacity: 52
   abrp_name:
   reg: VR3FPHNSTP.*
+- !CarModel
+  name: Spacetourer 2021
+  battery_power: 0
+  fuel_capacity: 70
+  abrp_name:
+  reg: VF7VEAHXKL.*
+  

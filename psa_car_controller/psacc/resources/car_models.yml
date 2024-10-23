@@ -661,3 +661,9 @@
   fuel_capacity: 52
   abrp_name:
   reg: VR3FPHNSTP.*
+- !CarModel
+  name: C4 Hybrid 2024
+  battery_power: 0.89
+  fuel_capacity: 50
+  abrp_name:
+  reg: VR7BAHPY0R.*

@@ -84,7 +84,8 @@ class RemoteClient:
             elif msg.topic.startswith(MQTT_EVENT_TOPIC):
                 charge_info = data["charging_state"]
                 programs = data["precond_state"].get("programs", None)
-                self.doors_state[data["vin"]] = data["doors_state"]
+                if "door_state" in data:
+                    self.doors_state[data["vin"]] = data["doors_state"]
                 if programs:
                     self.precond_programs[data["vin"]] = data["precond_state"]["programs"]
             self._fix_not_updated_api(charge_info, data["vin"])

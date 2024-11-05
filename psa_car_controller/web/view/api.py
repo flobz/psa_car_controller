@@ -51,6 +51,9 @@ def get_vehicle_info(vin):
     )
     return response
 
+/**
+    @return {'doors_opening_state': number[]; 'doors_locking_state': number}
+*/
 @app.route('/get_doors_state/<string:vin>')
 def get_doors_state(vin):
     doors_state = APP.myp.remote_client.doors_state.get(vin)

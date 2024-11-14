@@ -648,6 +648,12 @@
   abrp_name:
   reg: VR7BAHNSBP.*
 - !CarModel
+  name: Vanser 2021
+  battery_power: 0
+  fuel_capacity: 70
+  abrp_name:
+  reg: VF7VEAHXKL.*
+- !CarModel
   name: C5 Aircross Hybrid 2024
   battery_power: 13.2
   fuel_capacity: 43

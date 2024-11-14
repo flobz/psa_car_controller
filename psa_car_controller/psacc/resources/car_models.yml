@@ -648,7 +648,7 @@
   abrp_name:
   reg: VR7BAHNSBP.*
 - !CarModel
-  name: Vanser 2021
+  name: Spacetourer Vanster 2021
   battery_power: 0
   fuel_capacity: 70
   abrp_name:

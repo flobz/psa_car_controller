@@ -40,6 +40,7 @@ class CustomSqliteConnection(sqlite3.Connection):
     def __init__(self, *args, **kwargs):  # real signature unknown
         super().__init__(*args, **kwargs)
         self.callbacks = []
+        self.execute("PRAGMA journal_mode=WAL;")
 
     def execute_callbacks(self):
         for callback in self.callbacks:

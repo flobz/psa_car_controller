@@ -568,6 +568,14 @@
   reg: VR7ARHNSSP.*
   max_elec_consumption: 70
   max_fuel_consumption: 30
+- !CarModel
+  name: C5 Aircross 2020
+  battery_power: 0
+  fuel_capacity: 45
+  abrp_name:
+  reg: VR7ARHNSSM.*
+  max_elec_consumption: 70
+  max_fuel_consumption: 30
 - !ElecModel
   name: Combo-e Cargo XL
   battery_power: 50

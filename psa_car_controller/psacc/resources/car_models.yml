@@ -661,3 +661,9 @@
   fuel_capacity: 52
   abrp_name:
   reg: VR3FPHNSTP.*
+- !CarModel
+  name: Spacetourer 2022 2.0 BlueHDi 140
+  battery_power: 0
+  fuel_capacity: 55
+  abrp_name:
+  reg: VF7VEEHTMN.*

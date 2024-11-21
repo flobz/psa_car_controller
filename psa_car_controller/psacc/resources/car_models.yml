@@ -1,4 +1,11 @@
 - !ElecModel
+  name: Citroen Ami
+  battery_power: 5.35
+  fuel_capacity: 0
+  abrp_name: citroen:ami:20:5
+  reg: VR79AZ2CAR.*
+  max_elec_consumption: 6
+- !ElecModel
   name: e-3008
   battery_power: 73
   fuel_capacity: 0

@@ -661,3 +661,9 @@
   fuel_capacity: 52
   abrp_name:
   reg: VR3FPHNSTP.*
+- !CarModel
+  name: 3008 1.6L SUV 2020
+  battery_power: 0
+  fuel_capacity: 53
+  abrp_name:
+  reg: VF3MCYHZRL.*

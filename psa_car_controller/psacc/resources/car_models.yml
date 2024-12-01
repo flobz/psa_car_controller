@@ -661,3 +661,8 @@
   fuel_capacity: 52
   abrp_name:
   reg: VR3FPHNSTP.*
+- !CarModel
+  name: New Astra Sports Tourer Electric
+  battery_power: 50.8
+  abrp_name: opel:astrae:22:54:tour
+  reg: VXKFNZKW5R.*

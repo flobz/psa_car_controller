@@ -661,3 +661,10 @@
   fuel_capacity: 52
   abrp_name:
   reg: VR3FPHNSTP.*
+- !ElecModel
+  name: E-Partner 50 kWh (2024)
+  battery_power: 50
+  fuel_capacity: 0
+  abrp_name: Peugeot;Partner (alpha)
+  reg: VR3ENZKUXR.*
+  max_elec_consumption: 50

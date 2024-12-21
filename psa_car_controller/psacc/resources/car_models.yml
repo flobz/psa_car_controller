@@ -661,3 +661,10 @@
   fuel_capacity: 52
   abrp_name:
   reg: VR3FPHNSTP.*
+- !ElecModel
+  name: eC4X
+  battery_power: 46
+  fuel_capacity: 0
+  abrp_name: citroen:ec4x:23:50
+  reg: VR7BFZKXCN.*
+  max_elec_consumption: 50

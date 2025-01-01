@@ -661,3 +661,9 @@
   fuel_capacity: 52
   abrp_name:
   reg: VR3FPHNSTP.*
+- !CarModel
+  name: E-308 Allure
+  battery_power: 50
+  fuel_capacity: 0
+  abrp_name: peugeot:e308:23:54
+  reg: VR3FMZKW3R.*

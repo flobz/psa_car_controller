@@ -661,3 +661,9 @@
   fuel_capacity: 52
   abrp_name:
   reg: VR3FPHNSTP.*
+- !CarModel
+  name: Citroën C4 Piccasso
+  battery_power: 0
+  fuel_capacity: 55
+  abrp_name:
+  reg: VF73AHNSPJ.*

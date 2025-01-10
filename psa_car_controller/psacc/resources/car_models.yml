@@ -661,3 +661,10 @@
   fuel_capacity: 52
   abrp_name:
   reg: VR3FPHNSTP.*
+- !ElecModel
+  name: Astra L Electric GS
+  battery_power: 51
+  fuel_capacity: 0
+  abrp_name: opel:astrae:22:54 tour
+  reg: VXKFMZKWZP.*
+  max_elec_consumption: 70

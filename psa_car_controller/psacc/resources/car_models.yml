@@ -33,6 +33,15 @@
   abrp_name: Citroen;e-Berlingo;2022+ (alpha)
   reg: VR7EZZKXZM.*
   max_elec_consumption: 70
+
+- !ElecModel
+  name: e-berlingo 2021+
+  battery_power: 50
+  fuel_capacity: 0
+  abrp_name: Citroen;e-Berlingo;2021+ (alpha)
+  reg: VR7EAZKXZM.*
+  max_elec_consumption: 70
+  
 - !ElecModel
   name: e-berlingo 2022+
   battery_power: 46
@@ -40,6 +49,7 @@
   abrp_name: Citroen;e-Berlingo;2022+ (alpha)
   reg: VR7EZZKXZN.*
   max_elec_consumption: 70
+  
 - !ElecModel
   name: e-jumpy
   battery_power: 68

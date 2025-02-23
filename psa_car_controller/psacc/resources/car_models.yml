@@ -661,3 +661,11 @@
   fuel_capacity: 52
   abrp_name:
   reg: VR3FPHNSTP.*
+- !CarModel
+  name: SUV 3008 Hybrid4 300-2
+  battery_power: 13.2
+  fuel_capacity: 43
+  abrp_name:
+  reg: VF3M45GBUP.*
+  max_elec_consumption: 70
+  max_fuel_consumption: 30

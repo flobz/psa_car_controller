@@ -1,4 +1,11 @@
 - !ElecModel
+  name: e-3008
+  battery_power: 73
+  fuel_capacity: 0
+  abrp_name: peugeot:e3008:24:77
+  reg: VR3KCZKZ7R.*
+  max_elec_consumption: 70
+- !ElecModel
   name: Vivaro-e panel van L3
   battery_power: 68
   fuel_capacity: 0
@@ -119,11 +126,19 @@
   max_elec_consumption: 70
   max_fuel_consumption: 0
 - !ElecModel
-  name: E-C4x
+  name: E-C4X
   battery_power: 46
   fuel_capacity: 0
   abrp_name: citroen:ec4x:23:50
   reg: VR7BFZKX.*
+  max_elec_consumption: 70
+  max_fuel_consumption: 0
+- !ElecModel
+  name: E-C4X
+  battery_power: 54
+  fuel_capacity: 0
+  abrp_name: citroen:ec4x:24:54
+  reg: VR7BFZKW1R.*
   max_elec_consumption: 70
   max_fuel_consumption: 0
 - !ElecModel
@@ -600,6 +615,14 @@
   reg: VR3ECYHYCK.*
   max_elec_consumption: 0
   max_fuel_consumption: 30
+- !ElecModel
+  name: e3008
+  battery_power: 73
+  fuel_capacity: 0
+  abrp_name: peugeot:e3008:24:77
+  reg: VR3KCZKZ5R.*
+  max_elec_consumption: 77
+  max_fuel_consumption: 0
 - !CarModel
   name: SUV 3008 II 2021
   battery_power: 0

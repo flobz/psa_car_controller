@@ -661,3 +661,9 @@
   fuel_capacity: 52
   abrp_name:
   reg: VR3FPHNSTP.*
+- !CarModel
+  name: 408 GT 1.2 Petrol
+  battery_power: 0
+  fuel_capacity: 52
+  abrp_name:
+  reg: VR3FPHPY0S.*

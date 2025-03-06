@@ -661,3 +661,9 @@
   fuel_capacity: 52
   abrp_name:
   reg: VR3FPHNSTP.*
+- !CarModel
+  name: Ampera-e
+  battery_power: 0
+  fuel_capacity: 58
+  abrp_name: opel:ampera-e:17:66
+  reg: W0VF86E00H.*

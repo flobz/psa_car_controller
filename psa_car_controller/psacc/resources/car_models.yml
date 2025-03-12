@@ -521,6 +521,12 @@
   reg: W0VEZZKXZN.*
   max_elec_consumption: 45 
 - !CarModel
+  name: 308 SW 1.6 BlueHDi Active
+  battery_power: 0
+  fuel_capacity: 53
+  abrp_name:
+  reg: VF3LCBHZHH.*
+- !CarModel
   name: New 308 SW
   battery_power: 0
   fuel_capacity: 56

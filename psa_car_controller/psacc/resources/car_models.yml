@@ -1,4 +1,11 @@
 - !ElecModel
+  name: E-5008 73 kWh
+  battery_power: 73
+  fuel_capacity: 0
+  abrp_name: peugeot:e5008:25:77
+  reg: VR3KCZKZ0S.*
+  max_elec_consumption: 70
+- !ElecModel
   name: e-3008
   battery_power: 73
   fuel_capacity: 0

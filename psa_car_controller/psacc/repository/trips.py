@@ -58,9 +58,10 @@ class Trips(list):
         for vin in vehicles:
             trips = Trips()
             vin = vin[0]
-            res = conn.execute('SELECT Timestamp, VIN, longitude, latitude, mileage, level, moving, temperature, '
-                               'level_fuel, altitude FROM position WHERE VIN=? '
-                               'AND mileage IS NOT NULL ORDER BY Timestamp', (vin,)).fetchall()
+            res = conn.execute(
+                'SELECT Timestamp, VIN, longitude, latitude, mileage, level, moving, temperature, '
+                'level_fuel, altitude FROM position WHERE VIN=? '
+                'AND mileage IS NOT NULL AND Timestamp IS NOT NULL ORDER BY Timestamp', (vin,)).fetchall()
             if len(res) > 1:
                 car = vehicles_list.get_car_by_vin(vin)
                 assert car is not None

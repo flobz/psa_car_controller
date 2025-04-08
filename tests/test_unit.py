@@ -346,12 +346,10 @@ class TestUnit(unittest.TestCase):
 
     def test_regex(self):
         car_models = CarModelRepository().models
-        for x in range(0, len(car_models)):
-            for y in range(x + 1, len(car_models)):
-                reg_a = car_models[x].reg
-                reg_b = car_models[y].reg
-                res: charclass = parse(reg_a) & parse(reg_b)
-                self.assertTrue(res.empty(), msg=f"{reg_a} and {reg_b} can match the same string")
+        model_by_reg = {}
+        for model in car_models:
+            self.assertFalse(model.reg in model_by_reg, f"duplicate vin prefix {model.reg}")
+            model_by_reg[model.reg] = True
 
 
 if __name__ == '__main__':

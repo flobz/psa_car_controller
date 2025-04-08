@@ -1,4 +1,6 @@
 # PSACC API
+These links will work only if PSACC is on your computer, if it isn't please replace localhost by the ip of PSACC server.
+
 1. Get the car state
     
    http://localhost:5000/get_vehicleinfo/YOURVIN

@@ -12,7 +12,11 @@ and click on edit then copy cut an already existent model in the list and edit a
 - Fuel capacity in liter
 - abrp ref : [find it here](https://api.iternio.com/1/tlm/get_carmodels_list?api_key=32b2162f-9599-4647-8139-66e9f9528370)
 
-Finally, click on propose change. 
+Finally, set `Commit message` to :
+```
+feat: add model <replace by model name here>
+```
+And click on propose change. 
 
 ### 2. Error during activation {'newversion': '2.0.0', 'newversionurl': 'http://m.inwebo.com/', 'err': 'NOK:FORBIDDEN'}
 Your psa account is locked because you makes 20 sms activation. To unlock do this : 

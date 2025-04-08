@@ -724,7 +724,7 @@
   abrp_name: opel:astrae:22:54:tour
   reg: VXKFNZKWXR 
   max_elec_consumption: 70
-- !CarModel
+- !ElecModel
   name: E-308 Allure
   battery_power: 50
   fuel_capacity: 0

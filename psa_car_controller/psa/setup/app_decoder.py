@@ -123,9 +123,10 @@ class InitialSetup:
                 "No vehicle in your account is compatible with this API, you vehicle is probably too old...")
 
         for vehicle in self.user_info["vehicles"]:
-            car = self.psacc.vehicles_list.get_car_by_vin(vehicle["vin"])
-            if car is not None and "short_label" in vehicle and car.label == "unknown":
-                car.label = vehicle["short_label"].split(" ")[-1]  # remove new, nouvelle, neu word....
+            if vin := vehicle.get("vin"):
+                car = self.psacc.vehicles_list.get_car_by_vin(vin)
+                if car is not None and "short_label" in vehicle and car.label == "unknown":
+                    car.label = vehicle["short_label"].split(" ")[-1]  # remove new, nouvelle, neu word....
         self.psacc.vehicles_list.save_cars()
 
         logger.info("\nYour vehicles: %s", res)

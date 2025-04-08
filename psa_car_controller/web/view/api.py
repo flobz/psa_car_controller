@@ -195,7 +195,7 @@ def get_trips():
         trips = trips_by_vin[car.vin]
         trips_as_dict = trips.get_trips_as_dict()
         return jsonify(trips_as_dict)
-    except (IndexError, TypeError):
+    except (IndexError, TypeError, KeyError):
         logger.debug("Failed to get trips, there is probably not enough data yet:", exc_info=True)
         return jsonify([])
 

@@ -55,8 +55,13 @@ class InitialSetup:
                                 )},
                                 timeout=TIMEOUT_IN_S
                                 )
-
-            self.token = res.json()["accessToken"]
+            data = res.json()
+            if token := data.get("accessToken"):
+                self.token = token
+            else:
+                raise ConnectionError("No access token in response:", res.text)
+        except ConnectionError as e:
+            raise e
         except Exception as ex:
             msg = traceback.format_exc() + f"\nHOST_BRANDID : {apk_parser.host_brandid_prod} " \
                                            f"sitecode: {apk_parser.site_code}"

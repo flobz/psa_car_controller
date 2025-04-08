@@ -59,7 +59,7 @@ class Charging:
 
     @staticmethod
     def record_charging(car: Car, charging_status, charge_date: datetime, level, latitude,
-                        # pylint: disable=too-many-locals
+                        # pylint: disable=too-many-locals,too-many-positional-arguments
                         longitude, country_code, charging_mode, charging_rate, autonomy, mileage):
         conn = Database.get_db()
         charge_date = charge_date.replace(microsecond=0)

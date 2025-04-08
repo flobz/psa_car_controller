@@ -13,7 +13,7 @@ class ChargingMode(Enum):
 
 
 class Charge:
-    # pylint: disable=too-many-arguments
+    # pylint: disable=too-many-arguments,too-many-positional-arguments
     def __init__(self, start_at: datetime, stop_at: datetime = None, vin=None, start_level=None, end_level=None,
                  co2=None, kw=None, price=None, charging_mode=None, mileage=None):
         assert isinstance(start_at, datetime)

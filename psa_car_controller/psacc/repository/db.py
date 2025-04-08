@@ -246,7 +246,7 @@ class Database:
         conn.close()
         return geo_dumps(feature_collection, sort_keys=True)
 
-    # pylint: disable=too-many-arguments
+    # pylint: disable=too-many-arguments,too-many-positional-arguments
     @staticmethod
     def record_position(weather_api, vin, mileage, latitude, longitude, altitude, date, level, level_fuel, moving):
         if mileage == 0:  # fix a bug of the api

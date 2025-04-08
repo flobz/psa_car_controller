@@ -34,7 +34,7 @@ class PSAClient:
     def connect(self, code: str):
         self.manager.connect_with_code(code)
 
-    # pylint: disable=too-many-arguments
+    # pylint: disable=too-many-arguments,too-many-positional-arguments
     def __init__(self, refresh_token, client_id, client_secret, remote_refresh_token, customer_id, realm, country_code,
                  brand=None, proxies=None, weather_api=None, abrp=None, co2_signal_api=None):
         self.realm = realm

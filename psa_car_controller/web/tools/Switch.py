@@ -9,7 +9,7 @@ from psa_car_controller.web.tools.Button import Button
 
 class Switch(Button):
     def __init__(self, role, element_id, label, fct, value, prevent_initial_call=True):
-        # pylint: disable=too-many-arguments
+        # pylint: disable=too-many-arguments,too-many-positional-arguments
         self.value = value
         super().__init__(role, element_id, label, fct, prevent_initial_call)
 

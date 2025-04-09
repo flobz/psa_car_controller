@@ -5,7 +5,9 @@ ARG PSACC_VERSION="0.0.0"
 ARG PYTHON_DEP
 RUN  BUILD_DEP='python3-pip python3-setuptools python3-dev libblas-dev liblapack-dev gfortran libffi-dev libxml2-dev libxslt1-dev make automake gcc g++ subversion ninja-build' ; \
      apt-get update && apt-get install -y --no-install-recommends $BUILD_DEP $PYTHON_DEP;
-RUN pip3 install --upgrade pip && mkdir psa-car-controller && pip3 install poetry
+RUN pip3 install --upgrade pip wheel setuptools && \
+    mkdir psa-car-controller && \
+    pip3 install poetry
 COPY ./dist/psa_car_controller-${PSACC_VERSION}-py3-none-any.whl .
 RUN pip3 install --no-cache-dir psa_car_controller-${PSACC_VERSION}-py3-none-any.whl
 EXPOSE 5000

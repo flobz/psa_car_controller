@@ -18,13 +18,20 @@ feat: add model <replace by model name here>
 ```
 And click on propose change. 
 
-### 2. Error during activation {'newversion': '2.0.0', 'newversionurl': 'http://m.inwebo.com/', 'err': 'NOK:FORBIDDEN'}
-Your psa account is locked because you makes 20 sms activation. To unlock do this : 
+### 2. Error during activation 
+
+If you have one of the following error : 
+```shell
+Error during activation: {'newversion': None, 'newversionurl': None, 'err': 'NOK:MAXNBTOOLS'}
+Error during activation {'newversion': '2.0.0', 'newversionurl': 'http://m.inwebo.com/', 'err': 'NOK:FORBIDDEN'}
+```
+
+Your PSA account is locked because you make 20 sms activation. To unlock do this : 
 1. Install on a smartphone mypeugeot, myopel etc, depending on your car brand
 2. If the application is already installed uninstall and reinstall
 3. You should be asked to give your credentials
 4. Connect and test remote control, it should say that you need to reset your account
-6. If the remote control work on your smartphone it will work with psa_car_controller
+5. If the remote control work on your smartphone it will work with psa_car_controller
 
 ### 3. No data in dashboard
 The app record your position and other information if "-r" argument is provided and if data are fetched.

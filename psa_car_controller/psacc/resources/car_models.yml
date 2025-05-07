@@ -725,6 +725,13 @@
   reg: VXKFNZKWXR 
   max_elec_consumption: 70
 - !ElecModel
+  name: Astra L Sports Tourer Electric GS
+  battery_power: 50.8
+  fuel_capacity: 0
+  abrp_name: opel:astrae:22:54:tour
+  reg: VXKFNZKW3S 
+  max_elec_consumption: 70
+- !ElecModel
   name: E-308 Allure
   battery_power: 50
   fuel_capacity: 0

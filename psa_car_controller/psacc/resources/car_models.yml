@@ -772,6 +772,12 @@
   abrp_name:
   reg: VXKFPHNS2R 
 - !CarModel
+  name: Vauxhall Astra Design Turbo
+  battery_power: 0
+  fuel_capacity: 52
+  abrp_name:
+  reg: VXKFPHNPLN
+- !CarModel
   name: 408 GT Hybrid 225
   battery_power: 12.4
   fuel_capacity: 40

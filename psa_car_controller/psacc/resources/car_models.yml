@@ -520,6 +520,14 @@
   max_elec_consumption: 70
   max_fuel_consumption: 30
 - !CarModel
+  name: SUV 3008 Hybrid4 300
+  battery_power: 13.2
+  fuel_capacity: 43
+  abrp_name:
+  reg: VF3M45GBUN
+  max_elec_consumption: 70
+  max_fuel_consumption: 30
+- !CarModel
   name: 508 PSE
   battery_power: 11.5
   fuel_capacity: 43

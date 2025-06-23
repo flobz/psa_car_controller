@@ -823,17 +823,67 @@
   reg: VR3F3DGY7 
   max_elec_consumption: 70
   max_fuel_consumption: 30
-- !ElecModel
-  name: Zafira-e Life L3
-  battery_power: 46.3
-  fuel_capacity: 0
-  abrp_name: peugeot:etraveler:21:50:opel
-  reg: VXEVZZKXZM 
-  max_elec_consumption: 70
-  max_fuel_consumption: 0
 - !CarModel
   name: Opel Corsa Facelift (2024)
   battery_power: 0
   fuel_capacity: 44
   abrp_name:
   reg: VXKUPHNEKR 
+- !CarModel
+  name: Vauxhall Astra Design Turbo
+  battery_power: 0
+  fuel_capacity: 52
+  abrp_name:
+  reg: VXKFPHNPLN
+- !ElecModel
+  name: Astra L Sports Tourer Electric GS
+  battery_power: 50.8
+  fuel_capacity: 0
+  abrp_name: opel:astrae:22:54:tour
+  reg: VXKFNZKW3S
+  max_elec_consumption: 70
+- !ElecModel
+  name: Vauxhall Corsa Electric
+  battery_power: 46
+  fuel_capacity: 0
+  abrp_name: vauxhall:corsae:20:50
+  reg: VXKUPHNEKP
+  max_elec_consumption: 70
+  max_fuel_consumption: 0
+- !CarModel
+  name: '208(2017-2019)'
+  battery_power: 0
+  fuel_capacity: 44
+  abrp_name:
+  reg: VF3CCHMRPJ.*
+  max_elec_consumption: 70
+  max_fuel_consumptipn: 30
+- !ElecModel
+  name: E-Partner 50 kWh (2024)
+  battery_power: 50
+  fuel_capacity: 0
+  abrp_name: Peugeot;Partner (alpha)
+  reg: VR3ENZKUXR.*
+  max_elec_consumption: 50
+- !CarModel
+  name: Spacetourer Vanster 2021
+  battery_power: 0
+  fuel_capacity: 70
+  abrp_name:
+  reg: VF7VEAHXKL.*
+- !ElecModel
+  name: e-5008 Single Motor 73 kWh
+  battery_power: 73
+  fuel_capacity: 0
+  abrp_name: peugeot:e5008:25:77
+  reg: VR3KCZKZ4R.*
+  max_elec_consumption: 70
+- !CarModel
+  name: 3008-III
+  battery_power: 0
+  fuel_capacity: 53
+  abrp_name:
+  reg: VR3KAHPY1RS.*
+  max_elec_consumption: 70
+  max_fuel_consumption: 30
+

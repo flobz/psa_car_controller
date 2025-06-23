@@ -344,12 +344,14 @@ class TestUnit(unittest.TestCase):
             f.write(" ")
         assert github_file_need_to_be_downloaded(GITHUB_USER, GITHUB_REPO, "", filename) is True
 
-    def test_regex(self):
+    def test_car_model_duplication(self):
         car_models = CarModelRepository().models
-        model_by_reg = {}
+        vins = []
         for model in car_models:
-            self.assertFalse(model.reg in model_by_reg, f"duplicate vin prefix {model.reg}")
-            model_by_reg[model.reg] = True
+            self.assertFalse(model.reg in vins, f"duplicate vin prefix {model.reg}")
+            for vin in vins:
+                self.assertFalse(vin in model.reg, f"duplicate vin with shorter prefix {vin}")
+            vins.append(model.reg)
 
 
 if __name__ == '__main__':

@@ -10,6 +10,7 @@ import requests
 from Cryptodome.Cipher import AES
 from Cryptodome.PublicKey import RSA
 from Cryptodome import Hash
+from Cryptodome.Hash import SHA256
 
 from . import oaep
 from .load import IWData

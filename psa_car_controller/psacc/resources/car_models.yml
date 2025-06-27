@@ -676,6 +676,13 @@
   abrp_name: peugeot:e5008:25:77
   reg: VR3KCZKZ0S 
   max_elec_consumption: 70
+- !ElecModel
+  name: E-5008 73 kWh GT
+  battery_power: 73
+  fuel_capacity: 0
+  abrp_name: peugeot:e5008:25:77
+  reg: VR3KCZKZ1R 
+  max_elec_consumption: 70
 - !CarModel
   name: 408 GT 1.2 Petrol
   battery_power: 0

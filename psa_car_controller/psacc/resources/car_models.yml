@@ -55,7 +55,6 @@
   reg: VR3UHZK 
   max_elec_consumption: 70
 - !ElecModel
-  # VR3UHZKW8R
   name: e-208 Facelift 2024+
   battery_power: 48
   fuel_capacity: 0

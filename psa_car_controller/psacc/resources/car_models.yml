@@ -55,6 +55,14 @@
   reg: VR3UHZK 
   max_elec_consumption: 70
 - !ElecModel
+  # VR3UHZKW8R
+  name: e-208 Facelift 2024+
+  battery_power: 48
+  fuel_capacity: 0
+  abrp_name: peugeot:e208:24:54
+  reg: VR3UHZKW8R
+  max_elec_consumption: 70
+- !ElecModel
   name: e-2008
   battery_power: 46
   fuel_capacity: 0

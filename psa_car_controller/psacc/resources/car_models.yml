@@ -87,11 +87,11 @@
   max_elec_consumption: 70
   max_fuel_consumption: 0
 - !ElecModel
-  name: corsa-e
+  name: Corsa-e
   battery_power: 46
   fuel_capacity: 0
   abrp_name: opel:corsae:20:50
-  reg: VXKUHZKX 
+  reg: VXKUHZKXZL
   max_elec_consumption: 70
   max_fuel_consumption: 0
 - !ElecModel

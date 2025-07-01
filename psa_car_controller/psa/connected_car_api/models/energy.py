@@ -32,6 +32,7 @@ class Energy(object):
     """
     swagger_types = {
         'updated_at': 'datetime',
+        'created_at': 'datetime',
         'autonomy': 'float',
         'battery': 'EnergyBattery',
         'charging': 'EnergyCharging',
@@ -42,7 +43,8 @@ class Energy(object):
     }
 
     attribute_map = {
-        'updated_at': 'createdAt',
+        'created_at': 'createdAt',
+        'updated_at': 'updatedAt',
         'autonomy': 'autonomy',
         'battery': 'battery',
         'charging': 'charging',

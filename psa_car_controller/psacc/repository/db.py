@@ -40,6 +40,7 @@ class CustomSqliteConnection(sqlite3.Connection):
     def __init__(self, *args, **kwargs):  # real signature unknown
         super().__init__(*args, **kwargs)
         self.callbacks = []
+        self.execute("PRAGMA journal_mode=WAL;")
 
     def execute_callbacks(self):
         for callback in self.callbacks:
@@ -246,7 +247,7 @@ class Database:
         conn.close()
         return geo_dumps(feature_collection, sort_keys=True)
 
-    # pylint: disable=too-many-arguments
+    # pylint: disable=too-many-arguments,too-many-positional-arguments
     @staticmethod
     def record_position(weather_api, vin, mileage, latitude, longitude, altitude, date, level, level_fuel, moving):
         if mileage == 0:  # fix a bug of the api

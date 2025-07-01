@@ -44,12 +44,13 @@ scipy = [{version = ">=1.9.2", python = ">=3.11"},
 ipython = "^7.0.0"
 
 [tool.poetry.dev-dependencies]
-prospector = "1.10.3"
+prospector = "1.12.1"
 pre-commit = "^2.17.0"
 coverage = "^6.3.2"
 deepdiff = "^5.7.0"
 greenery = "^3.3.5"
 autopep8 = "2.0.4"
+pylint = "3.3.6"
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]

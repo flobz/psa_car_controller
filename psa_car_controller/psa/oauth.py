@@ -94,7 +94,7 @@ class Oauth2PSACCApiConfig(connected_car_api.Configuration):
 
 
 class OauthAPIClient(ApiClient):
-    # pylint: disable=no-member,too-many-arguments
+    # pylint: disable=no-member,too-many-arguments,too-many-positional-arguments
     def call_api(self, resource_path, method,
                  path_params=None, query_params=None, header_params=None,
                  body=None, post_params=None, files=None,

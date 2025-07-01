@@ -51,7 +51,8 @@ def start_app(*args, **kwargs):
     run(config_flask(*args, **kwargs))
 
 
-def config_flask(title, base_path, debug: bool, host, port, reloader=False,  # pylint: disable=too-many-arguments
+def config_flask(title, base_path, debug: bool, host, port, reloader=False,
+                 # pylint: disable=too-many-arguments,too-many-positional-arguments
                  unminified=False, view="psa_car_controller.web.view.views"):
     global app, dash_app
     reload_view = app is not None

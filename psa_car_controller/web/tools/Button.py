@@ -9,7 +9,8 @@ RESPONSE = "-response"
 
 
 class Button:
-    def __init__(self, role, element_id, label, fct, prevent_initial_call=True):  # pylint: disable=too-many-arguments
+    # pylint: disable=too-many-arguments,too-many-positional-arguments
+    def __init__(self, role, element_id, label, fct, prevent_initial_call=True):
         self.role = role
         self._element_id = element_id
         self._button_id = "{}-{}".format(self.role, element_id)

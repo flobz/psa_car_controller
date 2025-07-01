@@ -13,7 +13,7 @@ from psa_car_controller.psa.connected_car_api.models.vehicle_odometer import Veh
 logger = logging.getLogger(__name__)
 
 
-# pylint: disable=too-many-arguments
+# pylint: disable=too-many-arguments,too-many-positional-arguments
 class CarStatus(Status):
     def __init__(self, embedded=None, links=None, battery=None, doors_state=None, energy=None, environment=None,
                  ignition=None, kinetic=None, last_position=None, preconditionning=None, privacy=None, safety=None,

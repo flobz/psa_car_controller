@@ -81,7 +81,7 @@ class PreconditioningAirConditioning(object):
         :param failure_cause: The failure_cause of this PreconditioningAirConditioning.  # noqa: E501
         :type: str
         """
-        allowed_values = ["Defect", "DoorOpened", "LowBattery", "LowFuelLevel", "TooManyUnusedProg"]  # noqa: E501
+        allowed_values = ["Defect", "DoorOpened", "LowBattery", "LowFuelLevel", "TooManyUnusedProg", "WindowsRoofOpened"]  # noqa: E501
         if failure_cause not in allowed_values:
             raise ValueError(
                 "Invalid value for `failure_cause` ({0}), must be one of {1}"  # noqa: E501

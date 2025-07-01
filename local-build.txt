@@ -1,0 +1,8 @@
+pip wheel -w dist .
+docker build --platform linux/arm/v8 -t fre42/psa-car-controller:v3.5.3.1 .
+docker save fre42/psa-car-controller:v3.5.1.1 -o .\psa-car-controller-fre.tgz
+
+Dann per MobaXterm hochladen auf den Pi
+
+Dort 
+docker image load -i psa-car-controller-fre.tgz

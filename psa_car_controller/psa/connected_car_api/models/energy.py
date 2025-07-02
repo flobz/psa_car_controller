@@ -54,10 +54,11 @@ class Energy(object):
         'type': 'type'
     }
 
-    def __init__(self, updated_at=None, autonomy=None, battery=None, charging=None, consumption=None, level=None, residual=None, type=None):  # noqa: E501
+    def __init__(self, created_at=None, updated_at=None, autonomy=None, battery=None, charging=None, consumption=None, level=None, residual=None, type=None):  # noqa: E501
         """Energy - a model defined in Swagger"""  # noqa: E501
 
         self._updated_at = None
+        self._created_at = None
         self._autonomy = None
         self._battery = None
         self._charging = None
@@ -69,6 +70,8 @@ class Energy(object):
 
         if updated_at is not None:
             self.updated_at = updated_at
+        if created_at is not None:
+            self.created_at = created_at
         if autonomy is not None:
             self.autonomy = autonomy
         if battery is not None:
@@ -83,6 +86,40 @@ class Energy(object):
             self.residual = residual
         if type is not None:
             self.type = type
+
+    @property
+    def created_at(self):
+        """Gets the creazed of this Energy.  # noqa: E501
+
+        Date when the resource has been created.  # noqa: E501
+
+        :return: The creation of this Energy.  # noqa: E501
+        :rtype: datetime
+        """
+        return self._created_at
+
+    @property
+    def created_at(self):
+        """Gets the created_at of this Energy.  # noqa: E501
+
+        Date when the resource has been created.  # noqa: E501
+
+        :return: The created_at of this Energy.  # noqa: E501
+        :rtype: datetime
+        """
+        return self._created_at
+
+    @created_at.setter
+    def created_at(self, created_at):
+        """Sets the created_at of this Energy.
+
+        Date when the resource has been created.  # noqa: E501
+
+        :param created_at: The created_at of this Energy.  # noqa: E501
+        :type: datetime
+        """
+
+        self._created_at = created_at
 
     @property
     def updated_at(self):

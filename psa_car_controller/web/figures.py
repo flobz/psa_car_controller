@@ -84,6 +84,7 @@ def get_figures(car: Car):
         },
         columns=[{'id': 'id', 'name': '#', 'type': 'numeric'},
                  {'id': 'start_at_str', 'name': 'start at', 'type': 'datetime'},
+                 {'id': 'end_at_str', 'name': 'end at', 'type': 'datetime'},
                  {'id': 'duration', 'name': 'duration', 'type': 'numeric',
                   'format': deepcopy(nb_format).symbol_suffix(" min").precision(0)},
                  {'id': 'speed_average', 'name': 'avg. speed', 'type': 'numeric',

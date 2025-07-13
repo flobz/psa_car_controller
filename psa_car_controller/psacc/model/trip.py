@@ -75,13 +75,20 @@ class Trip:
                                                                "average consumption fuel": self.consumption_fuel_km})
 
     def get_info(self):
-
-        res = {"consumption_km": self.consumption_km, "start_at": self.start_at,
-               "consumption_by_temp": self.get_temperature(), "positions": self.get_positions(),
-               "duration": self.duration * 60, "speed_average": self.speed_average, "distance": self.distance,
-               "mileage": self.mileage, "altitude_diff": self.altitude_diff, "id": self.id,
-               "consumption": self.consumption
-               }
+        res = {
+            "consumption_km": self.consumption_km,
+            "start_at": self.start_at,
+            "end_at": self.end_at,
+            "consumption_by_temp": self.get_temperature(),
+            "positions": self.get_positions(),
+            "duration": self.duration * 60,
+            "speed_average": self.speed_average,
+            "distance": self.distance,
+            "mileage": self.mileage,
+            "altitude_diff": self.altitude_diff,
+            "id": self.id,
+            "consumption": self.consumption,
+        }
         if self.car.has_battery():
             res["consumption_km"] = self.consumption_km
 

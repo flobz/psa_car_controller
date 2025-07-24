@@ -356,7 +356,8 @@ class Database:
 
     @staticmethod
     def get_all_charge_without_price(conn) -> List[Charge]:
-        res = conn.execute("SELECT * FROM battery WHERE price IS NULL").fetchall()
+        # Chargings that did not end yet can't have a price
+        res = conn.execute("SELECT * FROM battery WHERE price IS NULL AND stop_at IS NOT NULL").fetchall()
         charges = []
         for row in res:
             charges.append(Charge(**dict_key_to_lower_case(**row)))

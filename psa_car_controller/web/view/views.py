@@ -250,7 +250,7 @@ def serve_layout():
                 fig_filter.add_graph(dcc.Graph(id="consumption_graph_by_temp"), "consumption_by_temp",
                                      ["consumption_km"] * 2, figures.consumption_fig_by_temp)]
             maps = fig_filter.add_map(dcc.Graph(id="trips_map", style={"height": '90vh'}), "lat",
-                                      ["long", "start_at"], figures.trips_map)
+                                      ["long", "start_at_str"], figures.trips_map)
             fig_filter.add_table("trips", figures.table_fig)
             fig_filter.add_table("chargings", figures.battery_table)
             fig_filter.src = {"trips": trips.get_trips_as_dict(), "chargings": chargings}

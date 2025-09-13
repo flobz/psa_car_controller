@@ -39,7 +39,7 @@ ELECTRIC_CAR_STATUS = {
     "odometer": {"createdAt": None, "mileage": 3196.5}, "updatedAt": "2022-03-26T11:02:54Z"}
 ELECTRIC_CAR_STATUS_V2 = {
     "lastPosition": {"type": "Feature", "geometry": {"type": "Point", "coordinates": [-1.59008, 47.274, 30]},
-                     "properties": {"updatedAt": "2021-03-29T06:22:51Z", "type": "Acquire", "signalQuality": 9}},
+                     "properties": {"createdAt": "2021-03-29T06:22:51Z", "type": "Acquire", "signalQuality": 9}},
     "preconditionning": {"airConditioning": {"updatedAt": "2022-03-26T10:52:11Z", "status": "Disabled"}},
     "energy": [{"createdAt": "2021-09-14T20:39:06Z", "type": "Fuel", "level": 0},
                {"updatedAt": "2022-03-26T11:02:54Z", "type": "Electric", "level": 59, "autonomy": 122,

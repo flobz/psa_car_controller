@@ -178,9 +178,8 @@ def create_callback():  # noqa: MC0001
 def update_trips():
     global trips, chargings, cached_layout, min_date, max_date, min_millis, max_millis, step, marks
     logger.info("update_data")
-    conn = Database.get_db(update_callback=False)
+    conn = Database.get_db()
     Database.add_altitude_to_db(conn)
-    conn.close()
     min_date = None
     max_date = None
     if APP.is_good:

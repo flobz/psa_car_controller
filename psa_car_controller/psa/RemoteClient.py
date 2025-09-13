@@ -26,6 +26,10 @@ MQTT_EVENT_TOPIC = "psa/RemoteServices/events/MPHRTServices/"
 MQTT_TOKEN_TTL = 890
 
 
+class RemoteException(Exception):
+    pass
+
+
 class RemoteClient:
 
     def __init__(self, account_info: AccountInformation, vehicles_list: Cars, manager: OpenIdCredentialManager,
@@ -186,7 +190,7 @@ class RemoteClient:
                 self.remote_token_last_update = datetime.now()
                 self.mqtt_client.username_pw_set("IMA_OAUTH_ACCESS_TOKEN", self.remoteCredentials.access_token)
                 return True
-            except (RequestException, RateLimitException, KeyError, AttributeError):
+            except (RequestException, RateLimitException, KeyError, AttributeError, RemoteException):
                 logger.exception("Can't refresh remote token, please redo otp procedure")
                 return False
 
@@ -213,8 +217,11 @@ class RemoteClient:
                                 json={"grant_type": "password", "password": password},
                                 headers=self.headers)
         data = res.json()
-        self.remoteCredentials.access_token = data["access_token"]
-        self.remoteCredentials.refresh_token = data["refresh_token"]
+        try:
+            self.remoteCredentials.access_token = data["access_token"]
+            self.remoteCredentials.refresh_token = data["refresh_token"]
+        except KeyError as e:
+            raise RemoteException("get_remote_access_token: bad response" + str(data)) from e
         return res
 
     def horn(self, vin, count):

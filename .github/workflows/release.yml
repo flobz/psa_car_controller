@@ -34,6 +34,13 @@ jobs:
     needs: create_release
     name: Push Docker image to Docker Hub
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        platform:
+          - linux/amd64
+          - linux/arm64
+          - linux/arm/v7
     steps:
       - name: Prepare
         id: prep
@@ -52,7 +59,7 @@ jobs:
       - name: Set up QEMU
         uses: docker/setup-qemu-action@master
         with:
-          platforms: all
+          platforms: ${{ matrix.platform }}
       - name: Set up Docker Buildx
         id: buildx
         uses: docker/setup-buildx-action@master
@@ -75,7 +82,7 @@ jobs:
           context: .
           push: true
           tags: ${{ steps.prep.outputs.tags }}
-          platforms: linux/amd64,linux/arm64,linux/arm/v7
+          platforms: ${{ matrix.platform }}
       -
         name: Image digest
         run: echo ${{ steps.docker_build.outputs.digest }}

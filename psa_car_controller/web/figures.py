@@ -209,6 +209,7 @@ def get_battery_curve_fig(row: dict, car: Car):
     battery_curves_dict = list(map(lambda bc: bc.__dict__, battery_curves))
     fig = px.line(battery_curves_dict, x="level", y="speed")
     fig.update_layout(xaxis_title="Battery %", yaxis_title="Charging speed in kW")
+    conn.close()
     return html.Div(Graph(figure=fig))
 
 

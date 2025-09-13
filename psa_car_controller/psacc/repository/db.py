@@ -132,7 +132,7 @@ class Database:
     @staticmethod
     def check_db_access() -> bool:
         try:
-            Database.get_db()
+            Database.get_db().close()
             return True
         except sqlite3.OperationalError:
             logger.fatal("Can't access to db file check permission")
@@ -253,31 +253,42 @@ class Database:
         if mileage == 0:  # fix a bug of the api
             logger.error("The api return a wrong mileage for %s : %f", vin, mileage)
         else:
-            conn = Database.get_db()
-            if conn.execute("SELECT Timestamp from position where Timestamp=?", (date,)).fetchone() is None:
-                temp = get_temp(latitude, longitude, weather_api)
-                if level_fuel and level_fuel == 0:  # fix fuel level not provided when car is off
-                    try:
-                        level_fuel = conn.execute(
-                            "SELECT level_fuel FROM position WHERE level_fuel>0 AND VIN=? ORDER BY Timestamp DESC "
-                            "LIMIT 1",
-                            (vin,)).fetchone()[0]
-                        logger.info("level_fuel fixed with last real value %f for %s", level_fuel, vin)
-                    except TypeError:
-                        level_fuel = None
-                        logger.info("level_fuel unfixed for %s", vin)
+            try:
+                conn = Database.get_db()
+                if conn.execute("SELECT Timestamp from position where Timestamp=?", (date,)).fetchone() is None:
+                    temp = get_temp(latitude, longitude, weather_api)
+                    if level_fuel and level_fuel == 0:  # fix fuel level not provided when car is off
+                        try:
+                            level_fuel = conn.execute(
+                                "SELECT level_fuel FROM position WHERE level_fuel>0 AND VIN=? ORDER BY Timestamp DESC "
+                                "LIMIT 1",
+                                (vin,)).fetchone()[0]
+                            logger.info("level_fuel fixed with last real value %f for %s", level_fuel, vin)
+                        except TypeError:
+                            level_fuel = None
+                            logger.info("level_fuel unfixed for %s", vin)
 
-                conn.execute("INSERT INTO position(Timestamp,VIN,longitude,latitude,altitude,mileage,level,level_fuel,"
-                             "moving,temperature) VALUES(?,?,?,?,?,?,?,?,?,?)",
-                             (date, vin, longitude, latitude, altitude, mileage, level, level_fuel, moving, temp))
+                    conn.execute(
+                        "INSERT INTO position(Timestamp,VIN,longitude,latitude,altitude,mileage,level,level_fuel,"
+                        "moving,temperature) VALUES(?,?,?,?,?,?,?,?,?,?)",
+                        (date,
+                         vin,
+                         longitude,
+                         latitude,
+                         altitude,
+                         mileage,
+                         level,
+                         level_fuel,
+                         moving,
+                         temp))
 
-                conn.commit()
-                logger.info("new position recorded for %s", vin)
-                Database.clean_position(conn)
+                    conn.commit()
+                    logger.info("new position recorded for %s", vin)
+                    Database.clean_position(conn)
+                    return True
+                logger.debug("position already saved")
+            finally:
                 conn.close()
-                return True
-            conn.close()
-            logger.debug("position already saved")
         return False
 
     @staticmethod
@@ -296,6 +307,7 @@ class Database:
         for row in res:
             dates.append(row[0])
             levels.append(row[1])
+        conn.close()
         return BatterySoh(vin, dates, levels)
 
     @staticmethod
@@ -308,10 +320,13 @@ class Database:
 
     @staticmethod
     def get_last_charge(vin) -> Charge:
-        conn = Database.get_db()
-        res = conn.execute("SELECT * FROM battery WHERE VIN=? ORDER BY start_at DESC limit 1", (vin,)).fetchone()
-        if res:
-            return Charge(**dict_key_to_lower_case(**res))
+        try:
+            conn = Database.get_db()
+            res = conn.execute("SELECT * FROM battery WHERE VIN=? ORDER BY start_at DESC limit 1", (vin,)).fetchone()
+            if res:
+                return Charge(**dict_key_to_lower_case(**res))
+        finally:
+            conn.close()
         return None
 
     @staticmethod
@@ -342,12 +357,14 @@ class Database:
     def update_charge(charge: Charge):
         # we don't need to update mileage, since it should be inserted at beginning of charge,
         # maybe in future this will be supported
-        conn = Database.get_db()
-        res = conn.execute(
-            "UPDATE battery set stop_at=?, end_level=?, co2=?, kw=?, price=? WHERE start_at=? and VIN=?",
-            (charge.stop_at, charge.end_level, charge.co2, charge.kw, charge.price, charge.start_at,
-             charge.vin)).rowcount
-        if res == 0:
-            logger.error("Can't find battery row to update")
-        conn.commit()
-        conn.close()
+        try:
+            conn = Database.get_db()
+            res = conn.execute(
+                "UPDATE battery set stop_at=?, end_level=?, co2=?, kw=?, price=? WHERE start_at=? and VIN=?",
+                (charge.stop_at, charge.end_level, charge.co2, charge.kw, charge.price, charge.start_at,
+                 charge.vin)).rowcount
+            if res == 0:
+                logger.error("Can't find battery row to update")
+            conn.commit()
+        finally:
+            conn.close()

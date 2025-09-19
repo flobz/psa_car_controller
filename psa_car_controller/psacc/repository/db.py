@@ -23,8 +23,6 @@ NEW_BATTERY_COLUMNS = [["price", "INTEGER"], ["charging_mode", "TEXT"], ["mileag
 NEW_POSITION_COLUMNS = [["level_fuel", "INTEGER"], ["altitude", "INTEGER"]]
 NEW_BATTERY_CURVE_COLUMNS = [["rate", "INTEGER"], ["autonomy", "INTEGER"]]
 
-sqlite3.threadsafety = 1
-
 
 def convert_sql_res(rows):
     return list(map(dict, rows))
@@ -41,26 +39,27 @@ class CustomSqliteConnection(sqlite3.Connection):
 
     def __init__(self, *args, **kwargs):  # real signature unknown
         super().__init__(*args, **kwargs)
-        self.callbacks = []
+        self.callbacks = set()
         self.execute("PRAGMA journal_mode=WAL;")
 
     def execute_callbacks(self):
         for callback in self.callbacks:
             callback()
 
+    # we don't close the connection because it's shared between thread
     def close(self):
         if self.total_changes:
             self.execute_callbacks()
         self.rollback()
         self.execute("PRAGMA optimize;")
         self.commit()
-        super().close()
 
 
 class Database:
     callback_fct: Callable[[], None] = lambda: None
     DEFAULT_DB_FILE = 'info.db'
     db_initialized = False
+    __conn = None
     __thread_lock = Lock()
 
     @staticmethod
@@ -77,7 +76,10 @@ class Database:
 
     @staticmethod
     def set_db_callback(callbackfct):
-        Database.callback_fct = callbackfct
+        with Database.__thread_lock:
+            if Database.__conn:
+                Database.__conn.callbacks.add(callbackfct)
+            Database.callback_fct = callbackfct
 
     @staticmethod
     def backup(conn):
@@ -141,17 +143,22 @@ class Database:
         return False
 
     @staticmethod
-    def get_db(db_file=None, update_callback=True) -> CustomSqliteConnection:
-        if db_file is None:
-            db_file = Database.DEFAULT_DB_FILE
-        conn = CustomSqliteConnection(db_file, detect_types=sqlite3.PARSE_DECLTYPES | sqlite3.PARSE_COLNAMES)
-        conn.row_factory = sqlite3.Row
+    def get_db(db_file=None) -> CustomSqliteConnection:
+        assert sqlite3.threadsafety == 3, \
+            "SQLite is not in serialized mode (sqlite3.threadsafety != 3). " + \
+            "Upgrade SQLite to a version with serialized mode"
         with Database.__thread_lock:
-            if not Database.db_initialized:
-                Database.init_db(conn)
-        if update_callback:
-            conn.callbacks.append(Database.callback_fct)
-        return conn
+            if not Database.__conn:
+                if db_file is None:
+                    db_file = Database.DEFAULT_DB_FILE
+                conn = CustomSqliteConnection(db_file, detect_types=sqlite3.PARSE_DECLTYPES | sqlite3.PARSE_COLNAMES,
+                                              check_same_thread=False)
+                conn.row_factory = sqlite3.Row
+                if not Database.db_initialized:
+                    Database.init_db(conn)
+                conn.callbacks.add(Database.callback_fct)
+                Database.__conn = conn
+        return Database.__conn
 
     @staticmethod
     def clean_battery(conn):

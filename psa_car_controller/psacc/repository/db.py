@@ -23,6 +23,8 @@ NEW_BATTERY_COLUMNS = [["price", "INTEGER"], ["charging_mode", "TEXT"], ["mileag
 NEW_POSITION_COLUMNS = [["level_fuel", "INTEGER"], ["altitude", "INTEGER"]]
 NEW_BATTERY_CURVE_COLUMNS = [["rate", "INTEGER"], ["autonomy", "INTEGER"]]
 
+sqlite3.threadsafety = 1
+
 
 def convert_sql_res(rows):
     return list(map(dict, rows))

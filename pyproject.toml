@@ -35,12 +35,17 @@ certifi = ">=14.05.14"
 six = ">=1.10"
 python-dateutil = ">=2.5.3"
 urllib3 = ">=1.15.1 <2.0.0"
-importlib-metadata = {version = ">=1.7.0", python = "<3.8"}
-pandas = "^1.1.5"
+importlib-metadata = { version = ">=1.7.0", python = "<3.8" }
+pandas = [
+    { version = "1.1.5", python = "<3.13" },
+    { version = "^2.3.1", python = ">=3.13" }
+]
 numpy = "^1.24.0"
-scipy = [{version = ">=1.9.2", python = ">=3.11"},
-         {version = "<1.11.0", python = "<3.8"},
-         {version = "<1.8.0", python = "<3.8"}]
+scipy = [
+    { version = ">=1.9.2", python = ">=3.11" },
+    { version = "<1.11.0", python = "<3.8" },
+    { version = "<1.8.0", python = "<3.8" }
+]
 ipython = "^7.0.0"
 
 [tool.poetry.dev-dependencies]

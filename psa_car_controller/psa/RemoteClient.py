@@ -120,9 +120,11 @@ class RemoteClient:
         return False
 
     def stop(self):
-        self.mqtt_client.on_disconnect = None
-        self.mqtt_client.disconnect()
-        self.update_thread.cancel()
+        if self.mqtt_client:
+            self.mqtt_client.on_disconnect = None
+            self.mqtt_client.disconnect()
+        if self.update_thread:
+            self.update_thread.cancel()
 
     def __keep_mqtt(self):  # avoid token expiration
         timeout = 3600 * 24  # 1 day

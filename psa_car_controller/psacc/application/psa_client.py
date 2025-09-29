@@ -182,7 +182,10 @@ class PSAClient:
         mileage = car.status.timed_odometer.mileage
         level = car.status.get_energy('Electric').level
         level_fuel = car.status.get_energy('Fuel').level
-        charge_date = car.status.get_energy('Electric').updated_at
+        if car.is_thermal():
+            charge_date = car.status.get_energy('Fuel').updated_at
+        else:
+            charge_date = car.status.get_energy('Electric').updated_at
         moving = car.status.kinetic.moving
 
         longitude = car.status.last_position.geometry.coordinates[0]

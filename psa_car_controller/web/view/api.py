@@ -51,6 +51,21 @@ def get_vehicle_info(vin):
     )
     return response
 
+/**
+    @return {'doors_opening_state': number[]; 'doors_locking_state': number}
+*/
+@app.route('/get_doors_state/<string:vin>')
+def get_doors_state(vin):
+    doors_state = APP.myp.remote_client.doors_state.get(vin)
+    if doors_state is None:
+        return jsonify({"error": "VIN not in list"})
+    logger.log(10, f"doors_state: {doors_state}")
+    response = app.response_class(
+        response=json.dumps(doors_state, default=str),
+        status=200,
+        mimetype='application/json'
+    )
+    return response
 
 @app.route("/style.json")
 def get_style():

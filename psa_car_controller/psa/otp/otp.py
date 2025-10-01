@@ -9,7 +9,7 @@ from xml.etree import cElementTree as ElT
 import requests
 from Cryptodome.Cipher import AES
 from Cryptodome.PublicKey import RSA
-from Cryptodome import Hash
+from Cryptodome.Hash import SHA256
 
 from . import oaep
 from .load import IWData
@@ -102,7 +102,7 @@ class Otp:
         self.pinmode = pinmode
         self.Kiw = self.decode_oaep(Kiw, self.Kfact)
         key = RSA.construct((int(self.Kiw, 16), Otp.exponent))
-        self.cipher = oaep.new(key, hash_algo=Hash.SHA256)
+        self.cipher = oaep.new(key, hash_algo=SHA256)
 
     def get_serial(self):
         return self.device_id + "/_/" + self.iwalea
@@ -135,7 +135,7 @@ class Otp:
     def decode_oaep(enc, key):
         modulus = int(key, 16)
         key = RSA.construct((modulus, Otp.exponent))
-        cipher = oaep.new(key, hash_algo=Hash.SHA256)
+        cipher = oaep.new(key, hash_algo=SHA256)
         block_size = 128
         dec_string = ""
         enc_b = bytes.fromhex(enc)
@@ -236,7 +236,7 @@ class Otp:
         self.action = "synchro"
         res = self.decode_oaep(xml["ms_key"], self.Kfact)
         temp_key = RSA.construct((int(res, 16), self.exponent))
-        temp_cipher = oaep.new(temp_key, hash_algo=Hash.SHA256)
+        temp_cipher = oaep.new(temp_key, hash_algo=SHA256)
         if random_bytes is None:
             random_bytes = token_bytes(16)
         kpub_encode = temp_cipher.encrypt(random_bytes)
@@ -291,7 +291,7 @@ class Otp:
         self.__dict__.update(dict_param)
         if self.Kiw is not None:
             key = RSA.construct((int(self.Kiw, 16), Otp.exponent))
-            self.cipher = oaep.new(key, hash_algo=Hash.SHA256)
+            self.cipher = oaep.new(key, hash_algo=SHA256)
 
     @staticmethod
     def set_proxies(proxies):
@@ -299,7 +299,7 @@ class Otp:
 
 
 def encode_oeap(text, key):
-    cipher = oaep.new(bytes.fromhex(key), hash_algo=Hash.SHA256)
+    cipher = oaep.new(bytes.fromhex(key), hash_algo=SHA256)
     return cipher.encrypt(text)
 
 

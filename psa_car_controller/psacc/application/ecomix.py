@@ -11,7 +11,7 @@ from pytz import UTC
 from requests import RequestException
 
 CO2_SIGNAL_REQ_INTERVAL = 600
-CO2_SIGNAL_URL = "https://api.co2signal.com"
+CO2_SIGNAL_URL = "https://api.electricitymaps.com"
 TIMEOUT_IN_S = 10
 logger = logging.getLogger(__name__)
 
@@ -70,15 +70,18 @@ class Ecomix:
                 elif len(Ecomix._cache[country_code]) > 0 and \
                         (now - Ecomix._cache[country_code][-1][0]).total_seconds() < CO2_SIGNAL_REQ_INTERVAL:
                     return False
-                res = requests.get(CO2_SIGNAL_URL + "/v1/latest",
+                res = requests.get(CO2_SIGNAL_URL + "/v3/carbon-intensity/latest",
                                    headers={"auth-token": Ecomix.co2_signal_key},
-                                   params={"countryCode": country_code},
+                                   params={"zone": country_code},
                                    timeout=TIMEOUT_IN_S)
+                if res.status_code != 200:
+                    return False
+
                 data = res.json()
-                value = data["data"]["carbonIntensity"]
+                value = data["carbonIntensity"]
                 assert isinstance(value, numbers.Number)
                 Ecomix._cache[country_code].append([now, value])
-                return data["status"] == "ok"
+                return True
             except (AssertionError, NameError, KeyError):
                 logger.debug("ecomix:", exc_info=True)
                 return False

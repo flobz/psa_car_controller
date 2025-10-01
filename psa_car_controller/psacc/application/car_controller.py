@@ -60,7 +60,7 @@ class PSACarController(metaclass=Singleton):
             logger.info("mqtt disabled")
         elif not self.args.web_conf or path.isfile(OTP_CONFIG_NAME):
             if self.myp.remote_client.mqtt_client is not None:
-                self.myp.remote_client.mqtt_client.disconnect()
+                self.myp.remote_client.stop()
             try:
                 self.myp.remote_client.start()
                 if self.args.charge_control:

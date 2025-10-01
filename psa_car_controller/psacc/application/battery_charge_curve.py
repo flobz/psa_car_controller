@@ -5,7 +5,6 @@ from typing import List
 from psa_car_controller.psacc.model.battery_curve import BatteryCurveDto
 from psa_car_controller.psacc.model.car import Car
 from psa_car_controller.psacc.model.charge import Charge
-from psa_car_controller.psacc.repository.db import Database
 
 DEFAULT_KM_BY_KW = 5.3
 MINIMUM_AUTONOMY_FOR_GOOD_RESULT = 20
@@ -21,8 +20,6 @@ class BatteryChargeCurve:
             -> 'List[BatteryChargeCurve]':  # pylint: disable=too-many-locals
         start_date = charge.start_at
         stop_at = charge.stop_at
-        conn = Database.get_db()
-        conn.close()
         battery_curves = []
         if len(battery_curves_dto) > 0 and battery_curves_dto[-1].level > 0 and battery_curves_dto[-1].autonomy > 0:
             battery_capacity = battery_curves_dto[-1].level * car.battery_power / 100

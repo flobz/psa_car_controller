@@ -1,3 +1,4 @@
+import contextlib
 from functools import wraps
 from threading import Semaphore, Timer
 from typing import List
@@ -60,3 +61,13 @@ def get_positions(locations):
                        params={"locations": locations_str},
                        timeout=TIMEOUT_IN_S)
     return res.json()["results"]
+
+
+@contextlib.contextmanager
+def nonblocking(lock):
+    locked = lock.acquire(False)
+    try:
+        yield locked
+    finally:
+        if locked:
+            lock.release()

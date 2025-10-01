@@ -26,6 +26,10 @@ MQTT_EVENT_TOPIC = "psa/RemoteServices/events/MPHRTServices/"
 MQTT_TOKEN_TTL = 890
 
 
+class RemoteException(Exception):
+    pass
+
+
 class RemoteClient:
 
     def __init__(self, account_info: AccountInformation, vehicles_list: Cars, manager: OpenIdCredentialManager,
@@ -44,6 +48,7 @@ class RemoteClient:
         self.mqtt_client = None
         self.otp = None
         self._lock = threading.Lock()
+        self.update_thread: threading.Timer = None
 
     def __on_mqtt_connect(self, client, userdata, result_code, _):  # pylint: disable=unused-argument
         logger.info("Connected with result code %s", result_code)
@@ -118,6 +123,13 @@ class RemoteClient:
         logger.error("Can't configure MQTT Client")
         return False
 
+    def stop(self):
+        if self.mqtt_client:
+            self.mqtt_client.on_disconnect = None
+            self.mqtt_client.disconnect()
+        if self.update_thread:
+            self.update_thread.cancel()
+
     def __keep_mqtt(self):  # avoid token expiration
         timeout = 3600 * 24  # 1 day
         if len(self.vehicles_list) > 0:
@@ -125,9 +137,9 @@ class RemoteClient:
                 self.wakeup(self.vehicles_list[0].vin)
             except RateLimitException:
                 logger.exception("__keep_mqtt")
-        t = threading.Timer(timeout, self.__keep_mqtt)
-        t.daemon = True
-        t.start()
+        self.update_thread = threading.Timer(timeout, self.__keep_mqtt)
+        self.update_thread.daemon = True
+        self.update_thread.start()
 
     def veh_charge_request(self, vin, hour, minute, charge_type):
         msg = self.mqtt_request(vin, {"program": {"hour": hour, "minute": minute}, "type": charge_type}, "/VehCharge")
@@ -178,7 +190,7 @@ class RemoteClient:
                 self.remote_token_last_update = datetime.now()
                 self.mqtt_client.username_pw_set("IMA_OAUTH_ACCESS_TOKEN", self.remoteCredentials.access_token)
                 return True
-            except (RequestException, RateLimitException, KeyError, AttributeError):
+            except (RequestException, RateLimitException, KeyError, AttributeError, RemoteException):
                 logger.exception("Can't refresh remote token, please redo otp procedure")
                 return False
 
@@ -205,8 +217,11 @@ class RemoteClient:
                                 json={"grant_type": "password", "password": password},
                                 headers=self.headers)
         data = res.json()
-        self.remoteCredentials.access_token = data["access_token"]
-        self.remoteCredentials.refresh_token = data["refresh_token"]
+        try:
+            self.remoteCredentials.access_token = data["access_token"]
+            self.remoteCredentials.refresh_token = data["refresh_token"]
+        except KeyError as e:
+            raise RemoteException("get_remote_access_token: bad response" + str(data)) from e
         return res
 
     def horn(self, vin, count):

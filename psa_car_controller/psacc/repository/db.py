@@ -39,26 +39,33 @@ class CustomSqliteConnection(sqlite3.Connection):
 
     def __init__(self, *args, **kwargs):  # real signature unknown
         super().__init__(*args, **kwargs)
-        self.callbacks = []
+        self.callbacks = set()
         self.execute("PRAGMA journal_mode=WAL;")
+        self.change_since_last_close = 0
 
     def execute_callbacks(self):
+        logger.debug("Executing callbacks")
         for callback in self.callbacks:
             callback()
+        logger.debug("End executing callbacks")
 
+    # we don't close the connection because it's shared between thread
     def close(self):
-        if self.total_changes:
+        if self.total_changes != self.change_since_last_close:
             self.execute_callbacks()
+            self.change_since_last_close = self.total_changes
         self.rollback()
         self.execute("PRAGMA optimize;")
         self.commit()
+
+    def close_db(self):
         super().close()
 
 
 class Database:
     callback_fct: Callable[[], None] = lambda: None
     DEFAULT_DB_FILE = 'info.db'
-    db_initialized = False
+    __conn = None
     __thread_lock = Lock()
 
     @staticmethod
@@ -75,7 +82,11 @@ class Database:
 
     @staticmethod
     def set_db_callback(callbackfct):
-        Database.callback_fct = callbackfct
+        with Database.__thread_lock:
+            if Database.__conn:
+                Database.__conn.callbacks.clear()
+                Database.__conn.callbacks.add(callbackfct)
+            Database.callback_fct = callbackfct
 
     @staticmethod
     def backup(conn):
@@ -139,17 +150,28 @@ class Database:
         return False
 
     @staticmethod
-    def get_db(db_file=None, update_callback=True) -> CustomSqliteConnection:
-        if db_file is None:
-            db_file = Database.DEFAULT_DB_FILE
-        conn = CustomSqliteConnection(db_file, detect_types=sqlite3.PARSE_DECLTYPES | sqlite3.PARSE_COLNAMES)
-        conn.row_factory = sqlite3.Row
+    def get_db(db_file=None, force_new_conn=False) -> CustomSqliteConnection:
+        assert sqlite3.threadsafety == 3, \
+            "SQLite is not in serialized mode (sqlite3.threadsafety != 3). " + \
+            "Upgrade python to python3.11"
         with Database.__thread_lock:
-            if not Database.db_initialized:
+            if not Database.__conn or force_new_conn:
+                if db_file is None:
+                    db_file = Database.DEFAULT_DB_FILE
+                conn = CustomSqliteConnection(db_file, detect_types=sqlite3.PARSE_DECLTYPES | sqlite3.PARSE_COLNAMES,
+                                              check_same_thread=False)
+                conn.row_factory = sqlite3.Row
                 Database.init_db(conn)
-        if update_callback:
-            conn.callbacks.append(Database.callback_fct)
-        return conn
+                Database.__conn = conn
+                logger.info("database initialized !")
+        Database.set_db_callback(Database.callback_fct)
+        return Database.__conn
+
+    @staticmethod
+    def close_db():
+        if Database.__conn:
+            Database.__conn.close_db()
+            Database.__conn = None
 
     @staticmethod
     def clean_battery(conn):
@@ -176,7 +198,6 @@ class Database:
         conn = Database.get_db()
         res = conn.execute("SELECT temperature FROM position WHERE VIN=? ORDER BY Timestamp DESC limit 1",
                            (vin,)).fetchone()
-        conn.close()
         if res is None:
             return None
         return res[0]
@@ -244,7 +265,6 @@ class Database:
                                           "level": row["level"], "level_fuel": row["level_fuel"]})
             features_list.append(feature)
         feature_collection = FeatureCollection(features_list)
-        conn.close()
         return geo_dumps(feature_collection, sort_keys=True)
 
     # pylint: disable=too-many-arguments,too-many-positional-arguments
@@ -253,31 +273,42 @@ class Database:
         if mileage == 0:  # fix a bug of the api
             logger.error("The api return a wrong mileage for %s : %f", vin, mileage)
         else:
-            conn = Database.get_db()
-            if conn.execute("SELECT Timestamp from position where Timestamp=?", (date,)).fetchone() is None:
-                temp = get_temp(latitude, longitude, weather_api)
-                if level_fuel and level_fuel == 0:  # fix fuel level not provided when car is off
-                    try:
-                        level_fuel = conn.execute(
-                            "SELECT level_fuel FROM position WHERE level_fuel>0 AND VIN=? ORDER BY Timestamp DESC "
-                            "LIMIT 1",
-                            (vin,)).fetchone()[0]
-                        logger.info("level_fuel fixed with last real value %f for %s", level_fuel, vin)
-                    except TypeError:
-                        level_fuel = None
-                        logger.info("level_fuel unfixed for %s", vin)
+            try:
+                conn = Database.get_db()
+                if conn.execute("SELECT Timestamp from position where Timestamp=?", (date,)).fetchone() is None:
+                    temp = get_temp(latitude, longitude, weather_api)
+                    if level_fuel and level_fuel == 0:  # fix fuel level not provided when car is off
+                        try:
+                            level_fuel = conn.execute(
+                                "SELECT level_fuel FROM position WHERE level_fuel>0 AND VIN=? ORDER BY Timestamp DESC "
+                                "LIMIT 1",
+                                (vin,)).fetchone()[0]
+                            logger.info("level_fuel fixed with last real value %f for %s", level_fuel, vin)
+                        except TypeError:
+                            level_fuel = None
+                            logger.info("level_fuel unfixed for %s", vin)
 
-                conn.execute("INSERT INTO position(Timestamp,VIN,longitude,latitude,altitude,mileage,level,level_fuel,"
-                             "moving,temperature) VALUES(?,?,?,?,?,?,?,?,?,?)",
-                             (date, vin, longitude, latitude, altitude, mileage, level, level_fuel, moving, temp))
+                    conn.execute(
+                        "INSERT INTO position(Timestamp,VIN,longitude,latitude,altitude,mileage,level,level_fuel,"
+                        "moving,temperature) VALUES(?,?,?,?,?,?,?,?,?,?)",
+                        (date,
+                         vin,
+                         longitude,
+                         latitude,
+                         altitude,
+                         mileage,
+                         level,
+                         level_fuel,
+                         moving,
+                         temp))
 
-                conn.commit()
-                logger.info("new position recorded for %s", vin)
-                Database.clean_position(conn)
+                    conn.commit()
+                    logger.info("new position recorded for %s", vin)
+                    Database.clean_position(conn)
+                    return True
+                logger.debug("position already saved")
+            finally:
                 conn.close()
-                return True
-            conn.close()
-            logger.debug("position already saved")
         return False
 
     @staticmethod
@@ -325,7 +356,8 @@ class Database:
 
     @staticmethod
     def get_all_charge_without_price(conn) -> List[Charge]:
-        res = conn.execute("SELECT * FROM battery WHERE price IS NULL").fetchall()
+        # Chargings that did not end yet can't have a price
+        res = conn.execute("SELECT * FROM battery WHERE price IS NULL AND stop_at IS NOT NULL").fetchall()
         charges = []
         for row in res:
             charges.append(Charge(**dict_key_to_lower_case(**row)))
@@ -335,19 +367,20 @@ class Database:
     def get_all_charge() -> List[Charge]:
         conn = Database.get_db()
         res = conn.execute("select * from battery ORDER BY start_at").fetchall()
-        conn.close()
         return res
 
     @staticmethod
     def update_charge(charge: Charge):
         # we don't need to update mileage, since it should be inserted at beginning of charge,
         # maybe in future this will be supported
-        conn = Database.get_db()
-        res = conn.execute(
-            "UPDATE battery set stop_at=?, end_level=?, co2=?, kw=?, price=? WHERE start_at=? and VIN=?",
-            (charge.stop_at, charge.end_level, charge.co2, charge.kw, charge.price, charge.start_at,
-             charge.vin)).rowcount
-        if res == 0:
-            logger.error("Can't find battery row to update")
-        conn.commit()
-        conn.close()
+        try:
+            conn = Database.get_db()
+            res = conn.execute(
+                "UPDATE battery set stop_at=?, end_level=?, co2=?, kw=?, price=? WHERE start_at=? and VIN=?",
+                (charge.stop_at, charge.end_level, charge.co2, charge.kw, charge.price, charge.start_at,
+                 charge.vin)).rowcount
+            if res == 0:
+                logger.error("Can't find battery row to update")
+            conn.commit()
+        finally:
+            conn.close()

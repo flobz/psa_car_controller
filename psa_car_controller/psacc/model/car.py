@@ -7,7 +7,7 @@ from ..repository.car_model import CarModelRepository
 logger = logging.getLogger(__name__)
 
 
-# pylint: disable=too-many-arguments
+# pylint: disable=too-many-arguments,too-many-positional-arguments
 class Car:
     def __init__(self, vin, vehicle_id, brand, label=None, battery_power=None, fuel_capacity=None,
                  max_elec_consumption=None, max_fuel_consumption=None, abrp_name=None):

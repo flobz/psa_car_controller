@@ -11,7 +11,7 @@ include = [
 ]
 
 [tool.poetry.dependencies]
-python = ">=3.7.2, <4.0.0"
+python = ">=3.11, <4.0.0"
 paho-mqtt = ">=1.5.0, <2.0.0"
 dash = ">=2.9.0, <3.0.0"
 dash-daq = "^0.5.0"
@@ -27,31 +27,35 @@ pytz = "^2021.0"
 argparse = "^1.4.0"
 geojson = "^2.5.0"
 reverse-geocode = "^1.4.1"
-androguard = "^3.3.5"
-pycryptodomex = "^3.9.0"
+androguard = "^4.1.2"
+pycryptodomex = "3.23.0"  # Pin version as they introduce breaking changes in minor versions
 pydantic = "^1.9.0"
 "ruamel.yaml" = ">=0.15.0"
 certifi = ">=14.05.14"
 six = ">=1.10"
 python-dateutil = ">=2.5.3"
 urllib3 = ">=1.15.1 <2.0.0"
-importlib-metadata = {version = ">=1.7.0", python = "<3.8"}
-pandas = "^1.1.5"
-numpy = [{version = ">=1.24.0", python = ">=3.11"},
-         {version = "<1.26.0", python = "<3.9"},
-         {version = "<1.22.0", python = "<3.8"}]
-scipy = [{version = ">=1.9.2", python = ">=3.11"},
-         {version = "<1.11.0", python = "<3.8"},
-         {version = "<1.8.0", python = "<3.8"}]
+importlib-metadata = { version = ">=1.7.0", python = "<3.8" }
+pandas = [
+    { version = ">=1.1.5", python = "<3.13" },
+    { version = "^2.3.1", python = ">=3.13" }
+]
+numpy = "^1.24.0"
+scipy = [
+    { version = ">=1.9.2", python = ">=3.11" },
+    { version = "<1.11.0", python = "<3.8" },
+    { version = "<1.8.0", python = "<3.8" }
+]
 ipython = "^7.0.0"
 
 [tool.poetry.dev-dependencies]
-prospector = "1.10.3"
+prospector = "1.12.1"
 pre-commit = "^2.17.0"
 coverage = "^6.3.2"
 deepdiff = "^5.7.0"
 greenery = "^3.3.5"
 autopep8 = "2.0.4"
+pylint = "3.3.6"
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]

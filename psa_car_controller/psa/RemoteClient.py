@@ -26,6 +26,10 @@ MQTT_EVENT_TOPIC = "psa/RemoteServices/events/MPHRTServices/"
 MQTT_TOKEN_TTL = 890
 
 
+class RemoteException(Exception):
+    pass
+
+
 class RemoteClient:
 
     def __init__(self, account_info: AccountInformation, vehicles_list: Cars, manager: OpenIdCredentialManager,
@@ -43,6 +47,8 @@ class RemoteClient:
         self.last_request = None
         self.mqtt_client = None
         self.otp = None
+        self._lock = threading.Lock()
+        self.update_thread: threading.Timer = None
 
     def __on_mqtt_connect(self, client, userdata, result_code, _):  # pylint: disable=unused-argument
         logger.info("Connected with result code %s", result_code)
@@ -117,6 +123,13 @@ class RemoteClient:
         logger.error("Can't configure MQTT Client")
         return False
 
+    def stop(self):
+        if self.mqtt_client:
+            self.mqtt_client.on_disconnect = None
+            self.mqtt_client.disconnect()
+        if self.update_thread:
+            self.update_thread.cancel()
+
     def __keep_mqtt(self):  # avoid token expiration
         timeout = 3600 * 24  # 1 day
         if len(self.vehicles_list) > 0:
@@ -124,9 +137,9 @@ class RemoteClient:
                 self.wakeup(self.vehicles_list[0].vin)
             except RateLimitException:
                 logger.exception("__keep_mqtt")
-        t = threading.Timer(timeout, self.__keep_mqtt)
-        t.daemon = True
-        t.start()
+        self.update_thread = threading.Timer(timeout, self.__keep_mqtt)
+        self.update_thread.daemon = True
+        self.update_thread.start()
 
     def veh_charge_request(self, vin, hour, minute, charge_type):
         msg = self.mqtt_request(vin, {"program": {"hour": hour, "minute": minute}, "type": charge_type}, "/VehCharge")
@@ -146,39 +159,40 @@ class RemoteClient:
         return MQTTRequest(topic, vin, req_parameters, self.account_info.get_mqtt_customer_id())
 
     def _refresh_remote_token(self, force=False):
-        bad_remote_token = self.remoteCredentials.refresh_token is None
-        if not force and not bad_remote_token and self.remoteCredentials.last_update:
-            last_update: datetime = self.remoteCredentials.last_update
-            if (datetime.now() - last_update).total_seconds() < MQTT_TOKEN_TTL:
-                return True
-        try:
-            self.manager.refresh_token_now()
-            if bad_remote_token:
-                logger.error("remote_refresh_token isn't defined")
-            else:
-                res = self.manager.post(REMOTE_URL + self.account_info.client_id,
-                                        json={"grant_type": "refresh_token",
-                                              "refresh_token": self.remoteCredentials.refresh_token},
-                                        headers=self.headers)
-                data = res.json()
-                logger.debug("refresh_remote_token: %s", data)
-                if "access_token" in data:
-                    self.remoteCredentials.access_token = data["access_token"]
-                    self.remoteCredentials.refresh_token = data["refresh_token"]
-                    bad_remote_token = False
+        with self._lock:
+            bad_remote_token = self.remoteCredentials.refresh_token is None
+            if not force and not bad_remote_token and self.remoteCredentials.last_update:
+                last_update: datetime = self.remoteCredentials.last_update
+                if (datetime.now() - last_update).total_seconds() < MQTT_TOKEN_TTL:
+                    return True
+            try:
+                self.manager.refresh_token_now()
+                if bad_remote_token:
+                    logger.warning("remote_refresh_token isn't defined")
                 else:
-                    logger.error("can't refresh_remote_token: %s\n Create a new one", data)
-                    bad_remote_token = True
-            if bad_remote_token:
-                otp_code = self.get_otp_code()
-                self._get_remote_access_token(otp_code)
-            self.remote_token_last_update = datetime.now()
-            self.mqtt_client.username_pw_set("IMA_OAUTH_ACCESS_TOKEN", self.remoteCredentials.access_token)
-            return True
-        except (RequestException, RateLimitException, KeyError) as e:
-            logger.exception("Can't refresh remote token %s", e)
-            time.sleep(60)
-            return False
+                    res = self.manager.post(REMOTE_URL + self.account_info.client_id,
+                                            json={"grant_type": "refresh_token",
+                                                  "refresh_token": self.remoteCredentials.refresh_token},
+                                            headers=self.headers)
+                    data = res.json()
+                    logger.debug("refresh_remote_token: %s", data)
+                    if "access_token" in data:
+                        self.remoteCredentials.access_token = data["access_token"]
+                        bad_remote_token = False
+                        if "refresh_token" in data:
+                            self.remoteCredentials.refresh_token = data["refresh_token"]
+                    else:
+                        logger.error("can't refresh_remote_token: %s\n Create a new one", data)
+                        bad_remote_token = True
+                if bad_remote_token:
+                    otp_code = self.get_otp_code()
+                    self._get_remote_access_token(otp_code)
+                self.remote_token_last_update = datetime.now()
+                self.mqtt_client.username_pw_set("IMA_OAUTH_ACCESS_TOKEN", self.remoteCredentials.access_token)
+                return True
+            except (RequestException, RateLimitException, KeyError, AttributeError, RemoteException):
+                logger.exception("Can't refresh remote token, please redo otp procedure")
+                return False
 
     def get_sms_otp_code(self):
         res = self.manager.post(
@@ -203,8 +217,11 @@ class RemoteClient:
                                 json={"grant_type": "password", "password": password},
                                 headers=self.headers)
         data = res.json()
-        self.remoteCredentials.access_token = data["access_token"]
-        self.remoteCredentials.refresh_token = data["refresh_token"]
+        try:
+            self.remoteCredentials.access_token = data["access_token"]
+            self.remoteCredentials.refresh_token = data["refresh_token"]
+        except KeyError as e:
+            raise RemoteException("get_remote_access_token: bad response" + str(data)) from e
         return res
 
     def horn(self, vin, count):

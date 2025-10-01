@@ -221,5 +221,4 @@ def get_altitude_fig(trip: Trip):
         line[0] = line[0] - start_mileage
     fig = px.line(res, x=0, y=1)
     fig.update_layout(xaxis_title="Distance km", yaxis_title="Altitude m")
-    conn.close()
     return html.Div(Graph(figure=fig))

@@ -49,8 +49,8 @@ class Trips(list):
             speed_average = 0
         return speed_average
 
-    @staticmethod  # noqa: MC0001
-    def get_trips(vehicles_list: Cars) -> Dict[str, "Trips"]:
+    @staticmethod
+    def get_trips(vehicles_list: Cars) -> Dict[str, "Trips"]:  # noqa: MC0001
         # pylint: disable=too-many-locals,too-many-statements,too-many-nested-blocks,too-many-branches
         conn = Database.get_db()
         vehicles = conn.execute("SELECT DISTINCT vin FROM position;").fetchall()
@@ -58,9 +58,10 @@ class Trips(list):
         for vin in vehicles:
             trips = Trips()
             vin = vin[0]
-            res = conn.execute('SELECT Timestamp, VIN, longitude, latitude, mileage, level, moving, temperature, '
-                               'level_fuel, altitude FROM position WHERE VIN=? '
-                               'AND mileage IS NOT NULL ORDER BY Timestamp', (vin,)).fetchall()
+            res = conn.execute(
+                'SELECT Timestamp, VIN, longitude, latitude, mileage, level, moving, temperature, '
+                'level_fuel, altitude FROM position WHERE VIN=? '
+                'AND mileage IS NOT NULL AND Timestamp IS NOT NULL ORDER BY Timestamp', (vin,)).fetchall()
             if len(res) > 1:
                 car = vehicles_list.get_car_by_vin(vin)
                 assert car is not None
@@ -135,5 +136,4 @@ class Trips(list):
                             trip.add_points(end["latitude"], end["longitude"])
                     end = next_point
                 trips_by_vin[vin] = trips
-        conn.close()
         return trips_by_vin

@@ -34,7 +34,7 @@ class PSAClient:
     def connect(self, code: str):
         self.manager.connect_with_code(code)
 
-    # pylint: disable=too-many-arguments
+    # pylint: disable=too-many-arguments,too-many-positional-arguments
     def __init__(self, refresh_token, client_id, client_secret, remote_refresh_token, customer_id, realm, country_code,
                  brand=None, proxies=None, weather_api=None, abrp=None, co2_signal_api=None):
         self.realm = realm
@@ -71,7 +71,7 @@ class PSAClient:
         self.set_proxies(proxies)
         self.config_file = DEFAULT_CONFIG_FILENAME
         Ecomix.co2_signal_key = co2_signal_api
-        self.refresh_thread = None
+        self.refresh_thread: threading.Timer = None
         remote_credentials = RemoteCredentials(remote_refresh_token)
         remote_credentials.update_callbacks.append(self.save_config)
         self.remote_client = RemoteClient(self.account_info,
@@ -119,6 +119,7 @@ class PSAClient:
         if self.info_refresh_rate is not None:
             if self.refresh_thread and self.refresh_thread.is_alive():
                 logger.debug("refresh_vehicle_info: precedent task still alive")
+                self.refresh_thread.cancel()
             self.refresh_thread = threading.Timer(self.info_refresh_rate, self.__refresh_vehicle_info)
             self.refresh_thread.daemon = True
             self.refresh_thread.start()
@@ -182,7 +183,10 @@ class PSAClient:
         mileage = car.status.timed_odometer.mileage
         level = car.status.get_energy('Electric').level
         level_fuel = car.status.get_energy('Fuel').level
-        charge_date = car.status.get_energy('Electric').updated_at
+        if car.is_thermal():
+            charge_date = car.status.get_energy('Fuel').updated_at
+        else:
+            charge_date = car.status.get_energy('Electric').updated_at
         moving = car.status.kinetic.moving
 
         longitude = car.status.last_position.geometry.coordinates[0]

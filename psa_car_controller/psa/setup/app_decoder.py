@@ -14,7 +14,7 @@ from psa_car_controller.psacc.application.charge_control import ChargeControl, C
 
 logger = logging.getLogger(__name__)
 
-APP_VERSION = "1.33.0"
+APP_VERSION = "1.48.2"
 GITHUB_USER = "flobz"
 GITHUB_REPO = "psa_apk"
 TIMEOUT_IN_S = 10
@@ -22,8 +22,8 @@ app = PSACarController()
 
 
 def get_content_from_apk(filename: str, country_code: str) -> ApkParser:
+    urlretrieve_from_github(GITHUB_USER, GITHUB_REPO, "", filename)
     apk_parser = ApkParser(filename, country_code)
-    urlretrieve_from_github(GITHUB_USER, GITHUB_REPO, "", apk_parser.filename)
     apk_parser.retrieve_content_from_apk()
     return apk_parser
 
@@ -55,8 +55,13 @@ class InitialSetup:
                                 )},
                                 timeout=TIMEOUT_IN_S
                                 )
-
-            self.token = res.json()["accessToken"]
+            data = res.json()
+            if token := data.get("accessToken"):
+                self.token = token
+            else:
+                raise ConnectionError("No access token in response:", res.text)
+        except ConnectionError as e:
+            raise e
         except Exception as ex:
             msg = traceback.format_exc() + f"\nHOST_BRANDID : {apk_parser.host_brandid_prod} " \
                                            f"sitecode: {apk_parser.site_code}"
@@ -118,9 +123,10 @@ class InitialSetup:
                 "No vehicle in your account is compatible with this API, you vehicle is probably too old...")
 
         for vehicle in self.user_info["vehicles"]:
-            car = self.psacc.vehicles_list.get_car_by_vin(vehicle["vin"])
-            if car is not None and "short_label" in vehicle and car.label == "unknown":
-                car.label = vehicle["short_label"].split(" ")[-1]  # remove new, nouvelle, neu word....
+            if vin := vehicle.get("vin"):
+                car = self.psacc.vehicles_list.get_car_by_vin(vin)
+                if car is not None and "short_label" in vehicle and car.label == "unknown":
+                    car.label = vehicle["short_label"].split(" ")[-1]  # remove new, nouvelle, neu word....
         self.psacc.vehicles_list.save_cars()
 
         logger.info("\nYour vehicles: %s", res)

@@ -1,12 +1,11 @@
 repos:
     - repo: https://github.com/pre-commit/mirrors-autopep8
       rev: 'v2.0.4'  # Use the sha / tag you want to point at
-      language: system
       hooks:
           - id: autopep8
             language: system
     -   repo: https://github.com/PyCQA/prospector
-        rev: v1.10.3 # The version of Prospector to use, if not 'master' for latest
+        rev: v1.16.1 # The version of Prospector to use, if not 'master' for latest
         hooks:
         -   id: prospector
             language: system

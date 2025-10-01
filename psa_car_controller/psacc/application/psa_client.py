@@ -20,6 +20,7 @@ from .ecomix import Ecomix
 from psa_car_controller.psa.constants import realm_info, AUTHORIZE_SERVICE
 
 from .abrp import Abrp
+from .osmand import OsmAndApi
 from psa_car_controller.psacc.repository.db import Database
 from psa_car_controller.common.mylogger import CustomLogger
 
@@ -36,7 +37,7 @@ class PSAClient:
 
     # pylint: disable=too-many-arguments,too-many-positional-arguments
     def __init__(self, refresh_token, client_id, client_secret, remote_refresh_token, customer_id, realm, country_code,
-                 brand=None, proxies=None, weather_api=None, abrp=None, co2_signal_api=None):
+                 brand=None, proxies=None, weather_api=None, abrp=None, osmandapi=None, co2_signal_api=None):
         self.realm = realm
         self.service_information = ServiceInformation(AUTHORIZE_SERVICE[self.realm],
                                                       realm_info[self.realm]['oauth_url'],
@@ -68,6 +69,10 @@ class PSAClient:
             self.abrp = Abrp()
         else:
             self.abrp: Abrp = Abrp(**abrp)
+        if osmandapi is None:
+            self.osmandapi = OsmAndApi()
+        else:
+            self.osmandapi: OsmAndApi = OsmAndApi(**osmandapi)
         self.set_proxies(proxies)
         self.config_file = DEFAULT_CONFIG_FILENAME
         Ecomix.co2_signal_key = co2_signal_api
@@ -94,6 +99,7 @@ class PSAClient:
         else:
             self.api_config.proxy = proxies['http']
             self.abrp.proxies = proxies
+            self.osmandapi.proxies = proxies
         self.manager.proxies = proxies
 
     def get_vehicle_info(self, vin, cache=False):
@@ -169,7 +175,7 @@ class PSAClient:
             config = {**json.loads(config_str)}
             if "country_code" not in config:
                 config["country_code"] = input("What is your country code ? (ex: FR, GB, DE, ES...)\n")
-            for new_el in ["abrp", "co2_signal_api"]:
+            for new_el in ["abrp", "osmandapi", "co2_signal_api"]:
                 if new_el not in config:
                     config[new_el] = None
             psacc = PSAClient(**config)
@@ -200,7 +206,9 @@ class PSAClient:
                      moving)
         Database.record_position(self.weather_api, car.vin, mileage, latitude, longitude, altitude, date, level,
                                  level_fuel, moving)
-        self.abrp.call(car, Database.get_last_temp(car.vin))
+        last_temp = Database.get_last_temp(car.vin)
+        self.abrp.call(car, last_temp)
+        self.osmandapi.call(car, last_temp)
         if car.has_battery():
             electric_energy_status = car.status.get_energy('Electric')
             try:
@@ -235,6 +243,7 @@ class PSAClientEncoder(JSONEncoder):
                "refresh_token": mp.manager.refresh_token,
                "client_secret": mp.service_information.client_secret,
                "abrp": dict(mp.abrp),
+               "osmandapi": dict(mp.osmandapi),
                "remote_refresh_token": mp.remote_client.remoteCredentials.refresh_token,
                "customer_id": mp.account_info.customer_id,
                "client_id": mp.account_info.client_id,

@@ -14,6 +14,7 @@ logger = logging.getLogger(__name__)
 
 REFRESH_SWITCH = "refresh-switch"
 ABRP_SWITCH = 'abrp-switch'
+OSMANDAPI_SWITCH = 'osmandapi-switch'
 CHARGE_SWITCH = "charge-switch"
 PRECONDITIONING_SWITCH = "preconditioning-switch"
 
@@ -72,5 +73,7 @@ def get_control_tabs(config):
         if not config.offline:
             buttons_row.append(Switch(ABRP_SWITCH, car.vin, "Send data to ABRP", myp.abrp.enable_abrp,
                                       car.vin in config.myp.abrp.abrp_enable_vin).get_html())
+            buttons_row.append(Switch(OSMANDAPI_SWITCH, car.vin, "Send data to OsmAndApi", myp.osmandapi.enable_osmand,
+                                      car.vin in config.myp.osmandapi.osmand_enable_vin).get_html())
         tabs.append(dbc.Tab(label=label, id="tab-" + car.vin, children=[dbc.Row(buttons_row), *el]))
     return dbc.Tabs(id="control-tabs", children=tabs)

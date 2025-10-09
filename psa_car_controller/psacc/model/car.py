@@ -10,7 +10,7 @@ logger = logging.getLogger(__name__)
 # pylint: disable=too-many-arguments,too-many-positional-arguments
 class Car:
     def __init__(self, vin, vehicle_id, brand, label=None, battery_power=None, fuel_capacity=None,
-                 max_elec_consumption=None, max_fuel_consumption=None, abrp_name=None):
+                 max_elec_consumption=None, max_fuel_consumption=None, abrp_name=None, osmand_id=None):
         self.vin = vin
         model = None
         if label is not None:
@@ -23,6 +23,7 @@ class Car:
         self.brand = brand
         self._status = None
         self.abrp_name = abrp_name or model.abrp_name
+        self.osmand_id = osmand_id
         self.battery_power = battery_power or model.battery_power
         self.fuel_capacity = fuel_capacity or model.fuel_capacity
         self.max_elec_consumption = max_elec_consumption or model.max_elec_consumption  # kwh/100Km
@@ -46,7 +47,7 @@ class Car:
     def has_fuel(self):
         return self.fuel_capacity > 0
 
-    def get_status(self):
+    def get_status(self) -> CarStatus:
         if self.status is not None:
             return self.status
         logger.error("status of %s is None", self.vin)
@@ -68,6 +69,11 @@ class Car:
         if self.abrp_name is not None:
             return self.abrp_name
         raise ValueError("ABRP model is not set")
+
+    def get_osmand_id(self):
+        if self.osmand_id is not None:
+            return self.osmand_id
+        return self.vin
 
     @property
     def status(self) -> CarStatus:

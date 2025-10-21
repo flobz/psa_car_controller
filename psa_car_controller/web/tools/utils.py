@@ -79,7 +79,7 @@ def diff_dashtable(data, data_previous, row_id_name="row_id"):
     changes = []
     for idx, row in df_diff.iterrows():
         row.dropna(inplace=True)
-        for change in row.iteritems():
+        for change in row.items():
             changes.append(
                 {
                     row_id_name: data[idx][row_id_name],

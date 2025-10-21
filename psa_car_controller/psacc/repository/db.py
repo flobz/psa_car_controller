@@ -269,14 +269,16 @@ class Database:
 
     # pylint: disable=too-many-arguments,too-many-positional-arguments
     @staticmethod
-    def record_position(weather_api, vin, mileage, latitude, longitude, altitude, date, level, level_fuel, moving):
+    def record_position(weather_api, vin, mileage, latitude, longitude, altitude, date, level, level_fuel,
+                        moving, temp):
         if mileage == 0:  # fix a bug of the api
             logger.error("The api return a wrong mileage for %s : %f", vin, mileage)
         else:
             try:
                 conn = Database.get_db()
                 if conn.execute("SELECT Timestamp from position where Timestamp=?", (date,)).fetchone() is None:
-                    temp = get_temp(latitude, longitude, weather_api)
+                    if temp is None:
+                        temp = get_temp(latitude, longitude, weather_api)
                     if level_fuel and level_fuel == 0:  # fix fuel level not provided when car is off
                         try:
                             level_fuel = conn.execute(

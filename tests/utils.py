@@ -37,10 +37,10 @@ def get_new_test_db():
 
 
 def record_position():
-    Database.record_position(None, car.vin, 11, latitude, longitude - 0.05, None, date0, 40, None, False)
-    Database.record_position(None, car.vin, 20, latitude, longitude, 32, date1, 35, None, False)
-    Database.record_position(None, car.vin, 30, latitude, longitude, 42, date2, 30, None, False)
-    Database.record_position(None, car.vin, None, latitude, longitude, 42, date2, 30, None, False)
+    Database.record_position(None, car.vin, 11, latitude, longitude - 0.05, None, date0, 40, None, False, None)
+    Database.record_position(None, car.vin, 20, latitude, longitude, 32, date1, 35, None, False, None)
+    Database.record_position(None, car.vin, 30, latitude, longitude, 42, date2, 30, None, False, None)
+    Database.record_position(None, car.vin, None, latitude, longitude, 42, date2, 30, None, False, None)
 
 
 def record_charging():

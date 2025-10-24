@@ -520,6 +520,14 @@
   max_elec_consumption: 70
   max_fuel_consumption: 30
 - !CarModel
+  name: SUV 3008 Hybrid 195
+  battery_power: 17.8
+  fuel_capacity: 55
+  abrp_name:
+  reg: VR3KBDGK0R 
+  max_elec_consumption: 70
+  max_fuel_consumption: 30
+- !CarModel
   name: SUV 3008 Hybrid4 300
   battery_power: 13.2
   fuel_capacity: 43

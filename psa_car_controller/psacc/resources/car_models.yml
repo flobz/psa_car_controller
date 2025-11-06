@@ -838,6 +838,13 @@
   reg: VR3FNZKW4R 
   max_elec_consumption: 70
 - !CarModel
+  name: E-308 SW 54kWh
+  battery_power: 50.8
+  fuel_capacity: 0
+  abrp_name: peugeot:e308:23:54
+  reg: VR3FNZKW9R 
+  max_elec_consumption: 70
+- !CarModel
   name: 308 SW GT Hybrid
   battery_power: 12.4
   fuel_capacity: 40

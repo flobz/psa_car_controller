@@ -456,6 +456,13 @@
   max_elec_consumption: 70
   max_fuel_consumption: 30
 - !ElecModel
+  name: Astra L Electric Sports Tourer GS
+  battery_power: 51
+  fuel_capacity: 0
+  abrp_name: opel:astrae:23:54
+  reg: VXKFNZKWZP 
+  max_elec_consumption: 70
+- !ElecModel
   name: Astra L Electric GS
   battery_power: 51
   fuel_capacity: 0

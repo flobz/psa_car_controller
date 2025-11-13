@@ -62,6 +62,13 @@
   reg:  VF7V1ZKXZM 
   max_elec_consumption: 70
 - !ElecModel
+  name: Citroën ë-SpaceTourer 75 kWh
+  battery_power: 69
+  fuel_capacity: 0
+  abrp_name: peugeot:etraveler:21:75:citroen
+  reg: VF7VSZKU9S  
+  max_elec_consumption: 70
+- !ElecModel
   name: e-208
   battery_power: 46
   fuel_capacity: 0

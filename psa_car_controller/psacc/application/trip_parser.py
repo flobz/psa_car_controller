@@ -63,7 +63,7 @@ class TripParser:
 
     def __is_recharging(self, start, end, distance):
         if start.get(LEVEL) is None or end.get(LEVEL) is None:
-                return False
+            return False
         decharge = self.get_level_consumption(start, end)[0]
         return TripParser.is_recharging(decharge, distance)
 

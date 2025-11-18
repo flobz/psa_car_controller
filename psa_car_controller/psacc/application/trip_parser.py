@@ -77,11 +77,6 @@ class TripParser:
         decharge = self.get_level_consumption(start, end)[0]
         return TripParser.is_recharging(decharge, distance)
 
-        if start.get(LEVEL) is None or end.get(LEVEL) is None:
-            return False
-        decharge = self.get_level_consumption(start, end)[0]
-        return TripParser.is_recharging(decharge, distance)
-
     @staticmethod
     def is_recharging(decharge, distance):
         # A margin of two is set because battery level can increase with regeneration system or temperature change.

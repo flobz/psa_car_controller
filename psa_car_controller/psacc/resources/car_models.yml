@@ -973,4 +973,11 @@
   reg: VXKUHZKW4S
   max_elec_consumption: 70
   max_fuel_consumption: 0
+- !ElecModel
+  name: Astra L Electric GS
+  battery_power: 51
+  fuel_capacity: 0
+  abrp_name: opel:astrae:22:54:tour
+  reg: VXKFNZKW9S 
+  max_elec_consumption: 70
 

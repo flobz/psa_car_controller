@@ -720,7 +720,9 @@
   battery_power: 0
   fuel_capacity: 52
   abrp_name:
-  reg: VR3FPHNSTP 
+  reg: VR3FPHNSTP
+  max_elec_consumption: 70
+  max_fuel_consumption: 30
 - !CarModel
   name: Citroën e-C3 IV
   battery_power: 44
@@ -748,7 +750,9 @@
   battery_power: 0
   fuel_capacity: 52
   abrp_name:
-  reg: VR3FPHPY0S 
+  reg: VR3FPHPY0S
+  max_elec_consumption: 70
+  max_fuel_consumption: 30
 - !CarModel
   name: SUV 3008 II
   battery_power: 0

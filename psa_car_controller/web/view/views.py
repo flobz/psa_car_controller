@@ -1,4 +1,5 @@
 from datetime import datetime
+from threading import Lock
 from typing import List
 from urllib.parse import parse_qs, urlparse
 
@@ -9,6 +10,7 @@ from dash.exceptions import PreventUpdate
 import time
 from flask import request
 
+from psa_car_controller.common import utils
 from psa_car_controller.common.mylogger import CustomLogger
 from psa_car_controller.psacc.application.car_controller import PSACarController
 from psa_car_controller.psacc.model.car import Cars, Car
@@ -175,58 +177,73 @@ def create_callback():  # noqa: MC0001
         CALLBACK_CREATED = True
 
 
+no_concurrent_update_trip = Lock()
+DATA_READY = False
+
+
 def update_trips():
-    global trips, chargings, cached_layout, min_date, max_date, min_millis, max_millis, step, marks
-    logger.info("update_data")
-    conn = Database.get_db(update_callback=False)
-    Database.add_altitude_to_db(conn)
-    conn.close()
-    min_date = None
-    max_date = None
-    if APP.is_good:
-        car = get_default_car()  # todo handle multiple car
+    global trips, chargings, cached_layout, min_date, max_date, min_millis, max_millis, step, marks, DATA_READY
+    # we allow on thread waiting for no_concurrent_update_trip lock
+    with utils.nonblocking(no_concurrent_update_trip) as locked:
+        if not locked:
+            logger.debug("update_trips already in progress")
+            return
         try:
-            trips_by_vin = Trips.get_trips(Cars([car]))
-            trips = trips_by_vin[car.vin]
-            assert len(trips) > 0
-            min_date = trips[0].start_at
-            max_date = trips[-1].start_at
-            figures.get_figures(trips[0].car)
-        except (AssertionError, KeyError):
-            logger.debug("No trips yet")
-            figures.get_figures(Car("vin", "vid", "brand"))
-        try:
-            chargings = Charging.get_chargings()
-            assert len(chargings) > 0
-            if min_date:
-                min_date = min(min_date, chargings[0]["start_at"])
-                max_date = max(max_date, chargings[-1]["start_at"])
-            else:
-                min_date = chargings[0]["start_at"]
-                max_date = chargings[-1]["start_at"]
-        except AssertionError:
-            logger.debug("No chargings yet")
-            if min_date is None:
-                return
-        # update for slider
-        try:
-            logger.debug("min_date:%s - max_date:%s", min_date, max_date)
-            min_millis = unix_time_millis(min_date)
-            max_millis = unix_time_millis(max_date)
-            step = (max_millis - min_millis) / 100
-            marks = get_marks_from_start_end(min_date, max_date)
-            cached_layout = None  # force regenerate layout
-            figures.get_figures(car)
-        except (ValueError, IndexError):
-            logger.error("update_trips (slider): %s", exc_info=True)
-        except AttributeError:
-            logger.debug("position table is probably empty :", exc_info=True)
-    return
+            logger.info("update_trips")
+            conn = Database.get_db()
+            Database.add_altitude_to_db(conn)
+            min_date = None
+            max_date = None
+            if APP.is_good:
+                car = get_default_car()  # todo handle multiple car
+                try:
+                    trips_by_vin = Trips.get_trips(Cars([car]))
+                    trips = trips_by_vin[car.vin]
+                    assert len(trips) > 0
+                    min_date = trips[0].start_at
+                    max_date = trips[-1].start_at
+                    figures.get_figures(trips[0].car)
+                except (AssertionError, KeyError):
+                    logger.debug("No trips yet")
+                    figures.get_figures(Car("vin", "vid", "brand"))
+                try:
+                    chargings = Charging.get_chargings()
+                    assert len(chargings) > 0
+                    if min_date:
+                        min_date = min(min_date, chargings[0]["start_at"])
+                        max_date = max(max_date, chargings[-1]["start_at"])
+                    else:
+                        min_date = chargings[0]["start_at"]
+                        max_date = chargings[-1]["start_at"]
+                except AssertionError:
+                    logger.debug("No chargings yet")
+                    if min_date is None:
+                        return
+                # update for slider
+                try:
+                    logger.debug("min_date:%s - max_date:%s", min_date, max_date)
+                    min_millis = unix_time_millis(min_date)
+                    max_millis = unix_time_millis(max_date)
+                    step = (max_millis - min_millis) / 100
+                    marks = get_marks_from_start_end(min_date, max_date)
+                    cached_layout = None  # force regenerate layout
+                    figures.get_figures(car)
+                except (ValueError, IndexError):
+                    logger.error("update_trips (slider): %s", exc_info=True)
+                except AttributeError:
+                    logger.debug("position table is probably empty :", exc_info=True)
+        finally:
+            DATA_READY = True
+        logger.debug("trips updated !")
+        return
 
 
 def serve_layout():
     global cached_layout
     if cached_layout is None:
+        while not DATA_READY:
+            logger.debug("wait for trips data...")
+            time.sleep(3)
         logger.debug("Create new layout")
         fig_filter = FigureFilter()
         try:
@@ -250,7 +267,7 @@ def serve_layout():
                 fig_filter.add_graph(dcc.Graph(id="consumption_graph_by_temp"), "consumption_by_temp",
                                      ["consumption_km"] * 2, figures.consumption_fig_by_temp)]
             maps = fig_filter.add_map(dcc.Graph(id="trips_map", style={"height": '90vh'}), "lat",
-                                      ["long", "start_at"], figures.trips_map)
+                                      ["long", "start_at_str"], figures.trips_map)
             fig_filter.add_table("trips", figures.table_fig)
             fig_filter.add_table("chargings", figures.battery_table)
             fig_filter.src = {"trips": trips.get_trips_as_dict(), "chargings": chargings}

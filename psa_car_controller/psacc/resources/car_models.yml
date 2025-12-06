@@ -1,4 +1,18 @@
 - !ElecModel
+  name: e-5008
+  battery_power: 73
+  fuel_capacity: 0
+  abrp_name: peugeot:e5008:25:77
+  reg: VR3KCZKZ8R 
+  max_elec_consumption: 70
+- !ElecModel
+  name: e-3008
+  battery_power: 73
+  fuel_capacity: 0
+  abrp_name: peugeot:e3008:24:77
+  reg: VR3KCZKZ3R 
+  max_elec_consumption: 70
+- !ElecModel
   name: e-3008
   battery_power: 73
   fuel_capacity: 0
@@ -46,6 +60,13 @@
   fuel_capacity: 0
   abrp_name: citroen:ejumpy:20:75:m
   reg:  VF7V1ZKXZM 
+  max_elec_consumption: 70
+- !ElecModel
+  name: Citroën ë-SpaceTourer 75 kWh
+  battery_power: 69
+  fuel_capacity: 0
+  abrp_name: peugeot:etraveler:21:75:citroen
+  reg: VF7VSZKU9S  
   max_elec_consumption: 70
 - !ElecModel
   name: e-208
@@ -177,6 +198,14 @@
   fuel_capacity: 46
   abrp_name:
   reg: VF3LCBHZHJ 
+  max_elec_consumption: 70
+  max_fuel_consumption: 30
+- !CarModel
+  name: '308SW GT-Line'
+  battery_power: 0
+  fuel_capacity: 52
+  abrp_name:
+  reg: VF3LRHNSPJ 
   max_elec_consumption: 70
   max_fuel_consumption: 30
 - !CarModel
@@ -427,6 +456,13 @@
   max_elec_consumption: 70
   max_fuel_consumption: 30
 - !ElecModel
+  name: Astra L Electric Sports Tourer GS
+  battery_power: 51
+  fuel_capacity: 0
+  abrp_name: opel:astrae:23:54
+  reg: VXKFNZKWZP 
+  max_elec_consumption: 70
+- !ElecModel
   name: Astra L Electric GS
   battery_power: 51
   fuel_capacity: 0
@@ -476,11 +512,19 @@
 - !CarModel
   name: New 308
   battery_power: 0
+  fuel_capacity: 56
+  abrp_name:
+  reg: VR3FPHNSLM 
+  max_elec_consumption: 70
+  max_fuel_consumption: 30   
+- !CarModel
+  name: New 308
+  battery_power: 0
   fuel_capacity: 52
   abrp_name:
   reg: VR3FPHNSLN 
   max_elec_consumption: 70
-  max_fuel_consumption: 30   
+  max_fuel_consumption: 30
 - !CarModel
   name: C5X
   battery_power: 12.4
@@ -498,11 +542,27 @@
   max_elec_consumption: 70
   max_fuel_consumption: 30
 - !CarModel
+  name: SUV 3008 Hybrid 195
+  battery_power: 17.8
+  fuel_capacity: 55
+  abrp_name:
+  reg: VR3KBDGK0R 
+  max_elec_consumption: 70
+  max_fuel_consumption: 30
+- !CarModel
   name: SUV 3008 Hybrid4 300
   battery_power: 13.2
   fuel_capacity: 43
   abrp_name:
   reg: VF3M45GBUM 
+  max_elec_consumption: 70
+  max_fuel_consumption: 30
+- !CarModel
+  name: SUV 3008 Hybrid4 300
+  battery_power: 13.2
+  fuel_capacity: 43
+  abrp_name:
+  reg: VF3M45GBUN
   max_elec_consumption: 70
   max_fuel_consumption: 30
 - !CarModel
@@ -660,7 +720,9 @@
   battery_power: 0
   fuel_capacity: 52
   abrp_name:
-  reg: VR3FPHNSTP 
+  reg: VR3FPHNSTP
+  max_elec_consumption: 70
+  max_fuel_consumption: 30
 - !CarModel
   name: Citroën e-C3 IV
   battery_power: 44
@@ -676,12 +738,21 @@
   abrp_name: peugeot:e5008:25:77
   reg: VR3KCZKZ0S 
   max_elec_consumption: 70
+- !ElecModel
+  name: E-5008 73 kWh GT
+  battery_power: 73
+  fuel_capacity: 0
+  abrp_name: peugeot:e5008:25:77
+  reg: VR3KCZKZ1R 
+  max_elec_consumption: 70
 - !CarModel
   name: 408 GT 1.2 Petrol
   battery_power: 0
   fuel_capacity: 52
   abrp_name:
-  reg: VR3FPHPY0S 
+  reg: VR3FPHPY0S
+  max_elec_consumption: 70
+  max_fuel_consumption: 30
 - !CarModel
   name: SUV 3008 II
   battery_power: 0
@@ -792,6 +863,14 @@
   abrp_name: peugeot:e308:23:54
   reg: VR3FNZKW4R 
   max_elec_consumption: 70
+- !ElecModel
+  name: E-308 SW 54kWh
+  battery_power: 50.8
+  fuel_capacity: 0
+  abrp_name: peugeot:e308:23:54
+  reg: VR3FNZKW9R 
+  max_elec_consumption: 70
+  max_fuel_consumption: 0
 - !CarModel
   name: 308 SW GT Hybrid
   battery_power: 12.4
@@ -823,16 +902,35 @@
   reg: VR3F3DGY7 
   max_elec_consumption: 70
   max_fuel_consumption: 30
+- !CarModel
+  name: Opel Corsa Facelift (2024)
+  battery_power: 0
+  fuel_capacity: 44
+  abrp_name:
+  reg: VXKUPHNEKR 
+- !CarModel
+  name: Vauxhall Astra Design Turbo
+  battery_power: 0
+  fuel_capacity: 52
+  abrp_name:
+  reg: VXKFPHNPLN
 - !ElecModel
-  name: Zafira-e Life L3
-  battery_power: 46.3
+  name: Astra L Sports Tourer Electric GS
+  battery_power: 50.8
   fuel_capacity: 0
-  abrp_name: peugeot:etraveler:21:50:opel
-  reg: VXEVZZKXZM 
+  abrp_name: opel:astrae:22:54:tour
+  reg: VXKFNZKW3S
+  max_elec_consumption: 70
+- !ElecModel
+  name: Vauxhall Corsa Electric
+  battery_power: 46
+  fuel_capacity: 0
+  abrp_name: vauxhall:corsae:20:50
+  reg: VXKUPHNEKP
   max_elec_consumption: 70
   max_fuel_consumption: 0
 - !CarModel
-  name: Opel Corsa Facelift (2024)
+  name: '208(2017-2019)'
   battery_power: 0
   fuel_capacity: 44
   abrp_name:
@@ -843,3 +941,50 @@
   fuel_capacity: 50
   abrp_name:
   reg: VR7ECYHZRK
+  reg: VF3CCHMRPJ.*
+  max_elec_consumption: 70
+  max_fuel_consumptipn: 30
+- !ElecModel
+  name: E-Partner 50 kWh (2024)
+  battery_power: 50
+  fuel_capacity: 0
+  abrp_name: Peugeot;Partner (alpha)
+  reg: VR3ENZKUXR.*
+  max_elec_consumption: 50
+- !CarModel
+  name: Spacetourer Vanster 2021
+  battery_power: 0
+  fuel_capacity: 70
+  abrp_name:
+  reg: VF7VEAHXKL.*
+- !ElecModel
+  name: e-5008 Single Motor 73 kWh
+  battery_power: 73
+  fuel_capacity: 0
+  abrp_name: peugeot:e5008:25:77
+  reg: VR3KCZKZ4R.*
+  max_elec_consumption: 70
+- !CarModel
+  name: 3008-III
+  battery_power: 0
+  fuel_capacity: 53
+  abrp_name:
+  reg: VR3KAHPY1RS.*
+  max_elec_consumption: 70
+  max_fuel_consumption: 30
+- !CarModel
+  name: Opel Corsa Electric GS Long Range (2025)
+  battery_power: 54
+  fuel_capacity: 0
+  abrp_name:
+  reg: VXKUHZKW4S
+  max_elec_consumption: 70
+  max_fuel_consumption: 0
+- !ElecModel
+  name: Astra L Electric GS
+  battery_power: 51
+  fuel_capacity: 0
+  abrp_name: opel:astrae:22:54:tour
+  reg: VXKFNZKW9S 
+  max_elec_consumption: 70
+

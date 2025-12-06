@@ -28,25 +28,19 @@ vehicule_list = Cars()
 vehicule_list.extend(
     [Car("VR3UHZKX", "vid", "Peugeot"), Car("VXXXXX", "XXXX", "Peugeot", label="SUV 3008 Hybrid 225")])
 car = vehicule_list[0]
-DB_DIR = DATA_DIR + "tmp.db"
 
 
 def get_new_test_db():
-    try:
-        os.remove(DATA_DIR + "tmp.db")
-    except FileNotFoundError:
-        pass
-    Database.DEFAULT_DB_FILE = DB_DIR
-    Database.db_initialized = False
-    conn = Database.get_db()
+    Database.close_db()
+    conn = Database.get_db(force_new_conn=True, db_file="")
     return conn
 
 
 def record_position():
-    Database.record_position(None, car.vin, 11, latitude, longitude - 0.05, None, date0, 40, None, False)
-    Database.record_position(None, car.vin, 20, latitude, longitude, 32, date1, 35, None, False)
-    Database.record_position(None, car.vin, 30, latitude, longitude, 42, date2, 30, None, False)
-    Database.record_position(None, car.vin, None, latitude, longitude, 42, date2, 30, None, False)
+    Database.record_position(None, car.vin, 11, latitude, longitude - 0.05, None, date0, 40, None, False, None)
+    Database.record_position(None, car.vin, 20, latitude, longitude, 32, date1, 35, None, False, None)
+    Database.record_position(None, car.vin, 30, latitude, longitude, 42, date2, 30, None, False, None)
+    Database.record_position(None, car.vin, None, latitude, longitude, 42, date2, 30, None, False, None)
 
 
 def record_charging():

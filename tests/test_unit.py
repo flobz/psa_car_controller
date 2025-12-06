@@ -156,7 +156,8 @@ class TestUnit(unittest.TestCase):
                            datetime(2022, 3, 26, 11, 2, 54, tzinfo=tzutc()),
                            59.0,
                            None,
-                           True)
+                           True,
+                           None)
         self.assertEqual(db_record_position_arg, expected_result)
 
     @patch("psa_car_controller.psacc.repository.db.Database.record_battery_soh")
@@ -175,7 +176,8 @@ class TestUnit(unittest.TestCase):
                            datetime(2022, 3, 26, 11, 2, 54, tzinfo=tzutc()),
                            59.0,
                            None,
-                           True)
+                           True,
+                           None)
         self.assertEqual(db_record_position_arg, expected_result)
         self.assertEqual(
             ('VR3UHZKX',
@@ -257,9 +259,9 @@ class TestUnit(unittest.TestCase):
         get_new_test_db()
         config_repository.CONFIG_FILENAME = DATA_DIR + "config.ini"
         car = self.vehicule_list[1]
-        Database.record_position(None, car.vin, 11, latitude, longitude, 22, date0, 40, 30, False)
-        Database.record_position(None, car.vin, 20, latitude, longitude, 22, date1, 35, 29, False)
-        Database.record_position(None, car.vin, 30, latitude, longitude, 22, date2, 30, 28, False)
+        Database.record_position(None, car.vin, 11, latitude, longitude, 22, date0, 40, 30, False, None)
+        Database.record_position(None, car.vin, 20, latitude, longitude, 22, date1, 35, 29, False, None)
+        Database.record_position(None, car.vin, 30, latitude, longitude, 22, date2, 30, 28, False, None)
         trips = Trips.get_trips(self.vehicule_list)
         res = trips[car.vin].get_trips_as_dict()
         assert compare_dict(res, [{'consumption_km': 6.947368421052632,
@@ -280,14 +282,14 @@ class TestUnit(unittest.TestCase):
         get_new_test_db()
         config_repository.CONFIG_FILENAME = DATA_DIR + "config.ini"
         car = self.vehicule_list[1]
-        Database.record_position(None, car.vin, None, latitude, longitude, 22, get_date(1), 40, 30, False)
-        Database.record_position(None, car.vin, None, latitude, longitude, 22, get_date(2), 35, 29, False)
-        Database.record_position(None, car.vin, None, latitude, longitude, 22, get_date(3), 30, 28, False)
+        Database.record_position(None, car.vin, None, latitude, longitude, 22, get_date(1), 40, 30, False, None)
+        Database.record_position(None, car.vin, None, latitude, longitude, 22, get_date(2), 35, 29, False, None)
+        Database.record_position(None, car.vin, None, latitude, longitude, 22, get_date(3), 30, 28, False, None)
         start = get_date(4)
         end = get_date(6)
-        Database.record_position(None, car.vin, 11, latitude, longitude, 22, start, 40, 30, False)
-        Database.record_position(None, car.vin, 20, latitude, longitude, 22, get_date(5), 35, 29, False)
-        Database.record_position(None, car.vin, 30, latitude, longitude, 22, end, 30, 28, False)
+        Database.record_position(None, car.vin, 11, latitude, longitude, 22, start, 40, 30, False, None)
+        Database.record_position(None, car.vin, 20, latitude, longitude, 22, get_date(5), 35, 29, False, None)
+        Database.record_position(None, car.vin, 30, latitude, longitude, 22, end, 30, 28, False, None)
         trips = Trips.get_trips(self.vehicule_list)
         res = trips[car.vin].get_trips_as_dict()
         assert compare_dict(res, [{'consumption_km': 6.947368421052632,
@@ -309,7 +311,7 @@ class TestUnit(unittest.TestCase):
         get_new_test_db()
         Database.set_db_callback(callback_test)
         assert old_dummy_value == dummy_value
-        Database.record_position(None, "xx", 11, latitude, longitude - 0.05, None, date0, 40, None, False)
+        Database.record_position(None, "xx", 11, latitude, longitude - 0.05, None, date0, 40, None, False, None)
         assert old_dummy_value != dummy_value
 
     def test_parse_hour(self):
@@ -344,12 +346,14 @@ class TestUnit(unittest.TestCase):
             f.write(" ")
         assert github_file_need_to_be_downloaded(GITHUB_USER, GITHUB_REPO, "", filename) is True
 
-    def test_regex(self):
+    def test_car_model_duplication(self):
         car_models = CarModelRepository().models
-        model_by_reg = {}
+        vins = []
         for model in car_models:
-            self.assertFalse(model.reg in model_by_reg, f"duplicate vin prefix {model.reg}")
-            model_by_reg[model.reg] = True
+            self.assertFalse(model.reg in vins, f"duplicate vin prefix {model.reg}")
+            for vin in vins:
+                self.assertFalse(vin in model.reg, f"duplicate vin with shorter prefix {vin}")
+            vins.append(model.reg)
 
 
 if __name__ == '__main__':

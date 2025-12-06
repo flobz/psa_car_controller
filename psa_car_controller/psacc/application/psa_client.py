@@ -71,7 +71,7 @@ class PSAClient:
         self.set_proxies(proxies)
         self.config_file = DEFAULT_CONFIG_FILENAME
         Ecomix.co2_signal_key = co2_signal_api
-        self.refresh_thread = None
+        self.refresh_thread: threading.Timer = None
         remote_credentials = RemoteCredentials(remote_refresh_token)
         remote_credentials.update_callbacks.append(self.save_config)
         self.remote_client = RemoteClient(self.account_info,
@@ -119,6 +119,7 @@ class PSAClient:
         if self.info_refresh_rate is not None:
             if self.refresh_thread and self.refresh_thread.is_alive():
                 logger.debug("refresh_vehicle_info: precedent task still alive")
+                self.refresh_thread.cancel()
             self.refresh_thread = threading.Timer(self.info_refresh_rate, self.__refresh_vehicle_info)
             self.refresh_thread.daemon = True
             self.refresh_thread.start()
@@ -182,7 +183,10 @@ class PSAClient:
         mileage = car.status.timed_odometer.mileage
         level = car.status.get_energy('Electric').level
         level_fuel = car.status.get_energy('Fuel').level
-        charge_date = car.status.get_energy('Electric').updated_at
+        if car.is_thermal():
+            charge_date = car.status.get_energy('Fuel').updated_at
+        else:
+            charge_date = car.status.get_energy('Electric').updated_at
         moving = car.status.kinetic.moving
 
         longitude = car.status.last_position.geometry.coordinates[0]
@@ -191,11 +195,14 @@ class PSAClient:
         date = car.status.last_position.properties.updated_at
         if date is None or date < datetime.now(timezone.utc) - timedelta(days=1):  # if position isn't updated
             date = charge_date
+
+        temp = getattr(getattr(getattr(car.status, "environment", None), "air", None), "temp", None)
+
         logger.debug("vin:%s longitude:%s latitude:%s date:%s mileage:%s level:%s charge_date:%s level_fuel:"
-                     "%s moving:%s", car.vin, longitude, latitude, date, mileage, level, charge_date, level_fuel,
-                     moving)
+                     "%s moving:%s temp:%s", car.vin, longitude, latitude, date, mileage, level, charge_date,
+                     level_fuel, moving, temp)
         Database.record_position(self.weather_api, car.vin, mileage, latitude, longitude, altitude, date, level,
-                                 level_fuel, moving)
+                                 level_fuel, moving, temp)
         self.abrp.call(car, Database.get_last_temp(car.vin))
         if car.has_battery():
             electric_energy_status = car.status.get_energy('Electric')

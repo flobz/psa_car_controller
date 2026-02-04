@@ -732,6 +732,14 @@
   max_elec_consumption: 70
   max_fuel_consumption: 30
 - !ElecModel
+  name: Citroën e-C3 IV
+  battery_power: 44
+  fuel_capacity: 0
+  abrp_name: citroen:ec3:24:44
+  reg: VR7CBZYA9S
+  max_elec_consumption: 70
+- !ElecModel
+- !ElecModel
   name: E-5008 73 kWh
   battery_power: 73
   fuel_capacity: 0

@@ -169,6 +169,14 @@
   reg: VF31NZKY 
   max_elec_consumption: 70
 - !CarModel
+  name: 5008 Plug-in Hybrid 195
+  battery_power: 17.8
+  fuel_capacity: 60
+  abrp_name:
+  reg: VR3KBDGK7S
+  max_elec_consumption: 70
+  max_fuel_consumption: 30
+- !CarModel
   name: SUV 3008 Hybrid 225
   battery_power: 13.2
   fuel_capacity: 43

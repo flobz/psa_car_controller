@@ -934,6 +934,13 @@
   battery_power: 0
   fuel_capacity: 44
   abrp_name:
+  reg: VXKUPHNEKR 
+- !CarModel
+  name: Berlingo 2018+ Diesel
+  battery_power: 0
+  fuel_capacity: 50
+  abrp_name:
+  reg: VR7ECYHZRK
   reg: VF3CCHMRPJ.*
   max_elec_consumption: 70
   max_fuel_consumptipn: 30

@@ -969,7 +969,7 @@
   battery_power: 0
   fuel_capacity: 53
   abrp_name:
-  reg: VR3KAHPY1RS.*
+  reg: VR3KAHPY1R
   max_elec_consumption: 70
   max_fuel_consumption: 30
 - !CarModel

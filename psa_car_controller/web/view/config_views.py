@@ -6,6 +6,7 @@ from dash.exceptions import PreventUpdate
 from flask import request
 
 from psa_car_controller.psa.otp.otp import new_otp_session
+from psa_car_controller.psa.setup.headless_oauth import HeadlessOAuthError, get_oauth_code_headless
 from psa_car_controller.psacc.application.car_controller import PSACarController
 from psa_car_controller.psa.setup.app_decoder import InitialSetup
 from psa_car_controller.common.mylogger import LOG_FILE
@@ -135,16 +136,61 @@ def connectPSA(n_clicks, app_name, email, password, countrycode):  # pylint: dis
         try:
             global INITIAL_SETUP
             INITIAL_SETUP = InitialSetup(app_name, email, password, countrycode)
-            redirect_uri = parse.quote(INITIAL_SETUP.psacc.manager.generate_redirect_url())
-            return dbc.Alert(["Success !", html.A(" Go to login",
-                                                  href=f"{request.url_root}config_connect?url={redirect_uri}")],
-                             color="success")
+            auth_url = INITIAL_SETUP.psacc.manager.generate_redirect_url()
+            scheme = INITIAL_SETUP.psacc.manager.redirect_uri.split("://")[0]
         except Exception as e:
-            res = str(e)
             logger.exception(e)
-            return dbc.Alert(res, color="danger")
-    else:
-        return ""
+            return dbc.Alert(str(e), color="danger")
+
+        # Attempt automatic headless OAuth
+        try:
+            code = get_oauth_code_headless(auth_url, email, password, scheme)
+            INITIAL_SETUP.connect(code)
+            return dbc.Alert(
+                ["Login successful! ", html.A("Go to OTP config", href=request.url_root + "config_otp")],
+                color="success"
+            )
+        except HeadlessOAuthError as e:
+            redirect_uri = parse.quote(auth_url)
+            return dbc.Alert(
+                [
+                    html.P("Automatic login failed. Please complete manually: "),
+                    html.A("Go to login", href=f"{request.url_root}config_connect?url={redirect_uri}"),
+                    html.Hr(),
+                    html.P("Debug information (please include in GitHub issue):"),
+                    dbc.Label("Last URL:"),
+                    dbc.Input(value=e.url, readonly=True, style={"margin-bottom": "10px"}),
+                    dbc.Label("Console Logs:"),
+                    dbc.Textarea(
+                        value="\n".join(e.logs),
+                        style={
+                            "height": "100px",
+                            "font-family": "monospace",
+                            "font-size": "12px",
+                            "margin-bottom": "10px"
+                        },
+                        readonly=True,
+                    ),
+                    dbc.Label("HTML Content:"),
+                    dbc.Textarea(
+                        value=e.html,
+                        style={"height": "200px", "font-family": "monospace", "font-size": "12px"},
+                        readonly=True,
+                    ),
+                ],
+                color="warning"
+            )
+        except Exception as e:  # pylint: disable=broad-except
+            logger.warning("Headless OAuth failed (%s), falling back to manual flow", e)
+
+        # Manual fallback
+        redirect_uri = parse.quote(auth_url)
+        return dbc.Alert(
+            ["Automatic login failed. Please complete manually: ",
+             html.A("Go to login", href=f"{request.url_root}config_connect?url={redirect_uri}")],
+            color="warning"
+        )
+    return ""
 
 
 @dash_app.callback(

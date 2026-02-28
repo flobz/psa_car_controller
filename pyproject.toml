@@ -28,6 +28,7 @@ argparse = "^1.4.0"
 geojson = "^2.5.0"
 reverse-geocode = "^1.4.1"
 androguard = "^4.1.2"
+playwright = ">=1.40.0"
 pycryptodomex = "3.23.0"  # Pin version as they introduce breaking changes in minor versions
 pydantic = "^1.9.0"
 "ruamel.yaml" = ">=0.15.0"
@@ -54,7 +55,7 @@ pre-commit = "^2.17.0"
 coverage = "^6.3.2"
 deepdiff = "^5.7.0"
 greenery = "^3.3.5"
-autopep8 = "2.0.4"
+autopep8 = "2.3.2"
 pylint = "3.3.6"
 
 [build-system]

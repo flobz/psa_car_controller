@@ -14,10 +14,9 @@ from psa_car_controller.psacc.application.charge_control import ChargeControl, C
 
 logger = logging.getLogger(__name__)
 
-APP_VERSION = "1.51.1"
 GITHUB_USER = "flobz"
 GITHUB_REPO = "psa_apk"
-TIMEOUT_IN_S = 10
+TIMEOUT_IN_S = 30
 app = PSACarController()
 
 
@@ -37,6 +36,7 @@ class InitialSetup:
         self.site_code = apk_parser.site_code
         self.client_id = apk_parser.client_id
         self.client_secret = apk_parser.client_secret
+        self.version = apk_parser.version
         self.country_code = country_code
         self.user_info = None
         self.customer_id = None
@@ -64,7 +64,7 @@ class InitialSetup:
             raise e
         except Exception as ex:
             msg = traceback.format_exc() + f"\nHOST_BRANDID : {apk_parser.host_brandid_prod} " \
-                                           f"sitecode: {apk_parser.site_code}"
+                f"sitecode: {apk_parser.site_code}"
             try:
                 msg += res.text
             except BaseException:
@@ -87,7 +87,7 @@ class InitialSetup:
                 params={
                     "culture": self.culture,
                     "width": 1080,
-                    "version": APP_VERSION
+                    "version": self.version
                 },
                 data=json.dumps({"site_code": self.site_code, "ticket": self.token}),
                 headers={
@@ -96,7 +96,7 @@ class InitialSetup:
                     "Source-Agent": "App-Android",
                     "Token": self.token,
                     "User-Agent": "okhttp/4.8.0",
-                    "Version": APP_VERSION
+                    "Version": self.version
                 },
                 cert=("certs/public.pem", "certs/private.pem"),
                 timeout=TIMEOUT_IN_S

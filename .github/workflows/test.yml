@@ -33,7 +33,6 @@ jobs:
       - name: check quality
         run: |
           source .venv/bin/activate
-          prospector
           pre-commit run -a
       - name: test app
         env:

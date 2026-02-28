@@ -125,6 +125,7 @@ class RemoteClient:
 
     def stop(self):
         if self.mqtt_client:
+            logger.info("stop mqtt...")
             self.mqtt_client.on_disconnect = None
             self.mqtt_client.disconnect()
         if self.update_thread:
@@ -135,7 +136,7 @@ class RemoteClient:
         if len(self.vehicles_list) > 0:
             try:
                 self.wakeup(self.vehicles_list[0].vin)
-            except RateLimitException:
+            except Exception:
                 logger.exception("__keep_mqtt")
         self.update_thread = threading.Timer(timeout, self.__keep_mqtt)
         self.update_thread.daemon = True

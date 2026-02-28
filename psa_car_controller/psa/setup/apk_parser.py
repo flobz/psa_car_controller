@@ -23,6 +23,7 @@ class ApkParser:
         self.culture = None
         self.client_id = None
         self.client_secret = None
+        self.version = None
 
     @staticmethod
     def __get_cultures_code(file, country_code):
@@ -45,6 +46,7 @@ class ApkParser:
 
         # Get Customer id
         self.site_code = BRAND[package_name]["brand_code"] + "_" + self.country_code + "_ESP"
+        self.version = a.androidversion.get("Name")
         pfx_cert = a.get_file("assets/MWPMYMA1.pfx")
         save_key_to_pem(pfx_cert, b"y5Y2my5B")
 

@@ -1002,4 +1002,10 @@
   abrp_name: opel:astrae:22:54:tour
   reg: VXKFNZKW9S 
   max_elec_consumption: 70
-
+- !ElecModel
+  name: Citroën ë-C3 Aircross 44 kWh
+  battery_power: 43.8
+  fuel_capacity: 0
+  abrp_name: citroen:ec3:24:44:aircross
+  reg: VR7CPZYA7T
+  max_elec_consumption: 70

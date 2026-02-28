@@ -15,9 +15,10 @@ logger = logging.getLogger(__name__)
 
 def get_oauth_config_layout(redirect_url):
     return dbc.Row(dbc.Col(md=12, lg=2, className="m-3", children=[
-        dbc.Row(html.H2('Connection to PSA')),
+        dbc.Row(html.H2('Connection to PSA (manual fallback)')),
         dbc.Row(className="ms-2", children=[
             html.Div(html.P([
+                "Automatic login failed. Complete the OAuth flow manually:", html.Br(),
                 html.A("1. Click here", href=redirect_url, target="_blank"), html.Br(),
                 "2. Complete the login procedure there too until you see 'LOGIN SUCCESSFUL'", html.Br(),
                 "3. Open your browser's DevTools (F12) and then the click on 'Network' tab", html.Br(),

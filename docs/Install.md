@@ -14,8 +14,17 @@
     
 - For everyone :
       ```pip3 install psa-car-controller```
-  
-            
+
+- Install [Playwright](https://playwright.dev/python/) for automatic OAuth login:
+
+  ```bash
+  pip3 install playwright
+  playwright install --with-deps webkit
+  ```
+
+  > If Playwright is not installed or the browser fails to start, automatic login falls back to the manual flow.
+
+
 1.3 start the app:
         
 Start the app with charge control enabled :

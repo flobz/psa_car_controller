@@ -210,8 +210,7 @@ class Otp:
         params.update(R)
         xml = self.request(params)
         if xml["err"] != "OK":
-            logger.error("Error during activation: %s", xml)
-            return Otp.NOK
+            raise ConfigException(f"Error during activation: {xml}")
         self.data.synchro(xml, self.generate_kma(self.codepin))
 
         if self.mode == Otp.OTP_MODE:
@@ -269,14 +268,13 @@ class Otp:
         try:
             if self.activation_start():
                 res = self.activation_finalyze()
-                if res != Otp.NOK:
-                    if res == Otp.OTP_TWICE:
-                        self.mode = Otp.OTP_MODE
-                        self.activation_start()
-                        assert self.activation_finalyze() == Otp.OK
-                    otp_code = self._get_otp_code()
-                    assert otp_code is not None
-                    logger.debug("otp code: %s", otp_code)
+                if res == Otp.OTP_TWICE:
+                    self.mode = Otp.OTP_MODE
+                    self.activation_start()
+                    assert self.activation_finalyze() == Otp.OK
+                otp_code = self._get_otp_code()
+                assert otp_code is not None
+                logger.debug("otp code: %s", otp_code)
         except AssertionError as e:
             raise ConfigException("Can't get otp code") from e
         return otp_code

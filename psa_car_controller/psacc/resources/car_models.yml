@@ -761,7 +761,6 @@
   reg: VR7CBZYA9S
   max_elec_consumption: 70
 - !ElecModel
-- !ElecModel
   name: E-5008 73 kWh
   battery_power: 73
   fuel_capacity: 0

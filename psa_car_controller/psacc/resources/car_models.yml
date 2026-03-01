@@ -1002,4 +1002,11 @@
   abrp_name: opel:astrae:22:54:tour
   reg: VXKFNZKW9S 
   max_elec_consumption: 70
-
+- !CarModel
+  name: SUV 5008 Hybrid eDCS6
+  battery_power: 0,4
+  fuel_capacity: 55
+  abrp_name:
+  reg: VR3KAHPY4R 
+  max_elec_consumption: 70
+  max_fuel_consumption: 30

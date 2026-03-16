@@ -64,7 +64,9 @@ class Ecomix:
             try:
                 now = datetime.utcnow().replace(tzinfo=UTC)
                 country_code = Ecomix.get_country(latitude, longitude, country_code_default)
-                assert country_code is not None
+                if country_code is None:
+                    logger.warning("Can't find country for %s %s", latitude, longitude)
+                    return False
                 if country_code not in Ecomix._cache:
                     Ecomix._cache[country_code] = []
                 elif len(Ecomix._cache[country_code]) > 0 and \
@@ -79,10 +81,12 @@ class Ecomix:
 
                 data = res.json()
                 value = data["carbonIntensity"]
-                assert isinstance(value, numbers.Number)
+                if not isinstance(value, numbers.Number):
+                    logger.error("carbonIntensity invalid value: '%s'", value)
+                    return False
                 Ecomix._cache[country_code].append([now, value])
                 return True
-            except (AssertionError, NameError, KeyError):
+            except (NameError, KeyError):
                 logger.debug("ecomix:", exc_info=True)
                 return False
         else:

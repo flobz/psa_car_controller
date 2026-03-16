@@ -51,7 +51,8 @@ class OpenIdCredentialManager(CredentialManager):
                                            code_challenge=code_challenge, code_challenge_method="S256")
 
     def connect_with_code(self, code: str):
-        assert len(code) == 36, "Invalid code length"
+        if len(code) != 36:
+            raise ValueError(f"Invalid code length: {len(code)} (expected 36)")
         self._token_request({"grant_type": 'authorization_code', "code": code,
                              "redirect_uri": self.redirect_uri, "code_verifier": self.code_verifier},
                             False)

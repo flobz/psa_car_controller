@@ -210,14 +210,14 @@ class Otp:
         params.update(R)
         xml = self.request(params)
         if xml["err"] != "OK":
-            raise ConfigException(f"Error during activation: {xml}")
+            raise ConfigException(f"Error during activation finalize: {xml}")
         self.data.synchro(xml, self.generate_kma(self.codepin))
 
         if self.mode == Otp.OTP_MODE:
             try:
                 self.defi = str(xml["defi"])
             except KeyError:
-                raise ConfigException from KeyError
+                raise ConfigException("Missing 'defi' in response") from KeyError
             if "J" in xml:
                 logger.debug("Need another otp request")
                 return Otp.OTP_TWICE
@@ -228,7 +228,7 @@ class Otp:
             return Otp.OK
 
         if int(xml["ms_n"]) > 1:
-            raise NotImplementedError
+            raise NotImplementedError("Multiple ms_n not supported")
         ms_n = "0"
 
         self.challenge = xml["challenge"]
@@ -251,6 +251,8 @@ class Otp:
         req_param.update({"id": self.data.iwid, "lastsync": self.data.iwTsync, "ms_n": 1})
         req_param.update(self.get_r())
         xml = self.request(req_param)
+        if xml["err"] != "OK":
+            raise ConfigException(f"Error during MS_MODE activation finalize: {xml}")
         self.data.synchro(xml, self.generate_kma(self.codepin))
         return Otp.OK
 
@@ -265,18 +267,17 @@ class Otp:
     def get_otp_code(self):
         self.mode = Otp.OTP_MODE
         otp_code = None
-        try:
-            if self.activation_start():
-                res = self.activation_finalyze()
-                if res == Otp.OTP_TWICE:
-                    self.mode = Otp.OTP_MODE
-                    self.activation_start()
-                    assert self.activation_finalyze() == Otp.OK
-                otp_code = self._get_otp_code()
-                assert otp_code is not None
-                logger.debug("otp code: %s", otp_code)
-        except AssertionError as e:
-            raise ConfigException("Can't get otp code") from e
+        if self.activation_start():
+            res = self.activation_finalyze()
+            if res == Otp.OTP_TWICE:
+                self.mode = Otp.OTP_MODE
+                self.activation_start()
+                if self.activation_finalyze() != Otp.OK:
+                    raise ConfigException("Can't get otp code (second attempt failed)")
+            otp_code = self._get_otp_code()
+            if otp_code is None:
+                raise ConfigException("Can't get otp code (code is None)")
+            logger.debug("otp code: %s", otp_code)
         return otp_code
 
     def __getstate__(self):
@@ -332,8 +333,7 @@ def new_otp_session(smscode, codepin, old_otp_session: Otp = None, ):
         otp = Otp("bb8e981582b0f31353108fb020bead1c", device_id=old_otp_session.device_id)
     otp.smsCode = smscode
     otp.codepin = codepin
-    if otp.activation_start():
-        otp.activation_finalyze()
-        save_otp(otp)
-        return otp
-    return None
+    otp.activation_start()
+    otp.activation_finalyze()
+    save_otp(otp)
+    return otp

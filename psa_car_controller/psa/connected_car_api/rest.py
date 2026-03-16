@@ -127,8 +127,11 @@ class RESTClientObject(object):
                                  (connection, read) timeouts.
         """
         method = method.upper()
-        assert method in ['GET', 'HEAD', 'DELETE', 'POST', 'PUT',
-                          'PATCH', 'OPTIONS']
+        allowed_methods = ['GET', 'HEAD', 'DELETE', 'POST', 'PUT', 'PATCH', 'OPTIONS']
+        if method not in allowed_methods:
+            raise ValueError(
+                f"Invalid HTTP method: {method}. Must be one of {allowed_methods}"
+            )
 
         if post_params and body:
             raise ValueError(

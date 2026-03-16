@@ -199,26 +199,26 @@ def update_trips():
                 try:
                     trips_by_vin = Trips.get_trips(Cars([car]))
                     trips = trips_by_vin[car.vin]
-                    assert len(trips) > 0
-                    min_date = trips[0].start_at
-                    max_date = trips[-1].start_at
-                    figures.get_figures(trips[0].car)
-                except (AssertionError, KeyError):
+                    if len(trips) > 0:
+                        min_date = trips[0].start_at
+                        max_date = trips[-1].start_at
+                        figures.get_figures(trips[0].car)
+                except (KeyError, IndexError):
                     logger.debug("No trips yet")
                     figures.get_figures(Car("vin", "vid", "brand"))
-                try:
-                    chargings = Charging.get_chargings()
-                    assert len(chargings) > 0
+                figures.get_figures(Car("vin", "vid", "brand"))
+                chargings = Charging.get_chargings()
+                if len(chargings) == 0:
+                    logger.debug("No chargings yet")
+                    if min_date is None:
+                        return
+                else:
                     if min_date:
                         min_date = min(min_date, chargings[0]["start_at"])
                         max_date = max(max_date, chargings[-1]["start_at"])
                     else:
                         min_date = chargings[0]["start_at"]
                         max_date = chargings[-1]["start_at"]
-                except AssertionError:
-                    logger.debug("No chargings yet")
-                    if min_date is None:
-                        return
                 # update for slider
                 try:
                     logger.debug("min_date:%s - max_date:%s", min_date, max_date)

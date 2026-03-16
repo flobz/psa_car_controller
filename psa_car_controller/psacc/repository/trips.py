@@ -64,7 +64,9 @@ class Trips(list):
                 'AND mileage IS NOT NULL AND Timestamp IS NOT NULL ORDER BY Timestamp', (vin,)).fetchall()
             if len(res) > 1:
                 car = vehicles_list.get_car_by_vin(vin)
-                assert car is not None
+                if car is None:
+                    logger.warning("Car with vin %s not found in vehicles list", vin)
+                    continue
                 trip_parser = TripParser(car)
                 start = res[0]
                 end = res[1]

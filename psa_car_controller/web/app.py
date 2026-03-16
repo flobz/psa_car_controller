@@ -80,7 +80,7 @@ def config_flask(title, base_path, debug: bool, host, port, reloader=False,
     dash_app = DashCustom(external_stylesheets=[dbc.themes.BOOTSTRAP, dbc.icons.BOOTSTRAP],
                           external_scripts=locale_url, title=title,
                           server=app, requests_pathname_prefix=requests_pathname_prefix,
-                          suppress_callback_exceptions=True, serve_locally=False)
+                          suppress_callback_exceptions=True)
     dash_app.enable_dev_tools(debug)
     app.wsgi_app = MyProxyFix(dash_app)
     # keep this line

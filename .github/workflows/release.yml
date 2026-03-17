@@ -79,3 +79,31 @@ jobs:
       -
         name: Image digest
         run: echo ${{ steps.docker_build.outputs.digest }}
+
+  update_ha_config:
+    needs: push_to_registry
+    name: Update psacc-ha version
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v') && !contains(github.ref, '-')
+    steps:
+      - name: Update psacc-ha version
+        env:
+          GH_TOKEN: ${{ secrets.GH_PAT }}
+          VERSION: ${{ github.ref_name }}
+        run: |
+          echo "Updating flobz/psacc-ha config.json to $VERSION"
+          
+          # Get current content and SHA
+          RESPONSE=$(gh api repos/flobz/psacc-ha/contents/psacc-ha/config.json)
+          FILE_SHA=$(echo "$RESPONSE" | jq -r '.sha')
+          CURRENT_CONTENT=$(echo "$RESPONSE" | jq -r '.content' | base64 -d)
+          
+          # Replace version
+          NEW_CONTENT=$(echo "$CURRENT_CONTENT" | sed "s/\"version\": \"v[^\"]*\"/\"version\": \"$VERSION\"/")
+          
+          # Update file
+          gh api repos/flobz/psacc-ha/contents/psacc-ha/config.json \
+            -X PUT \
+            -f message="chore: bump version to $VERSION" \
+            -f content="$(echo "$NEW_CONTENT" | base64 -w 0)" \
+            -f sha="$FILE_SHA"

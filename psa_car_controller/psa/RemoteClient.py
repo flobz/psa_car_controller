@@ -84,7 +84,7 @@ class RemoteClient:
                     else:
                         logger.error("Last request might have been send twice without success")
                 elif data["return_code"] != "0":
-                    logger.error('%s : %s', data["return_code"], data.get("reason", "?"))
+                    logger.error('mqtt error %s : %s', data["return_code"], data.get("reason", "?"))
             elif msg.topic.startswith(MQTT_EVENT_TOPIC):
                 charge_info = data["charging_state"]
                 programs = data["precond_state"].get("programs", None)
@@ -151,7 +151,7 @@ class RemoteClient:
     def publish(self, mqtt_request: MQTTRequest, store=True):
         self._refresh_remote_token()
         message = mqtt_request.get_message_to_json(self.remoteCredentials.access_token)
-        logger.debug("%s %s", mqtt_request.topic, message)
+        logger.debug("mqtt publish: %s %s", mqtt_request.topic, message)
         self.mqtt_client.publish(mqtt_request.topic, message)
         if store:
             self.last_request = mqtt_request

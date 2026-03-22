@@ -665,18 +665,18 @@ testing = ["beautifulsoup4 (>=4.8.2)", "cryptography", "dash_testing_stub (>=0.0
 
 [[package]]
 name = "dash-bootstrap-components"
-version = "1.7.1"
+version = "2.0.4"
 description = "Bootstrap themed components for use in Plotly Dash"
 optional = false
-python-versions = "<4,>=3.9"
+python-versions = ">=3.9"
 groups = ["main"]
 files = [
-    {file = "dash_bootstrap_components-1.7.1-py3-none-any.whl", hash = "sha256:5e8eae7ee1d013f69e272c68c1015b53ab71802460152088f33fffa90d245199"},
-    {file = "dash_bootstrap_components-1.7.1.tar.gz", hash = "sha256:30d48340d6dc89831d6c06e400cd4236f0d5363562c05b2a922f21545695a082"},
+    {file = "dash_bootstrap_components-2.0.4-py3-none-any.whl", hash = "sha256:767cf0084586c1b2b614ccf50f79fe4525fdbbf8e3a161ed60016e584a14f5d1"},
+    {file = "dash_bootstrap_components-2.0.4.tar.gz", hash = "sha256:c3206c0923774bbc6a6ddaa7822b8d9aa5326b0d3c1e7cd795cc975025fe2484"},
 ]
 
 [package.dependencies]
-dash = ">=2.0.0"
+dash = ">=3.0.4"
 
 [package.extras]
 pandas = ["numpy (>=2.0.2)", "pandas (>=2.2.3)"]
@@ -3250,4 +3250,4 @@ type = ["pytest-mypy"]
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.11, <4.0.0"
-content-hash = "406777f4f9851d08f5654943490f0407792e8e422276e91758fc76963b37a73a"
+content-hash = "7490767cda5b9993fe4c8c1e9d2e3ba3b50e36826982d1a0c6737e79441e8684"

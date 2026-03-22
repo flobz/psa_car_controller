@@ -73,7 +73,7 @@ def config_flask(title, base_path, debug: bool, host, port, reloader=False,
     app.config["DEBUG"] = debug
     if base_path == "/":
         application = DispatcherMiddleware(app)
-        requests_pathname_prefix = None
+        requests_pathname_prefix = "/"
     else:
         application = DispatcherMiddleware(Flask('dummy_app'), {base_path: app})
         requests_pathname_prefix = base_path + "/"

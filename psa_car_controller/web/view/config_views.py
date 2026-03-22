@@ -101,8 +101,11 @@ config_otp_layout = dbc.Row(dbc.Col(className="col-md-12 col-lg-2 m-3", children
 
 
 def log_layout():
-    with open(LOG_FILE, "r", encoding="utf-8") as f:
-        log_text = f.read()
+    try:
+        with open(LOG_FILE, "r", encoding="utf-8") as f:
+            log_text = f.read()
+    except Exception as e:
+        log_text = f"Can't read log file: {e}"
     return html.H3(className="m-2", children=["Log:", dbc.Container(
         fluid=True,
         style={"height": "80vh",

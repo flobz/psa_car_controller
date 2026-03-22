@@ -31,7 +31,7 @@ def get_marks_from_start_end(start, end):
             date_f = '%x'
         marks = {}
         for date in result:
-            marks[unix_time_millis(date)] = str(date.strftime(date_f))
+            marks[unix_time_millis(date)] = {"label": str(date.strftime(date_f))}
         return marks
     return None
 

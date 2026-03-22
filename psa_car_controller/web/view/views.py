@@ -204,12 +204,10 @@ def update_trips():
                         max_date = trips[-1].start_at
                         figures.get_figures(trips[0].car)
                 except (KeyError, IndexError):
-                    logger.debug("No trips yet")
-                    figures.get_figures(Car("vin", "vid", "brand"))
-                figures.get_figures(Car("vin", "vid", "brand"))
+                    logger.info("No trips yet")
                 chargings = Charging.get_chargings()
                 if len(chargings) == 0:
-                    logger.debug("No chargings yet")
+                    logger.info("No chargings yet")
                     if min_date is None:
                         return
                 else:
@@ -377,11 +375,11 @@ def serve_layout():
 try:
     if APP.is_good:
         Charging.set_default_price(APP.myp.vehicles_list)
+        figures.CURRENCY = APP.config.General.currency
+        figures.EXPORT_FORMAT = APP.config.General.export_format
+        update_trips()
     Database.set_db_callback(update_trips)
-    figures.CURRENCY = APP.config.General.currency
-    figures.EXPORT_FORMAT = APP.config.General.export_format
-    update_trips()
-except (IndexError, TypeError):
+except (IndexError, TypeError, AttributeError):
     logger.debug("Failed to get trips, there is probably not enough data yet:", exc_info=True)
 
 dash_app.layout = dbc.Container(fluid=True, children=[dcc.Location(id='url', refresh=False),

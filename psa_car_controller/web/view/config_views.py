@@ -23,7 +23,7 @@ setup_config_layout = dbc.Row(dbc.Col(md=12, lg=2, className="m-3", children=[
     dbc.Row(html.H2('Config')),
     dbc.Row(className="ms-2", children=[
         dbc.Form([
-            html.Div([
+            html.Div(className="mb-3", children=[
                 dbc.Label("Car Brand", html_for="psa-app"),
                 dcc.Dropdown(
                     id="psa-app",
@@ -35,14 +35,14 @@ setup_config_layout = dbc.Row(dbc.Col(md=12, lg=2, className="m-3", children=[
                         {"label": "Vauxhall", "value": "com.psa.mym.myvauxhall"}
                     ],
                 )]),
-            html.Div([
+            html.Div(className="mb-3", children=[
                 dbc.Label("Email", html_for="psa-email"),
                 dbc.Input(type="email", id="psa-email", placeholder="Enter email"),
                 dbc.FormText(
                     "PSA account email",
                     color="secondary",
                 )]),
-            html.Div([
+            html.Div(className="mb-3", children=[
                 dbc.Label("Password", html_for="psa-password"),
                 dbc.Input(
                     type="password",
@@ -53,7 +53,7 @@ setup_config_layout = dbc.Row(dbc.Col(md=12, lg=2, className="m-3", children=[
                     "PSA account password",
                     color="secondary",
                 )]),
-            html.Div([
+            html.Div(className="mb-3", children=[
                 dbc.Label("Country code", html_for="countrycode"),
                 dbc.Input(
                     type="text",

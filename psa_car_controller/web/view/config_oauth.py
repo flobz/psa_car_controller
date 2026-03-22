@@ -29,7 +29,7 @@ def get_oauth_config_layout(redirect_url):
                        href="https://github.com/flobz/psa_car_controller/discussions/779"), html.Br()]
             )),
             dbc.Form([
-                html.Div([
+                html.Div(className="mb-3", children=[
                     dbc.Label("Code", html_for="psa-oauth-code"),
                     dbc.Input(type="text", id="psa-oauth-code", placeholder="Enter login code"),
                     dbc.FormText(

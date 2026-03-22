@@ -175,7 +175,7 @@ class RemoteClient:
                     res = self.manager.post(REMOTE_URL + self.account_info.client_id,
                                             json={"grant_type": "refresh_token",
                                                   "refresh_token": self.remoteCredentials.refresh_token},
-                                            headers=self.headers)
+                                            headers=self.headers, timeout=TIMEOUT_IN_S)
                     data = res.json()
                     logger.debug("refresh_remote_token: %s", data)
                     if "access_token" in data:
@@ -202,7 +202,7 @@ class RemoteClient:
     def get_sms_otp_code(self):
         res = self.manager.post(
             "https://api.groupe-psa.com/applications/cvs/v4/mobile/smsCode?client_id=" + self.account_info.client_id,
-            headers=self.headers)
+            headers=self.headers, timeout=TIMEOUT_IN_S)
         return res
 
     # 6 otp by day
@@ -220,7 +220,7 @@ class RemoteClient:
     def _get_remote_access_token(self, password):
         res = self.manager.post(REMOTE_URL + self.account_info.client_id,
                                 json={"grant_type": "password", "password": password},
-                                headers=self.headers)
+                                headers=self.headers, timeout=TIMEOUT_IN_S)
         data = res.json()
         try:
             self.remoteCredentials.access_token = data["access_token"]

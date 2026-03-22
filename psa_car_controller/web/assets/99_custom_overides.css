@@ -3,7 +3,7 @@
   display: none;
 }
 
-div.export-load-anim div.dash-sk-circle {
+div.export-load-anim .dash-loading-spinner {
   width: 20px;
   height: 20px;
 }

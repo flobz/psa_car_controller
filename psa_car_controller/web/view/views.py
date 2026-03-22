@@ -71,19 +71,18 @@ def add_header(el):
                    [Input('url', 'pathname'),
                     Input('url', 'search')])
 def display_page(pathname, search):
-    pathname = pathname[len(dash_app.requests_pathname_external_prefix) - 1:]
+    prefix = dash_app.requests_pathname_external_prefix or "/"
+    pathname = pathname[len(prefix) - 1:]
     query_params = parse_qs(urlparse(search).query)
     no_header = query_params.get("header", None) == ["false"]
-    if pathname == "/config":
-        page = config_layout()
-    elif pathname == "/config_login":
+    if not APP.is_good or pathname == "/config_login":
         page = config_layout("login")
+    elif pathname == "/config":
+        page = config_layout()
     elif pathname == "/config_connect":
         page = get_oauth_config_layout(query_params["url"][0])
     elif pathname == "/log":
         page = log_layout()
-    elif not APP.is_good:
-        page = dcc.Location(pathname=dash_app.requests_pathname_external_prefix + "config_login", id="config_redirect")
     elif pathname == "/config_otp":
         page = config_layout("otp")
     elif pathname == "/control":
@@ -252,6 +251,7 @@ def serve_layout():
                 step=step,
                 marks=marks,
                 value=[min_millis, max_millis],
+                allow_direct_input=False,
             )
             figures.CURRENCY = APP.config.General.currency
             figures.EXPORT_FORMAT = APP.config.General.export_format
@@ -281,7 +281,9 @@ def serve_layout():
         data_div = html.Div([
             *fig_filter.get_store(),
             html.Div([
-                range_slider,
+                dbc.Row(
+                    children=range_slider
+                ),
                 dbc.Tabs([
                     dbc.Tab(label="Summary", tab_id="summary", children=summary_tab),
                     dbc.Tab(label="Trips", tab_id="trips", id="tab_trips",

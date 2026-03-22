@@ -10,7 +10,7 @@ from typing import Optional
 from oauth2_client.credentials_manager import CredentialManager, ServiceInformation
 from requests import Response, RequestException
 
-from psa_car_controller.common.utils import rate_limit
+from psa_car_controller.common.utils import rate_limit, TIMEOUT_IN_S
 from psa_car_controller.psa import connected_car_api
 from psa_car_controller.psa.connected_car_api import ApiClient
 from psa_car_controller.psa.connected_car_api.rest import ApiException
@@ -84,6 +84,11 @@ class OpenIdCredentialManager(CredentialManager):
             logger.error("Can't refresh token %s", e)
         return False
 
+    def request(self, method, url, **kwargs):  # pylint: disable=W0221
+        if "timeout" not in kwargs:
+            kwargs["timeout"] = TIMEOUT_IN_S
+        return super().request(method, url, **kwargs)
+
 
 class Oauth2PSACCApiConfig(connected_car_api.Configuration):
     def __init__(self):
@@ -102,6 +107,7 @@ class OauthAPIClient(ApiClient):
                  response_type=None, auth_settings=None, async_req=None,
                  _return_http_data_only=None, collection_formats=None,
                  _preload_content=True, _request_timeout=None):
+        _request_timeout = _request_timeout or TIMEOUT_IN_S
         for _ in range(0, 2):
             try:
                 if not async_req:

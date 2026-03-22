@@ -6,7 +6,7 @@ from os import path
 import requests
 
 logger = logging.getLogger(__name__)
-TIMEOUT_IN_S = 10
+TIMEOUT_IN_S = 20
 
 
 def get_github_sha_from_file(user, repo, directory, filename):

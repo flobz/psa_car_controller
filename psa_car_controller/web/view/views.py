@@ -293,7 +293,7 @@ def serve_layout():
                                         id="loading-div-trips",
                                         children=[html.Div([html.Div(id="loading-output-trips")])],
                                         type="circle",
-                                        className="export-load-anim"
+                                        parent_className="export-load-anim"
                                     ),
                                     dbc.Button("Export trips data",
                                                id="export-trips-table",
@@ -314,7 +314,7 @@ def serve_layout():
                                     dbc.ModalFooter(
                                         dbc.Button("Close",
                                                    id="tab_trips_popup-close",
-                                                   className="ml-auto")
+                                                   className="ms-auto")
                                     ),
                                 ],
                                 id="tab_trips_popup",
@@ -328,7 +328,7 @@ def serve_layout():
                                         id="loading-div-battery",
                                         children=[html.Div([html.Div(id="loading-output-battery")])],
                                         type="circle",
-                                        className="export-load-anim"
+                                        parent_className="export-load-anim"
                                     ),
                                     dbc.Button("Export charging data",
                                                id="export-battery-table",
@@ -350,7 +350,7 @@ def serve_layout():
                                     dbc.ModalFooter(
                                         dbc.Button("Close",
                                                    id="tab_battery_popup-close",
-                                                   className="ml-auto")
+                                                   className="ms-auto")
                                     ),
                                 ],
                                 id="tab_battery_popup",

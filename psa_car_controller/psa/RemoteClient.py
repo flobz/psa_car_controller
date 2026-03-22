@@ -15,7 +15,7 @@ from psa_car_controller.psa.constants import INPROGRESS, DEFAULT_PRECONDITIONING
     DELAYED_CHARGE, REMOTE_URL
 from psa_car_controller.psa.mqtt_request import MQTTRequest
 from psa_car_controller.psa.oauth import OpenIdCredentialManager
-from psa_car_controller.common.utils import RateLimitException, rate_limit, parse_hour
+from psa_car_controller.common.utils import RateLimitException, rate_limit, parse_hour, TIMEOUT_IN_S
 from psa_car_controller.psa.otp.otp import ConfigException, save_otp, load_otp
 
 logger = logging.getLogger(__name__)
@@ -130,6 +130,7 @@ class RemoteClient:
             self.mqtt_client.disconnect()
         if self.update_thread:
             self.update_thread.cancel()
+            self.update_thread.join(timeout=TIMEOUT_IN_S)
 
     def __keep_mqtt(self):  # avoid token expiration
         timeout = 3600 * 24  # 1 day

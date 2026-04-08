@@ -643,6 +643,14 @@
   max_elec_consumption: 70
   max_fuel_consumption: 30
 - !CarModel
+  name: 308 SW PLUG-IN HYBRID (2026) 195 e-DSC7
+  battery_power: 17.2
+  fuel_capacity: 42
+  abrp_name:
+  reg: VR3F4DGM2S 
+  max_elec_consumption: 70
+  max_fuel_consumption: 30
+- !CarModel
   name: C5 Aircross
   battery_power: 0
   fuel_capacity: 45

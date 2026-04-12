@@ -1002,4 +1002,9 @@
   abrp_name: opel:astrae:22:54:tour
   reg: VXKFNZKW9S 
   max_elec_consumption: 70
-
+- !CarModel
+  name: Berlingo 2018+ Diesel
+  battery_power: 0
+  fuel_capacity: 50
+  abrp_name:
+  reg: VR7ECYHZRK

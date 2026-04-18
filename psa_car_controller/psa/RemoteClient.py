@@ -192,7 +192,10 @@ class RemoteClient:
                 self.remote_token_last_update = datetime.now()
                 self.mqtt_client.username_pw_set("IMA_OAUTH_ACCESS_TOKEN", self.remoteCredentials.access_token)
                 return True
-            except (RequestException, RateLimitException, KeyError, AttributeError, RemoteException):
+            except RateLimitException as e:
+                logger.error("Can't refresh remote token please wait... %s", e)
+                return False
+            except (RequestException, KeyError, AttributeError, RemoteException):
                 logger.exception("Can't refresh remote token, please redo otp procedure")
                 return False
 

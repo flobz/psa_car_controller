@@ -21,7 +21,7 @@ def rate_limit(limit, every):
                     timer.daemon = True
                     timer.start()
             else:
-                raise RateLimitException
+                raise RateLimitException(func.__name__)
 
         return wrapper
 
@@ -47,7 +47,8 @@ def parse_hour(s):
 
 
 class RateLimitException(Exception):
-    pass
+    def __init__(self, func_name):
+        super().__init__(f"Rate limit exceeded for {func_name}")
 
 
 def get_positions(locations):

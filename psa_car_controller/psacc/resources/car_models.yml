@@ -383,6 +383,14 @@
   max_elec_consumption: 70
   max_fuel_consumption: 30
 - !CarModel
+  name: Grandland Electric
+  battery_power: 73
+  fuel_capacity: 0
+  abrp_name: opel:grandland:25:74
+  reg: VXKKCZKZ3T
+  max_elec_consumption: 70
+  max_fuel_consumption: 0
+- !CarModel
   name: C3 Aircross
   battery_power: 0
   fuel_capacity: 45

@@ -67,6 +67,7 @@ class TripParser:
             return True
         return False
     # pylint: disable=unused-argument
+
     def __is_refuel(self, start, end, distance):
         fuel_consumption = self.get_level_consumption(start, end)[1]
         if fuel_consumption < 0:

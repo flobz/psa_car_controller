@@ -282,7 +282,8 @@ def serve_layout():
             *fig_filter.get_store(),
             html.Div([
                 dbc.Row(
-                    children=range_slider
+                    children=range_slider,
+                    style={"paddingLeft": "40px", "paddingRight": "40px", "height": "50px"},
                 ),
                 dbc.Tabs([
                     dbc.Tab(label="Summary", tab_id="summary", children=summary_tab),

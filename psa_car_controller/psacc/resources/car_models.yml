@@ -1023,3 +1023,11 @@
   fuel_capacity: 50
   abrp_name:
   reg: VR7ECYHZRK
+- !ElecModel
+  name: Opel Astra Sports Tourer GS Electric
+  battery_power: 54
+  fuel_capacity: 0
+  abrp_name: opel:astrae:25:55:gs
+  reg: VXKFNZKW8S 
+  max_elec_consumption: 70
+  max_fuel_consumption: 0

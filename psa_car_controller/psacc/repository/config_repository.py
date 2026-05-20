@@ -20,6 +20,10 @@ export_format = csv
 minimum trip length =
 # for future use
 length unit = km
+[Options]
+# display units in the view layer: true = imperial (mi, mph), false = metric (km, km/h)
+# data is always stored internally as metric
+use imperial = false
 [Electricity config]
 # price by kw/h
 day price =
@@ -68,7 +72,7 @@ class Hour(str):
         if len(v) == 0:
             return None
 
-        m = HOUR_REGEX.fullmatch(v.lower())
+        m = HOUR_REGEX.fullmatch(v)
         if not m:
             raise ValueError('invalid hour format')
         hour = cls(v)
@@ -89,6 +93,10 @@ class GeneralConfig(BaseModel):
     length_unit: str = "km"
     minimum_trip_length: float = 10
     export_format = "csv"
+
+
+class OptionsConfig(BaseModel):
+    use_imperial: bool = False
 
 
 class ElectricityPriceConfig(BaseModel):
@@ -153,6 +161,7 @@ class ElectricityPriceConfig(BaseModel):
 
 class ConfigRepository(BaseModel):
     General: GeneralConfig
+    Options: OptionsConfig = OptionsConfig()
     Electricity_config: ElectricityPriceConfig
 
     @staticmethod

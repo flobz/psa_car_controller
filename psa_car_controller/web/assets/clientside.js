@@ -41,7 +41,7 @@ const logger = (function () {
   return pub
 }())
 function addLocaleDate (data, dateKey) {
-  const dateOption = [undefined, { hour: 'numeric', minute: 'numeric' }]
+  const dateOption = [navigator.language, { hour: 'numeric', minute: 'numeric' }]
   function dateToLocale (row, key) {
     const date = new Date(row[key])
     row[key] = date.getTime()

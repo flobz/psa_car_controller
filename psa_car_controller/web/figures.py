@@ -36,11 +36,84 @@ AVG_CONSUM_KW = "avg_consum_kw"
 AVG_CONSUM_PRICE = "avg_consum_price"
 CURRENCY = "€"
 EXPORT_FORMAT = "csv"
+USE_IMPERIAL = False  # view-layer flag: True = imperial (mi/mph), False = metric (km/km/h)
+
+# Conversion factors (metric → imperial)
+_KM_TO_MI = 0.621371
+_KMH_TO_MPH = 0.621371
+_KWH_PER_100KM_TO_KWH_PER_100MI = 1 / _KM_TO_MI  # consuming more kWh over fewer miles
+
+
+def _dist_unit() -> str:
+    return "mi" if USE_IMPERIAL else "km"
+
+
+def _speed_unit() -> str:
+    return "mph" if USE_IMPERIAL else "km/h"
+
+
+def _consumption_unit() -> str:
+    """Electric consumption per distance unit."""
+    return f"kWh/100{_dist_unit()}"
+
+
+def _fuel_consumption_unit() -> str:
+    return f"L/100{_dist_unit()}"
+
+
+def _dist_suffix() -> str:
+    return f" {_dist_unit()}"
+
+
+def _speed_suffix() -> str:
+    return f" {_speed_unit()}"
+
+
+def convert_trips_for_display(trips_dict: list) -> list:
+    """
+    Return a copy of the trips-as-dict list with distance, mileage,
+    speed_average, consumption_km, and consumption_fuel_km converted to
+    imperial values when USE_IMPERIAL is True. View-layer only.
+    """
+    if not USE_IMPERIAL:
+        return trips_dict
+    result = []
+    for trip in trips_dict:
+        t = dict(trip)
+        if t.get("distance") is not None:
+            t["distance"] = t["distance"] * _KM_TO_MI
+        if t.get("mileage") is not None:
+            t["mileage"] = t["mileage"] * _KM_TO_MI
+        if t.get("speed_average") is not None:
+            t["speed_average"] = t["speed_average"] * _KMH_TO_MPH
+        if t.get("consumption_km") is not None:
+            t["consumption_km"] = t["consumption_km"] * _KWH_PER_100KM_TO_KWH_PER_100MI
+        if t.get("consumption_fuel_km") is not None:
+            t["consumption_fuel_km"] = t["consumption_fuel_km"] * _KWH_PER_100KM_TO_KWH_PER_100MI
+        result.append(t)
+    return result
+
+
+def convert_chargings_for_display(chargings_dict: list) -> list:
+    """
+    Return a copy of the chargings list with the mileage field converted
+    to imperial when USE_IMPERIAL is True. View-layer only.
+    """
+    if not USE_IMPERIAL:
+        return chargings_dict
+    result = []
+    for charge in chargings_dict:
+        c = dict(charge)
+        if c.get("mileage") is not None:
+            c["mileage"] = c["mileage"] * _KM_TO_MI
+        result.append(c)
+    return result
 
 
 def get_summary_cards():
-    return {"Average consumption": {"text": [card_value_div(AVG_CONSUM_KW, "kWh/100km"),
-                                             card_value_div(AVG_CONSUM_PRICE, f"{CURRENCY}/100km")],
+    dist = _dist_unit()
+    return {"Average consumption": {"text": [card_value_div(AVG_CONSUM_KW, f"kWh/100{dist}"),
+                                             card_value_div(AVG_CONSUM_PRICE, f"{CURRENCY}/100{dist}")],
                                     "src": "assets/images/consumption.svg"},
             "Average emission": {"text": [card_value_div(AVG_EMISSION_KM, " g/km"),
                                           card_value_div(AVG_EMISSION_KW, "g/kWh")],
@@ -66,6 +139,8 @@ def get_figures(car: Car):
         showlegend=False, name="Last Position"))
     # table
     nb_format = Format(precision=2, scheme=Scheme.fixed, symbol=Symbol.yes, group=Group.yes)
+    dist = _dist_unit()
+    speed = _speed_unit()
     style_cell_conditional = []
     if car.is_electric():
         style_cell_conditional.append({'if': {'column_id': 'consumption_fuel_km', }, 'display': 'None', })
@@ -87,15 +162,15 @@ def get_figures(car: Car):
                  {'id': 'duration', 'name': 'duration', 'type': 'numeric',
                   'format': deepcopy(nb_format).symbol_suffix(" min").precision(0)},
                  {'id': 'speed_average', 'name': 'avg. speed', 'type': 'numeric',
-                  'format': deepcopy(nb_format).symbol_suffix(" km/h").precision(0)},
+                  'format': deepcopy(nb_format).symbol_suffix(f" {speed}").precision(0)},
                  {'id': 'consumption_km', 'name': 'avg. consumption', 'type': 'numeric',
-                  'format': deepcopy(nb_format).symbol_suffix(" kWh/100km")},
+                  'format': deepcopy(nb_format).symbol_suffix(f" kWh/100{dist}")},
                  {'id': 'consumption_fuel_km', 'name': 'average consumption fuel', 'type': 'numeric',
-                  'format': deepcopy(nb_format).symbol_suffix(" L/100km")},
+                  'format': deepcopy(nb_format).symbol_suffix(f" L/100{dist}")},
                  {'id': 'distance', 'name': 'distance', 'type': 'numeric',
-                  'format': nb_format.symbol_suffix(" km").precision(1)},
-                 {'id': 'mileage', 'name': 'mileage', 'type': 'numeric',
-                  'format': nb_format},
+                  'format': deepcopy(nb_format).symbol_suffix(f" {dist}").precision(1)},
+                 {'id': 'mileage', 'name': f'mileage ({dist})', 'type': 'numeric',
+                  'format': Format(precision=1, scheme=Scheme.fixed, symbol=Symbol.no, group=Group.yes)},
                  {'id': 'altitude_diff', 'name': 'altitude diff', 'type': 'numeric',
                   'format': deepcopy(nb_format).symbol_suffix(" m").precision(0)}
                  ],
@@ -116,7 +191,7 @@ def get_figures(car: Car):
     # consumption_fig
     consumption_fig = px.histogram(x=[0], y=[1], title='Consumption of the car',
                                    histfunc="avg")
-    consumption_fig.update_layout(yaxis_title="Consumption kWh/100Km", xaxis_title="date")
+    consumption_fig.update_layout(yaxis_title=f"Consumption kWh/100{dist}", xaxis_title="date")
     consumption_fig.update_xaxes(type="date", tickformat="%d/%m/%Y")
 
     consumption_fig_by_speed = px.histogram(data_frame=[{"start_at": 1, "speed_average": 2}], x="start_at",
@@ -126,7 +201,8 @@ def get_figures(car: Car):
     consumption_fig_by_speed.update_layout(bargap=0.05)
     consumption_fig_by_speed.add_trace(go.Scatter(mode="markers", x=[0],
                                                   y=[0], name="Trips"))
-    consumption_fig_by_speed.update_layout(xaxis_title="average Speed km/h", yaxis_title="Consumption kWh/100Km")
+    consumption_fig_by_speed.update_layout(xaxis_title=f"average Speed {speed}",
+                                           yaxis_title=f"Consumption kWh/100{dist}")
     # battery_table
     battery_table = DataTable(
         id='battery-table',
@@ -153,7 +229,8 @@ def get_figures(car: Car):
                  {'id': 'price', 'name': 'price', 'type': 'numeric',
                   'format': deepcopy(nb_format).symbol_suffix(" " + CURRENCY).precision(2), 'editable': True},
                  {'id': 'charging_mode', 'name': 'charging mode', 'type': 'text'},
-                 {'id': 'mileage', 'name': 'mileage', 'type': 'numeric', 'format': nb_format},
+                 {'id': 'mileage', 'name': f'mileage ({dist})', 'type': 'numeric',
+                  'format': Format(precision=1, scheme=Scheme.fixed, symbol=Symbol.no, group=Group.yes)},
                  ],
         data=[],
         page_size=50,
@@ -197,7 +274,7 @@ def get_figures(car: Car):
         go.Scatter(mode="markers", x=[0],
                    y=[0], name="Trips"))
     consumption_fig_by_temp.update_layout(xaxis_title="average temperature in °C",
-                                          yaxis_title="Consumption kWh/100Km")
+                                          yaxis_title=f"Consumption kWh/100{dist}")
     return True
 
 
@@ -220,5 +297,6 @@ def get_altitude_fig(trip: Trip):
     for line in res:
         line[0] = line[0] - start_mileage
     fig = px.line(res, x=0, y=1)
-    fig.update_layout(xaxis_title="Distance km", yaxis_title="Altitude m")
+    dist = _dist_unit()
+    fig.update_layout(xaxis_title=f"Distance {dist}", yaxis_title="Altitude m")
     return html.Div(Graph(figure=fig))

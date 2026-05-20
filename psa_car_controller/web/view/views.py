@@ -270,7 +270,8 @@ def serve_layout():
                                       ["long", "start_at_str"], figures.trips_map)
             fig_filter.add_table("trips", figures.table_fig)
             fig_filter.add_table("chargings", figures.battery_table)
-            fig_filter.src = {"trips": trips.get_trips_as_dict(), "chargings": chargings}
+            fig_filter.src = {"trips": figures.convert_trips_for_display(trips.get_trips_as_dict()),
+                              "chargings": figures.convert_chargings_for_display(chargings)}
             fig_filter.set_clientside_callback(dash_app, {"minimumLength": APP.config.General.minimum_trip_length})
             create_callback()
         except (IndexError, TypeError, NameError, AssertionError, NameError, AttributeError):
@@ -380,6 +381,7 @@ try:
     Database.set_db_callback(update_trips)
     figures.CURRENCY = APP.config.General.currency
     figures.EXPORT_FORMAT = APP.config.General.export_format
+    figures.USE_IMPERIAL = APP.config.Options.use_imperial
     update_trips()
 except (IndexError, TypeError):
     logger.debug("Failed to get trips, there is probably not enough data yet:", exc_info=True)

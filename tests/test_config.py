@@ -54,6 +54,61 @@ night hour end = 4h42
         conf.Electricity_config.night_hour_start = "200"
         self.assertRaises(ValueError, lambda: conf.write_config())
 
+    @patch("psa_car_controller.psacc.repository.config_repository.ConfigRepository._write")
+    @patch("psa_car_controller.psacc.repository.config_repository.ConfigRepository._read_file")
+    def test_options_use_imperial_default_false(self, mock_read, mock_write):
+        """Options.use_imperial should default to False when the section is absent."""
+        old_config_str = """[General]
+currency = €
+
+[Electricity config]
+day price = 0.15
+
+"""
+        mock_read.return_value = old_config_str
+        conf = ConfigRepository.read_config()
+        self.assertFalse(conf.Options.use_imperial)
+
+    @patch("psa_car_controller.psacc.repository.config_repository.ConfigRepository._write")
+    @patch("psa_car_controller.psacc.repository.config_repository.ConfigRepository._read_file")
+    def test_options_use_imperial_persists(self, mock_read, mock_write):
+        """Setting use_imperial = true in the ini should be read back as True."""
+        config_str = """[General]
+currency = €
+
+[Options]
+use imperial = true
+
+[Electricity config]
+day price = 0.15
+
+"""
+        mock_read.return_value = config_str
+        conf = ConfigRepository.read_config()
+        self.assertTrue(conf.Options.use_imperial)
+
+    def test_convert_trips_for_display_metric(self):
+        """When USE_IMPERIAL is False, convert_trips_for_display should return data unchanged."""
+        from psa_car_controller.web import figures
+        figures.USE_IMPERIAL = False
+        trip = {"distance": 100.0, "mileage": 5000.0, "speed_average": 80.0,
+                "consumption_km": 20.0, "consumption_fuel_km": 6.0}
+        result = figures.convert_trips_for_display([trip])
+        self.assertEqual(result, [trip])
+
+    def test_convert_trips_for_display_imperial(self):
+        """When USE_IMPERIAL is True, convert_trips_for_display should convert distance/speed fields."""
+        from psa_car_controller.web import figures
+        figures.USE_IMPERIAL = True
+        trip = {"distance": 100.0, "mileage": 5000.0, "speed_average": 100.0,
+                "consumption_km": 20.0, "consumption_fuel_km": 6.0}
+        result = figures.convert_trips_for_display([trip])
+        self.assertAlmostEqual(result[0]["distance"], 62.1371, places=3)
+        self.assertAlmostEqual(result[0]["mileage"], 3106.855, places=2)
+        self.assertAlmostEqual(result[0]["speed_average"], 62.1371, places=3)
+        # restore
+        figures.USE_IMPERIAL = False
+
 
 if __name__ == '__main__':
     my_logger(handler_level=os.environ.get("DEBUG_LEVEL", 20))

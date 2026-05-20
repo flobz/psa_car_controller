@@ -21,5 +21,10 @@ COPY --from=builder /usr/local/bin/  /usr/local/bin/
 RUN  apt-get install -y --no-install-recommends $PYTHON_DEP curl && \
      apt-get clean ; \
      rm -rf /var/lib/apt/lists/*
+
+# Install Playwright and WebKit dependencies
+RUN pip3 install --break-system-packages playwright && \
+    playwright install --with-deps webkit
+
 COPY /docker_files/init.sh /init.sh
 CMD /init.sh

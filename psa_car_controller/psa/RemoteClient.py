@@ -15,7 +15,7 @@ from psa_car_controller.psa.constants import INPROGRESS, DEFAULT_PRECONDITIONING
     DELAYED_CHARGE, REMOTE_URL
 from psa_car_controller.psa.mqtt_request import MQTTRequest
 from psa_car_controller.psa.oauth import OpenIdCredentialManager
-from psa_car_controller.common.utils import RateLimitException, rate_limit, parse_hour
+from psa_car_controller.common.utils import RateLimitException, rate_limit, parse_hour, TIMEOUT_IN_S
 from psa_car_controller.psa.otp.otp import ConfigException, save_otp, load_otp
 
 logger = logging.getLogger(__name__)
@@ -84,7 +84,7 @@ class RemoteClient:
                     else:
                         logger.error("Last request might have been send twice without success")
                 elif data["return_code"] != "0":
-                    logger.error('%s : %s', data["return_code"], data.get("reason", "?"))
+                    logger.error('mqtt error %s : %s', data["return_code"], data.get("reason", "?"))
             elif msg.topic.startswith(MQTT_EVENT_TOPIC):
                 charge_info = data["charging_state"]
                 programs = data["precond_state"].get("programs", None)
@@ -125,17 +125,19 @@ class RemoteClient:
 
     def stop(self):
         if self.mqtt_client:
+            logger.info("stop mqtt...")
             self.mqtt_client.on_disconnect = None
             self.mqtt_client.disconnect()
         if self.update_thread:
             self.update_thread.cancel()
+            self.update_thread.join(timeout=TIMEOUT_IN_S)
 
     def __keep_mqtt(self):  # avoid token expiration
         timeout = 3600 * 24  # 1 day
         if len(self.vehicles_list) > 0:
             try:
                 self.wakeup(self.vehicles_list[0].vin)
-            except RateLimitException:
+            except Exception:
                 logger.exception("__keep_mqtt")
         self.update_thread = threading.Timer(timeout, self.__keep_mqtt)
         self.update_thread.daemon = True
@@ -150,7 +152,7 @@ class RemoteClient:
     def publish(self, mqtt_request: MQTTRequest, store=True):
         self._refresh_remote_token()
         message = mqtt_request.get_message_to_json(self.remoteCredentials.access_token)
-        logger.debug("%s %s", mqtt_request.topic, message)
+        logger.debug("mqtt publish: %s %s", mqtt_request.topic, message)
         self.mqtt_client.publish(mqtt_request.topic, message)
         if store:
             self.last_request = mqtt_request
@@ -190,7 +192,10 @@ class RemoteClient:
                 self.remote_token_last_update = datetime.now()
                 self.mqtt_client.username_pw_set("IMA_OAUTH_ACCESS_TOKEN", self.remoteCredentials.access_token)
                 return True
-            except (RequestException, RateLimitException, KeyError, AttributeError, RemoteException):
+            except RateLimitException as e:
+                logger.error("Can't refresh remote token please wait... %s", e)
+                return False
+            except (RequestException, KeyError, AttributeError, RemoteException):
                 logger.exception("Can't refresh remote token, please redo otp procedure")
                 return False
 

@@ -71,8 +71,8 @@ class PSACarController(metaclass=Singleton):
                 logger.exception(
                     "Can't connect to mqtt broker your are not connected to internet or PSA MQTT server is "
                     "down !")
-            except ConfigException:
-                logger.error("start_remote_control failed redo otp config")
+            except ConfigException as e:
+                logger.error("start_remote_control failed redo otp config: %s", e)
 
     def load_app(self) -> bool:
         my_logger(handler_level=int(self.args.debug))

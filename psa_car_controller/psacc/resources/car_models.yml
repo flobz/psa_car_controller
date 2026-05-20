@@ -1023,3 +1023,10 @@
   fuel_capacity: 50
   abrp_name:
   reg: VR7ECYHZRK
+- !ElecModel
+  name: e-C5 Comfort Range
+  battery_power: 73
+  fuel_capacity: 0
+  abrp_name: citroen:ec5:25:75:aircross
+  reg: VR7KCZKZ9S 
+  max_elec_consumption: 70

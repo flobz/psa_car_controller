@@ -383,7 +383,7 @@ try:
         update_trips()
     Database.set_db_callback(update_trips)
 except (IndexError, TypeError, AttributeError):
-    logger.debug("Failed to get trips, there is probably not enough data yet:", exc_info=True)
+    logger.error("Failed to get trips, there is probably not enough data yet:", exc_info=True)
 
 dash_app.layout = dbc.Container(fluid=True, children=[dcc.Location(id='url', refresh=False),
                                                       html.Div(id='page-content')],

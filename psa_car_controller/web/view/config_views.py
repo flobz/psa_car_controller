@@ -35,7 +35,7 @@ setup_config_layout = dbc.Row(dbc.Col(md=12, lg=2, className="m-3", children=[
                     options=[
                         {"label": "Peugeot", "value": "com.psa.mym.mypeugeot"},
                         {"label": "Opel", "value": "com.psa.mym.myopel"},
-                        {"label": "CitroÃ«n", "value": "com.psa.mym.mycitroen"},
+                        {"label": "Citroën", "value": "com.psa.mym.mycitroen"},
                         {"label": "DS", "value": "com.psa.mym.myds"},
                         {"label": "Vauxhall", "value": "com.psa.mym.myvauxhall"}
                     ],

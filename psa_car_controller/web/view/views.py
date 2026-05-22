@@ -71,19 +71,18 @@ def add_header(el):
                    [Input('url', 'pathname'),
                     Input('url', 'search')])
 def display_page(pathname, search):
-    pathname = pathname[len(dash_app.requests_pathname_external_prefix) - 1:]
+    prefix = dash_app.requests_pathname_external_prefix or "/"
+    pathname = pathname[len(prefix) - 1:]
     query_params = parse_qs(urlparse(search).query)
     no_header = query_params.get("header", None) == ["false"]
-    if pathname == "/config":
-        page = config_layout()
-    elif pathname == "/config_login":
+    if not APP.is_good or pathname == "/config_login":
         page = config_layout("login")
+    elif pathname == "/config":
+        page = config_layout()
     elif pathname == "/config_connect":
         page = get_oauth_config_layout(query_params["url"][0])
     elif pathname == "/log":
         page = log_layout()
-    elif not APP.is_good:
-        page = dcc.Location(pathname=dash_app.requests_pathname_external_prefix + "config_login", id="config_redirect")
     elif pathname == "/config_otp":
         page = config_layout("otp")
     elif pathname == "/control":
@@ -199,26 +198,24 @@ def update_trips():
                 try:
                     trips_by_vin = Trips.get_trips(Cars([car]))
                     trips = trips_by_vin[car.vin]
-                    assert len(trips) > 0
-                    min_date = trips[0].start_at
-                    max_date = trips[-1].start_at
-                    figures.get_figures(trips[0].car)
-                except (AssertionError, KeyError):
-                    logger.debug("No trips yet")
-                    figures.get_figures(Car("vin", "vid", "brand"))
-                try:
-                    chargings = Charging.get_chargings()
-                    assert len(chargings) > 0
+                    if len(trips) > 0:
+                        min_date = trips[0].start_at
+                        max_date = trips[-1].start_at
+                        figures.get_figures(trips[0].car)
+                except (KeyError, IndexError):
+                    logger.info("No trips yet")
+                chargings = Charging.get_chargings()
+                if len(chargings) == 0:
+                    logger.info("No chargings yet")
+                    if min_date is None:
+                        return
+                else:
                     if min_date:
                         min_date = min(min_date, chargings[0]["start_at"])
                         max_date = max(max_date, chargings[-1]["start_at"])
                     else:
                         min_date = chargings[0]["start_at"]
                         max_date = chargings[-1]["start_at"]
-                except AssertionError:
-                    logger.debug("No chargings yet")
-                    if min_date is None:
-                        return
                 # update for slider
                 try:
                     logger.debug("min_date:%s - max_date:%s", min_date, max_date)
@@ -254,6 +251,7 @@ def serve_layout():
                 step=step,
                 marks=marks,
                 value=[min_millis, max_millis],
+                allow_direct_input=False,
             )
             figures.CURRENCY = APP.config.General.currency
             figures.EXPORT_FORMAT = APP.config.General.export_format
@@ -283,7 +281,10 @@ def serve_layout():
         data_div = html.Div([
             *fig_filter.get_store(),
             html.Div([
-                range_slider,
+                dbc.Row(
+                    children=range_slider,
+                    style={"paddingLeft": "40px", "paddingRight": "40px", "height": "50px"},
+                ),
                 dbc.Tabs([
                     dbc.Tab(label="Summary", tab_id="summary", children=summary_tab),
                     dbc.Tab(label="Trips", tab_id="trips", id="tab_trips",
@@ -293,7 +294,7 @@ def serve_layout():
                                         id="loading-div-trips",
                                         children=[html.Div([html.Div(id="loading-output-trips")])],
                                         type="circle",
-                                        className="export-load-anim"
+                                        parent_className="export-load-anim"
                                     ),
                                     dbc.Button("Export trips data",
                                                id="export-trips-table",
@@ -314,7 +315,7 @@ def serve_layout():
                                     dbc.ModalFooter(
                                         dbc.Button("Close",
                                                    id="tab_trips_popup-close",
-                                                   className="ml-auto")
+                                                   className="ms-auto")
                                     ),
                                 ],
                                 id="tab_trips_popup",
@@ -328,7 +329,7 @@ def serve_layout():
                                         id="loading-div-battery",
                                         children=[html.Div([html.Div(id="loading-output-battery")])],
                                         type="circle",
-                                        className="export-load-anim"
+                                        parent_className="export-load-anim"
                                     ),
                                     dbc.Button("Export charging data",
                                                id="export-battery-table",
@@ -350,7 +351,7 @@ def serve_layout():
                                     dbc.ModalFooter(
                                         dbc.Button("Close",
                                                    id="tab_battery_popup-close",
-                                                   className="ml-auto")
+                                                   className="ms-auto")
                                     ),
                                 ],
                                 id="tab_battery_popup",
@@ -377,12 +378,12 @@ def serve_layout():
 try:
     if APP.is_good:
         Charging.set_default_price(APP.myp.vehicles_list)
+        figures.CURRENCY = APP.config.General.currency
+        figures.EXPORT_FORMAT = APP.config.General.export_format
+        update_trips()
     Database.set_db_callback(update_trips)
-    figures.CURRENCY = APP.config.General.currency
-    figures.EXPORT_FORMAT = APP.config.General.export_format
-    update_trips()
-except (IndexError, TypeError):
-    logger.debug("Failed to get trips, there is probably not enough data yet:", exc_info=True)
+except (IndexError, TypeError, AttributeError):
+    logger.error("Failed to get trips, there is probably not enough data yet:", exc_info=True)
 
 dash_app.layout = dbc.Container(fluid=True, children=[dcc.Location(id='url', refresh=False),
                                                       html.Div(id='page-content')],

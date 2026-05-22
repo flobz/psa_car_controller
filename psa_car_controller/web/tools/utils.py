@@ -31,13 +31,13 @@ def get_marks_from_start_end(start, end):
             date_f = '%x'
         marks = {}
         for date in result:
-            marks[unix_time_millis(date)] = str(date.strftime(date_f))
+            marks[unix_time_millis(date)] = {"label": str(date.strftime(date_f))}
         return marks
     return None
 
 
 def card_value_div(card_id, unit, value="-"):
-    return html.Div([html.Div(value, id=card_id, className="mr-2"), html.Div(unit)],
+    return html.Div([html.Div(value, id=card_id, className="me-2"), html.Div(unit)],
                     className="d-flex flex-row justify-content-center")
 
 
@@ -72,7 +72,8 @@ def create_card(card: dict):
 def diff_dashtable(data, data_previous, row_id_name="row_id"):
     df, df_previous = DataFrame(data=data), DataFrame(data_previous)
     for _df in [df, df_previous]:
-        assert row_id_name in _df.columns
+        if row_id_name not in _df.columns:
+            raise ValueError(f"Column '{row_id_name}' not found in dataframes")
         _df = _df.set_index(row_id_name)
     mask = df.ne(df_previous)
     df_diff = df[mask].dropna(how="all", axis="columns").dropna(how="all", axis="rows")

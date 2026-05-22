@@ -138,8 +138,10 @@ class ElectricityPriceConfig(BaseModel):
                 date = date + timedelta(minutes=30)
             try:
                 res = round(consumption * mean(prices) / self.charger_efficiency, 2)
-            except (TypeError, StatisticsError):
-                logger.error("Can't get_price of charge, check config")
+            except StatisticsError as e:
+                logger.error("Can't get_price of charge: %s-%s prices: %s", start, end, prices, exc_info=e)
+            except TypeError as e:
+                logger.error("Can't get_price of charge, check config", exc_info=e)
         return res
 
     def get_price(self, charge: Charge, battery_charge_curves: List[BatteryChargeCurve]):

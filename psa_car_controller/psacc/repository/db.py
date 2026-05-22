@@ -151,9 +151,11 @@ class Database:
 
     @staticmethod
     def get_db(db_file=None, force_new_conn=False) -> CustomSqliteConnection:
-        assert sqlite3.threadsafety == 3, \
-            "SQLite is not in serialized mode (sqlite3.threadsafety != 3). " + \
-            "Upgrade python to python3.11"
+        if sqlite3.threadsafety != 3:
+            raise RuntimeError(
+                "SQLite is not in serialized mode (sqlite3.threadsafety != 3). "
+                "Please upgrade python to python3.11 or ensure sqlite3 is compiled with threading support."
+            )
         with Database.__thread_lock:
             if not Database.__conn or force_new_conn:
                 if db_file is None:

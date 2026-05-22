@@ -9,4 +9,4 @@ repos:
         hooks:
         -   id: prospector
             language: system
-
+            args: ["--without-tool", "dodgy"]

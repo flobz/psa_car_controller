@@ -1041,6 +1041,14 @@
   reg: VXKUHZKW4S
   max_elec_consumption: 70
   max_fuel_consumption: 0
+- !CarModel
+  name: Opel Corsa Electric Long Range (2026)
+  battery_power: 50.8
+  fuel_capacity: 0
+  abrp_name: opel:corsae:23:54
+  reg: VXKUHZKW1T
+  max_elec_consumption: 70
+  max_fuel_consumption: 0
 - !ElecModel
   name: Astra L Electric GS
   battery_power: 51

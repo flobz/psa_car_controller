@@ -1061,3 +1061,9 @@
   abrp_name: citroen:ec5:25:75:aircross
   reg: VR7KCZKZ9S 
   max_elec_consumption: 70
+- !CarModel
+  name: Citroën C5 Aircross
+  battery_power: 0
+  fuel_capacity: 55
+  abrp_name:
+  reg: VR7ACYHZ5S 

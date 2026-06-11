@@ -1,0 +1,47 @@
+name: 'Update HA Config'
+description: 'Update psacc-ha config.json with new version'
+inputs:
+  gh_token:
+    description: 'GitHub PAT token'
+    required: true
+  version:
+    description: 'Version to set'
+    required: true
+  branch:
+    description: 'Branch to update (main or beta)'
+    required: true
+    default: 'main'
+  message:
+    description: 'Commit message'
+    required: true
+runs:
+  using: "composite"
+  steps:
+    - name: Update psacc-ha config
+      env:
+        GH_TOKEN: ${{ inputs.gh_token }}
+        VERSION: ${{ inputs.version }}
+        BRANCH: ${{ inputs.branch }}
+        MESSAGE: ${{ inputs.message }}
+      run: |
+        echo "Updating flobz/psacc-ha config.json to $VERSION on branch $BRANCH"
+        
+        # Build API URL with ref parameter if beta
+        API_URL="repos/flobz/psacc-ha/contents/psacc-ha/config.json"
+        [[ "$BRANCH" == "beta" ]] && API_URL="${API_URL}?ref=beta"
+        
+        # Get current content and SHA
+        RESPONSE=$(gh api $API_URL)
+        FILE_SHA=$(echo "$RESPONSE" | jq -r '.sha')
+        CURRENT_CONTENT=$(echo "$RESPONSE" | jq -r '.content' | base64 -d)
+        
+        # Replace version
+        NEW_CONTENT=$(echo "$CURRENT_CONTENT" | sed "s/\"version\": \"v[^\"]*\"/\"version\": \"$VERSION\"/")
+        
+        # Update file
+        gh api $API_URL \
+          -X PUT \
+          -f message="$MESSAGE" \
+          -f content="$(echo "$NEW_CONTENT" | base64 -w 0)" \
+          -f sha="$FILE_SHA"
+      shell: bash

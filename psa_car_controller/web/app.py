@@ -34,7 +34,7 @@ class MyProxyFix(ProxyFix):
         super().__init__(self.flask_app.wsgi_app, x_host=1, x_port=1, x_prefix=1)
 
     def __call__(self, environ, start_response):
-        prefix = environ.get("HTTP_X_INGRESS_PATH")
+        prefix = environ.get("HTTP_X_INGRESS_PATH") or environ.get("HTTP_X_FORWARDED_PREFIX")
         if prefix:
             environ["HTTP_X_FORWARDED_PREFIX"] = prefix
             self.flask_app.config['APPLICATION_ROOT'] = environ['SCRIPT_NAME'] = prefix

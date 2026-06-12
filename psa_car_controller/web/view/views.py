@@ -110,7 +110,8 @@ def create_callback():  # noqa: MC0001
                     conn = Database.get_db()
                     charge = Charge(datetime.utcfromtimestamp(changed_line['start_at'] / 1000))
                     charge.price = changed_line['current_value']
-                    charge.vin = get_default_car().vin
+                    if APP.myp.vehicles_list:
+                        charge.vin = get_default_car().vin
                     if not Database.set_chargings_price(conn, charge):
                         logger.error("Can't find line to update in the database")
                     else:
@@ -128,7 +129,8 @@ def create_callback():  # noqa: MC0001
                 is_open = False
             if active_cell is not None and active_cell["column_id"] in ["start_level", "end_level"] and not is_open:
                 row = data[active_cell["row"]]
-                return figures.get_battery_curve_fig(row, APP.myp.vehicles_list[0]), True
+                if APP.myp.vehicles_list:
+                    return figures.get_battery_curve_fig(row, APP.myp.vehicles_list[0]), True
             return "", False
 
         @dash_app.callback([Output("tab_trips_popup_graph", "children"), Output("tab_trips_popup", "is_open"), ],
@@ -193,7 +195,7 @@ def update_trips():
             Database.add_altitude_to_db(conn)
             min_date = None
             max_date = None
-            if APP.is_good:
+            if APP.is_good and APP.myp.vehicles_list:
                 car = get_default_car()  # todo handle multiple car
                 try:
                     trips_by_vin = Trips.get_trips(Cars([car]))

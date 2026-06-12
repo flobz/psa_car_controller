@@ -1,5 +1,6 @@
 {
     "abrp": {
+        "abrp_enable_vin": [],
         "token": null
     },
     "client_id": "cid",
@@ -7,7 +8,10 @@
     "co2_signal_api": null,
     "country_code": "FR",
     "customer_id": "AP-ACNT1234",
-    "proxies": null,
+    "proxies": {
+        "http": "",
+        "https": ""
+    },
     "realm": "clientsB2CPeugeot",
     "refresh_token": "aasds-aaa",
     "remote_refresh_token": "aa",

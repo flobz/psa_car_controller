@@ -57,11 +57,11 @@ def add_header(el):
                              color="secondary",
                              className="me-1 bi bi-github",
                              external_link=True, href=github_url)
-    return dbc.Row([dbc.Col(dcc.Link(html.H1('My car info'), href=dash_app.requests_pathname_external_prefix,
+    return dbc.Row([dbc.Col(dcc.Link(html.H1('My car info'), href=dash_app.config.requests_pathname_prefix,
                                      style={"TextDecoration": "none"})),
                     dbc.Col(html.Div([dbc_version,
                                       dcc.Link(html.Img(src="assets/images/settings.svg", width="30veh"),
-                                               href=dash_app.requests_pathname_external_prefix + "config",
+                                               href=dash_app.config.requests_pathname_prefix + "config",
                                                className="float-end")],
                                      className="d-grid gap-2 d-md-flex justify-content-md-end",))],
                    className='align-items-center'), el
@@ -71,7 +71,7 @@ def add_header(el):
                    [Input('url', 'pathname'),
                     Input('url', 'search')])
 def display_page(pathname, search):
-    prefix = dash_app.requests_pathname_external_prefix or "/"
+    prefix = dash_app.config.requests_pathname_prefix or "/"
     pathname = pathname[len(prefix) - 1:]
     query_params = parse_qs(urlparse(search).query)
     no_header = query_params.get("header", None) == ["false"]

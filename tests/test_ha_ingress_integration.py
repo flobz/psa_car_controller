@@ -8,10 +8,12 @@ the HTML response contain the prefix.
 Run with: python -m unittest tests.test_ha_ingress_integration -v
 or: python tests/test_ha_ingress_integration.py
 """
+import psa_car_controller
 import os
 import sys
 import time
 import re
+import socket
 import requests
 import threading
 from unittest import TestCase, skipIf
@@ -21,14 +23,16 @@ from unittest.mock import patch, MagicMock
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 
-try:
-    import psa_car_controller
-    HAS_APP = True
-except ImportError:
-    HAS_APP = False
+def is_port_free(port, host='127.0.0.1'):
+    """Check if a port is free on the specified host."""
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+        try:
+            s.bind((host, port))
+            return True
+        except socket.error:
+            return False
 
 
-@skipIf(not HAS_APP, "App dependencies not available")
 class TestHomeAssistantIngressIntegration(TestCase):
     """
     Integration tests for PSA Car Controller with Home Assistant X-Ingress-Path header.
@@ -42,6 +46,10 @@ class TestHomeAssistantIngressIntegration(TestCase):
         cls.server_port = 18080
         cls.server_url = f"http://127.0.0.1:{cls.server_port}"
 
+        # Check if port is free before starting server
+        if not is_port_free(cls.server_port):
+            raise RuntimeError(f"Port {cls.server_port} is already in use")
+
         # Start the PSA app in a thread
         def start_server():
             from psa_car_controller.__main__ import main
@@ -49,6 +57,7 @@ class TestHomeAssistantIngressIntegration(TestCase):
 
             # Override sys.argv to pass the required arguments
             original_argv = sys.argv
+            config_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "data", "config.json")
             try:
                 # Set up command line arguments
                 sys.argv = [
@@ -60,7 +69,7 @@ class TestHomeAssistantIngressIntegration(TestCase):
                     '-l', '127.0.0.1',
                     '-p', str(cls.server_port),
                     '-b', '/',
-                    '-f', 'config/config.json'
+                    '-f', config_path
                 ]
 
                 # Run the app
@@ -107,21 +116,10 @@ class TestHomeAssistantIngressIntegration(TestCase):
         except requests.exceptions.RequestException:
             self.skipTest("Server not responding")
 
-    def test_root_route_with_ingress_path(self):
-        """
-        Test that / route returns HTML with hrefs containing the prefix
-        when X-Ingress-Path header is present.
-        """
-        prefix = '/api/ingress/a93a74ea_psacc'
-        headers = {
-            'X-Ingress-Path': prefix,
-            'Host': f'127.0.0.1:{self.server_port}'
-        }
-
-        url = f"{self.server_url}/"
+    def validate_path(self, headers, expected_prefix):
 
         try:
-            response = requests.get(url, headers=headers, timeout=10)
+            response = requests.get(self.server_url, headers=headers, timeout=10)
 
             self.assertEqual(response.status_code, 200,
                              f"Expected 200, got {response.status_code}")
@@ -130,53 +128,38 @@ class TestHomeAssistantIngressIntegration(TestCase):
 
             # Check for prefix in HTML
 
-            scripts = re.findall(r'src="([^"]+)"', html)
+            scripts = re.findall(r'src="(/[^"]+)"', html)
             for script in scripts:
-                assert (not script.startswith("/")
-                        ) or script.startswith(prefix), f"script {script} doesn't contain prefix"
-            # The Dash app's initial HTML should contain the prefix in its config
-            # Look for the Dash config which includes requests_pathname_prefix
-            if 'requests_pathname_prefix' in html:
-                import json
-                # Try to extract the Dash config
-                config_match = re.search(r'id="_dash-config"[^>]*>([^<]+)</script>', html)
-                if config_match:
-                    config_str = config_match.group(1)
-                    try:
-                        config = json.loads(config_str)
-                        requests_prefix = config.get('requests_pathname_prefix', '')
-                        print(f"Dash config requests_pathname_prefix: {requests_prefix}")
-
-                        # Check if it matches our prefix
-                        if prefix in requests_prefix:
-                            print(f"✓ Dash config has correct prefix")
-                            return
-                        else:
-                            print(f"✗ Dash config prefix doesn't match")
-                            print(f"  Expected: {prefix}")
-                            print(f"  Got: {requests_prefix}")
-                    except json.JSONDecodeError:
-                        pass
-
+                assert re.match(expected_prefix, script), f"Script {script} does not match {expected_prefix}"
             # Check if prefix appears in hrefs
-            hrefs = re.findall(r'href="([^"]+)"', html)
-            prefix_hrefs = [h for h in hrefs if prefix in h]
-
-            if prefix_hrefs:
-                print(f"✓ Found {len(prefix_hrefs)} hrefs with prefix")
-            else:
-                # Check if prefix appears anywhere
-                if prefix in html:
-                    print(f"✓ Prefix found in HTML")
-                else:
-                    print(f"✗ Prefix NOT found in HTML")
-                    print(f"Sample hrefs: {hrefs[:10]}")
-                    with open('/tmp/test_root_response.html', 'w') as f:
-                        f.write(html)
-                    self.fail(f"Prefix '{prefix}' not found in HTML")
+            hrefs = re.findall(f'href="(/[^"]+)"', html)
+            for href in hrefs:
+                assert re.match(expected_prefix, href), f"Href {href} does not match {expected_prefix}"
 
         except requests.exceptions.RequestException as e:
             self.fail(f"Request failed: {e}")
+
+    def test_root_route_with_ingress_path(self):
+        """
+        Test that / route returns HTML with hrefs containing the prefix
+        when X-Ingress-Path header is present.
+        """
+        prefix = r'/api/ingress/a93a74ea_psacc/.+'
+        headers = {
+            'X-Ingress-Path': prefix,
+            'Host': f'127.0.0.1:{self.server_port}'
+        }
+        self.validate_path(headers, prefix)
+
+    def test_root_route_without(self):
+        """
+        Test that / route returns HTML with hrefs containing the prefix
+        when X-Ingress-Path header is present.
+        """
+        headers = {
+            'Host': f'127.0.0.1:{self.server_port}'
+        }
+        self.validate_path(headers, r"/(assets|_dash|_favicon).+")
 
     def test_api_route_with_ingress_path(self):
         """

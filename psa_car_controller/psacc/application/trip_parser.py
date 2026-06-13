@@ -29,7 +29,14 @@ class TripParser:
 
     @staticmethod
     def get_elec_consumption(start, end):
-        return [start[LEVEL] - end[LEVEL], 0]
+        try:
+            start_level = start[LEVEL]
+            end_level = end[LEVEL]
+            if start_level is None or end_level is None:
+                return [0, 0]
+            return [start_level - end_level, 0]
+        except (KeyError, IndexError):
+            return [0, 0]
 
     @staticmethod
     def get_hybrid_consumption(start, end):
@@ -60,6 +67,13 @@ class TripParser:
         return False
 
     def __is_recharging(self, start, end, distance):
+        try:
+            start_level = start[LEVEL]
+            end_level = end[LEVEL]
+            if start_level is None or end_level is None:
+                return False
+        except (KeyError, IndexError):
+            return False
         decharge = self.get_level_consumption(start, end)[0]
         return TripParser.is_recharging(decharge, distance)
 

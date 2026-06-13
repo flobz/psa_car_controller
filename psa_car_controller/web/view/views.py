@@ -8,7 +8,6 @@ from dash import dcc, html
 from dash.dependencies import Output, Input, State
 from dash.exceptions import PreventUpdate
 import time
-from flask import request
 
 from psa_car_controller.common import utils
 from psa_car_controller.common.mylogger import CustomLogger
@@ -362,7 +361,7 @@ def serve_layout():
                             ]),
                     dbc.Tab(label="Map", tab_id="map", children=[maps]),
                     dbc.Tab(label="Control", tab_id="control", children=html.Iframe(
-                        src=request.url_root + "control?header=false",
+                        src=dash_app.config.requests_pathname_prefix + "control?header=false",
                         style={"position": "absolute",
                                "height": "100%",
                                "width": "100%",

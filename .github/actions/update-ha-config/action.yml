@@ -17,6 +17,7 @@ inputs:
 runs:
   using: "composite"
   steps:
+    - uses: actions/checkout@v6
     - name: Update psacc-ha config
       env:
         GH_TOKEN: ${{ inputs.gh_token }}

@@ -8,7 +8,6 @@ the HTML response contain the prefix.
 Run with: python -m unittest tests.test_ha_ingress_integration -v
 or: python tests/test_ha_ingress_integration.py
 """
-import psa_car_controller
 import os
 import sys
 import time
@@ -16,8 +15,7 @@ import re
 import socket
 import requests
 import threading
-from unittest import TestCase, skipIf
-from unittest.mock import patch, MagicMock
+from unittest import TestCase
 
 # Add parent directory to path
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -185,6 +183,35 @@ class TestHomeAssistantIngressIntegration(TestCase):
         except requests.exceptions.RequestException as e:
             print(f"API request failed (may need auth): {e}")
             # This is OK - we're just checking the server is running
+
+    def test_style_json_with_ingress_path(self):
+        """
+        Test that /style.json returns JSON with sprite path containing the prefix
+        when X-Ingress-Path header is present.
+        """
+        prefix = '/api/ingress/a93a74ea_psacc/'
+        headers = {
+            'X-Ingress-Path': prefix,
+            'Host': f'127.0.0.1:{self.server_port}'
+        }
+
+        url = f"{self.server_url}/style.json"
+        expected = f"{self.server_url}{prefix}assets/sprites/osm-liberty"
+        try:
+            # todo lower timeout
+            response = requests.get(url, headers=headers, timeout=3600)
+
+            self.assertEqual(response.status_code, 200,
+                             f"Expected 200, got {response.status_code}")
+
+            data = response.json()
+            self.assertIn('sprite', data, "Response should contain 'sprite' key")
+
+            sprite_path = data['sprite']
+            self.assertEqual(sprite_path, expected)
+
+        except requests.exceptions.RequestException as e:
+            self.fail(f"Request failed: {e}")
 
 
 if __name__ == '__main__':

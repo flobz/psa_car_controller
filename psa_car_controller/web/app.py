@@ -27,7 +27,7 @@ logger = logging.getLogger(__name__)
 
 
 class MyProxyFix(ProxyFix):
-    def __init__(self, dashapp, static_prefix):
+    def __init__(self, dashapp: Dash, static_prefix):
         self.flask_app = dashapp.server
         self.dash_app = dashapp
         self.static_prefix = static_prefix
@@ -41,6 +41,7 @@ class MyProxyFix(ProxyFix):
             self.dash_app.config.requests_pathname_prefix = ""
             self.dash_app.config.url_base_pathname = None
         else:
+            environ["HTTP_X_FORWARDED_PREFIX"] = prefix
             if not prefix.endswith("/"):
                 prefix += "/"
             self.dash_app.config.requests_pathname_prefix = prefix

@@ -12,6 +12,7 @@ from psa_car_controller.psacc.application.charging import Charging
 from psa_car_controller.psacc.model.car import Car
 from psa_car_controller.psacc.repository.trips import Trip
 from psa_car_controller.psacc.repository.db import Database
+from psa_car_controller.web.app import dash_app
 
 # pylint: disable=invalid-name
 from psa_car_controller.web.tools.utils import card_value_div, dash_date_to_datetime
@@ -41,15 +42,15 @@ EXPORT_FORMAT = "csv"
 def get_summary_cards():
     return {"Average consumption": {"text": [card_value_div(AVG_CONSUM_KW, "kWh/100km"),
                                              card_value_div(AVG_CONSUM_PRICE, f"{CURRENCY}/100km")],
-                                    "src": "assets/images/consumption.svg"},
+                                    "src": dash_app.get_asset_url("images/consumption.svg")},
             "Average emission": {"text": [card_value_div(AVG_EMISSION_KM, " g/km"),
                                           card_value_div(AVG_EMISSION_KW, "g/kWh")],
-                                 "src": "assets/images/pollution.svg"},
+                                 "src": dash_app.get_asset_url("images/pollution.svg")},
             "Average charge speed": {"text": [card_value_div(AVG_CHARGE_SPEED, " kW")],
-                                     "src": "assets/images/battery-charge-line.svg"},
+                                     "src": dash_app.get_asset_url("images/battery-charge-line.svg")},
             "Electricity consumption": {"text": [card_value_div(ELEC_CONSUM_KW, "kWh"),
                                                  card_value_div(ELEC_CONSUM_PRICE, CURRENCY)],
-                                        "src": "assets/images/electricity bill.svg"}
+                                        "src": dash_app.get_asset_url("images/electricity bill.svg")}
             }
 
 

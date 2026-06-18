@@ -213,6 +213,43 @@ class TestHomeAssistantIngressIntegration(TestCase):
         except requests.exceptions.RequestException as e:
             self.fail(f"Request failed: {e}")
 
+    def test_svg_images_with_ingress_path(self):
+        """
+        Test that SVG images in HTML have correct path with X-Ingress-Path header.
+        Specifically checks for battery-soh.svg and other image paths.
+        """
+        prefix = '/api/ingress/a93a74ea_psacc/'
+        headers = {
+            'X-Ingress-Path': prefix,
+            'Host': f'127.0.0.1:{self.server_port}'
+        }
+
+        try:
+            response = requests.get(self.server_url, headers=headers, timeout=10)
+
+            self.assertEqual(response.status_code, 200,
+                             f"Expected 200, got {response.status_code}")
+
+            html = response.text
+
+            # Find all src attributes in img tags
+            img_srcs = re.findall(r'<img[^>]+src="([^"]+)"', html)
+
+            # Check each image source
+            for img_src in img_srcs:
+                # Skip data URLs
+                if img_src.startswith('data:'):
+                    continue
+
+                # Check if it's an assets/image path
+                if 'assets/images/' in img_src:
+                    # The path should start with the prefix
+                    self.assertTrue(img_src.startswith(prefix),
+                                    f"Image path {img_src} does not start with prefix {prefix}")
+
+        except requests.exceptions.RequestException as e:
+            self.fail(f"Request failed: {e}")
+
 
 if __name__ == '__main__':
     import unittest

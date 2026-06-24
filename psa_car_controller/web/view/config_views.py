@@ -3,7 +3,6 @@ from urllib import parse
 
 from dash import callback_context, html, dcc
 from dash.exceptions import PreventUpdate
-from flask import request
 
 from psa_car_controller.psa.otp.otp import new_otp_session
 from psa_car_controller.psa.setup.headless_oauth import HeadlessOAuthError, get_oauth_code_headless
@@ -149,40 +148,47 @@ def connectPSA(n_clicks, app_name, email, password, countrycode):  # pylint: dis
         try:
             code = get_oauth_code_headless(auth_url, email, password, scheme)
             INITIAL_SETUP.connect(code)
-            return dbc.Alert(
-                ["Login successful! ", html.A("Go to OTP config", href=request.url_root + "config_otp")],
-                color="success"
-            )
+            return dbc.Alert(["Login successful! ",
+                              html.A("Go to OTP config",
+                                     href=dash_app.config.requests_pathname_prefix + "config_otp")], color="success")
         except HeadlessOAuthError as e:
             redirect_uri = parse.quote(auth_url)
             return dbc.Alert(
                 [
                     html.P("Automatic login failed. Please complete manually: "),
-                    html.A("Go to login", href=f"{request.url_root}config_connect?url={redirect_uri}"),
+                    html.A(
+                        "Go to login",
+                        href=f"{dash_app.config.requests_pathname_prefix}config_connect?url={redirect_uri}"),
                     html.Hr(),
                     html.P("Debug information (please include in GitHub issue):"),
                     dbc.Label("Last URL:"),
-                    dbc.Input(value=e.url, readonly=True, style={"margin-bottom": "10px"}),
+                    dbc.Input(
+                        value=e.url,
+                        readonly=True,
+                        style={
+                            "margin-bottom": "10px"}),
                     dbc.Label("Console Logs:"),
                     dbc.Textarea(
-                        value="\n".join(e.logs),
+                        value="\n".join(
+                            e.logs),
                         style={
                             "height": "100px",
                             "font-family": "monospace",
                             "font-size": "12px",
-                            "margin-bottom": "10px"
-                        },
+                            "margin-bottom": "10px"},
                         readonly=True,
                     ),
                     dbc.Label("HTML Content:"),
                     dbc.Textarea(
                         value=e.html,
-                        style={"height": "200px", "font-family": "monospace", "font-size": "12px"},
+                        style={
+                            "height": "200px",
+                            "font-family": "monospace",
+                            "font-size": "12px"},
                         readonly=True,
                     ),
                 ],
-                color="warning"
-            )
+                color="warning")
         except Exception as e:  # pylint: disable=broad-except
             logger.warning("Headless OAuth failed (%s), falling back to manual flow", e)
 
@@ -190,7 +196,8 @@ def connectPSA(n_clicks, app_name, email, password, countrycode):  # pylint: dis
         redirect_uri = parse.quote(auth_url)
         return dbc.Alert(
             ["Automatic login failed. Please complete manually: ",
-             html.A("Go to login", href=f"{request.url_root}config_connect?url={redirect_uri}")],
+             html.A("Go to login",
+                    href=f"{dash_app.config.requests_pathname_prefix}config_connect?url={redirect_uri}")],
             color="warning"
         )
     return ""
@@ -224,8 +231,8 @@ def finishOtp(n_clicks, code_pin, sms_code):  # pylint: disable=unused-argument
             app.myp.remote_client.otp = otp_session
             app.myp.save_config()
             app.start_remote_control()
-            return dbc.Alert(["OTP config finish !!! ", html.A("Go to home", href=request.url_root)],
-                             color="success")
+            return dbc.Alert(["OTP config finish !!! ", html.A(
+                "Go to home", href=dash_app.config.requests_pathname_prefix)], color="success")
         except Exception as e:
             res = str(e)
             logger.exception("finishOtp:")

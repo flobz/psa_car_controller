@@ -9,9 +9,9 @@ jobs:
     name: Push to pypi
     runs-on: ubuntu-latest
     steps:
-     - uses: actions/checkout@v2
+     - uses: actions/checkout@v6
      - name: Set up Python
-       uses: actions/setup-python@v2
+       uses: actions/setup-python@v6
        with:
         python-version: '3.11'
      - name: Install dependencies
@@ -26,7 +26,7 @@ jobs:
          poetry build
          poetry publish --username __token__ --password ${{ secrets.PYPI_TOKEN }}
          mv dist/psa_car_controller-${PSACC_VERSION:1}-py3-none-any.whl dist/psa_car_controller-0.0.0-py3-none-any.whl
-     - uses: actions/upload-artifact@master
+     - uses: actions/upload-artifact@v4
        with:
          name: wheel-package
          path: dist/psa_car_controller-0.0.0-py3-none-any.whl
@@ -50,27 +50,27 @@ jobs:
           fi
           echo ::set-output name=tags::${TAGS}
       - name: Set up QEMU
-        uses: docker/setup-qemu-action@master
+        uses: docker/setup-qemu-action@v4
         with:
           platforms: all
       - name: Set up Docker Buildx
         id: buildx
-        uses: docker/setup-buildx-action@master
+        uses: docker/setup-buildx-action@v4
       - name: Check out the repo
-        uses: actions/checkout@v2
-      - uses: actions/download-artifact@master
+        uses: actions/checkout@v6
+      - uses: actions/download-artifact@v4
         with:
           name: wheel-package
           path: dist/psa_car_controller-0.0.0-py3-none-any.whl
       - name: Login to DockerHub
-        uses: docker/login-action@v1 
+        uses: docker/login-action@v4 
         with:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
       -
         name: Build and push
         id: docker_build
-        uses: docker/build-push-action@v2
+        uses: docker/build-push-action@v7
         with:
           context: .
           push: true
@@ -84,26 +84,24 @@ jobs:
     needs: push_to_registry
     name: Update psacc-ha version
     runs-on: ubuntu-latest
-    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v') && !contains(github.ref, '-')
+    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v') && !contains(github.ref, 'b')
     steps:
-      - name: Update psacc-ha version
-        env:
-          GH_TOKEN: ${{ secrets.GH_PAT }}
-          VERSION: ${{ github.ref_name }}
-        run: |
-          echo "Updating flobz/psacc-ha config.json to $VERSION"
-          
-          # Get current content and SHA
-          RESPONSE=$(gh api repos/flobz/psacc-ha/contents/psacc-ha/config.json)
-          FILE_SHA=$(echo "$RESPONSE" | jq -r '.sha')
-          CURRENT_CONTENT=$(echo "$RESPONSE" | jq -r '.content' | base64 -d)
-          
-          # Replace version
-          NEW_CONTENT=$(echo "$CURRENT_CONTENT" | sed "s/\"version\": \"v[^\"]*\"/\"version\": \"$VERSION\"/")
-          
-          # Update file
-          gh api repos/flobz/psacc-ha/contents/psacc-ha/config.json \
-            -X PUT \
-            -f message="chore: bump version to $VERSION" \
-            -f content="$(echo "$NEW_CONTENT" | base64 -w 0)" \
-            -f sha="$FILE_SHA"
+      - uses: ./.github/actions/update-ha-config
+        with:
+          gh_token: ${{ secrets.GH_PAT }}
+          version: ${{ github.ref_name }}
+          branch: 'main'
+          message: "chore: bump version to ${{ github.ref_name }}"
+
+  update_ha_config_beta:
+    needs: push_to_registry
+    name: Update psacc-ha beta version
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v') && contains(github.ref, 'b')
+    steps:
+      - uses: ./.github/actions/update-ha-config
+        with:
+          gh_token: ${{ secrets.GH_PAT }}
+          version: ${{ github.ref_name }}
+          branch: 'beta'
+          message: "chore: bump beta version to ${{ github.ref_name }}"

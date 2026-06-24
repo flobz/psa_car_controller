@@ -2,8 +2,12 @@ import logging
 import os
 import time
 from urllib.parse import urlparse, parse_qs
-from playwright import sync_api as playwright_sync
-from playwright.sync_api import Page
+try:
+    from playwright import sync_api as playwright_sync
+    from playwright.sync_api import Page
+except ImportError:
+    playwright_sync = None
+    Page = None
 
 logger = logging.getLogger(__name__)
 

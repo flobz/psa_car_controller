@@ -8,7 +8,6 @@ from dash import dcc, html
 from dash.dependencies import Output, Input, State
 from dash.exceptions import PreventUpdate
 import time
-from flask import request
 
 from psa_car_controller.common import utils
 from psa_car_controller.common.mylogger import CustomLogger
@@ -57,11 +56,11 @@ def add_header(el):
                              color="secondary",
                              className="me-1 bi bi-github",
                              external_link=True, href=github_url)
-    return dbc.Row([dbc.Col(dcc.Link(html.H1('My car info'), href=dash_app.requests_pathname_external_prefix,
+    return dbc.Row([dbc.Col(dcc.Link(html.H1('My car info'), href=dash_app.config.requests_pathname_prefix,
                                      style={"TextDecoration": "none"})),
                     dbc.Col(html.Div([dbc_version,
                                       dcc.Link(html.Img(src="assets/images/settings.svg", width="30veh"),
-                                               href=dash_app.requests_pathname_external_prefix + "config",
+                                               href=dash_app.config.requests_pathname_prefix + "config",
                                                className="float-end")],
                                      className="d-grid gap-2 d-md-flex justify-content-md-end",))],
                    className='align-items-center'), el
@@ -71,7 +70,7 @@ def add_header(el):
                    [Input('url', 'pathname'),
                     Input('url', 'search')])
 def display_page(pathname, search):
-    prefix = dash_app.requests_pathname_external_prefix or "/"
+    prefix = dash_app.config.requests_pathname_prefix or "/"
     pathname = pathname[len(prefix) - 1:]
     query_params = parse_qs(urlparse(search).query)
     no_header = query_params.get("header", None) == ["false"]
@@ -110,7 +109,8 @@ def create_callback():  # noqa: MC0001
                     conn = Database.get_db()
                     charge = Charge(datetime.utcfromtimestamp(changed_line['start_at'] / 1000))
                     charge.price = changed_line['current_value']
-                    charge.vin = get_default_car().vin
+                    if APP.myp.vehicles_list:
+                        charge.vin = get_default_car().vin
                     if not Database.set_chargings_price(conn, charge):
                         logger.error("Can't find line to update in the database")
                     else:
@@ -128,7 +128,8 @@ def create_callback():  # noqa: MC0001
                 is_open = False
             if active_cell is not None and active_cell["column_id"] in ["start_level", "end_level"] and not is_open:
                 row = data[active_cell["row"]]
-                return figures.get_battery_curve_fig(row, APP.myp.vehicles_list[0]), True
+                if APP.myp.vehicles_list:
+                    return figures.get_battery_curve_fig(row, APP.myp.vehicles_list[0]), True
             return "", False
 
         @dash_app.callback([Output("tab_trips_popup_graph", "children"), Output("tab_trips_popup", "is_open"), ],
@@ -193,7 +194,7 @@ def update_trips():
             Database.add_altitude_to_db(conn)
             min_date = None
             max_date = None
-            if APP.is_good:
+            if APP.is_good and APP.myp.vehicles_list:
                 car = get_default_car()  # todo handle multiple car
                 try:
                     trips_by_vin = Trips.get_trips(Cars([car]))
@@ -360,7 +361,7 @@ def serve_layout():
                             ]),
                     dbc.Tab(label="Map", tab_id="map", children=[maps]),
                     dbc.Tab(label="Control", tab_id="control", children=html.Iframe(
-                        src=request.url_root + "control?header=false",
+                        src=dash_app.config.requests_pathname_prefix + "control?header=false",
                         style={"position": "absolute",
                                "height": "100%",
                                "width": "100%",

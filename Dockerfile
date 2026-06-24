@@ -1,10 +1,10 @@
 ARG PYTHON_DEP='python3 python3-wheel python3-typing-extensions python3-pandas python3-six python3-dateutil python3-brotli python3-pycryptodome libatlas3-base python3-cryptography python3-scipy androguard python3-flask python3-paho-mqtt python3-ruamel.yaml ca-certificates python3-numpy'
 ARG DEBIAN_FRONTEND=noninteractive
 FROM debian:bookworm-slim AS builder
-ARG PSACC_VERSION="0.0.0"
 ARG PYTHON_DEP
 RUN  BUILD_DEP='python3-pip python3-setuptools python3-dev libblas-dev liblapack-dev gfortran libffi-dev libxml2-dev libxslt1-dev make automake gcc g++ subversion ninja-build' ; \
      apt-get update && apt-get install -y --no-install-recommends $BUILD_DEP $PYTHON_DEP;
+ARG PSACC_VERSION="0.0.0"
 RUN pip3 install --break-system-packages --upgrade pip wheel setuptools
 COPY ./dist/psa_car_controller-${PSACC_VERSION}-py3-none-any.whl .
 RUN pip3 install --break-system-packages --no-cache-dir psa_car_controller-${PSACC_VERSION}-py3-none-any.whl
@@ -22,9 +22,10 @@ RUN  apt-get install -y --no-install-recommends $PYTHON_DEP curl && \
      apt-get clean ; \
      rm -rf /var/lib/apt/lists/*
 
-# Install Playwright and WebKit dependencies
-RUN pip3 install --break-system-packages playwright && \
-    playwright install --with-deps webkit
+# Install Playwright and WebKit dependencies (skip on ARM where not available via pip)
+RUN pip3 install --break-system-packages playwright 2>/dev/null && \
+    playwright install --with-deps webkit 2>/dev/null || \
+    echo "Playwright not available on this architecture, headless auth will use manual fallback"
 
 COPY /docker_files/init.sh /init.sh
 CMD /init.sh

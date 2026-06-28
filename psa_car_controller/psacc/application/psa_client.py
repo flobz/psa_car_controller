@@ -106,6 +106,16 @@ class PSAClient:
                 try:
                     res = self.api().get_vehicle_status(car.vehicle_id)
                     if res is not None:
+                        try:
+                            if car.status is not None:
+                                current_update = car.status.get_energy('Electric').updated_at
+                                new_update = res.get_energy('Electric').updated_at
+                                if new_update is not None and current_update is not None and new_update < current_update:
+                                    logger.info("Discarding stale API response for %s: api date %s < last update %s",
+                                                vin, new_update, current_update)
+                                    return car.status
+                        except (AttributeError, TypeError):
+                            pass
                         car.status = res
                         if self._record_enabled:
                             self.record_info(car)

@@ -86,6 +86,18 @@ class RemoteClient:
                 elif data["return_code"] != "0":
                     logger.error('mqtt error %s : %s', data["return_code"], data.get("reason", "?"))
             elif msg.topic.startswith(MQTT_EVENT_TOPIC):
+                car = self.vehicles_list.get_car_by_vin(data["vin"])
+                if car and car.status is not None:
+                    try:
+                        last_update = car.status.get_energy('Electric').updated_at
+                        msg_date = datetime.strptime(data["date"],
+                                                     "%Y-%m-%dT%H:%M:%SZ").replace(tzinfo=last_update.tzinfo)
+                        if msg_date < last_update:
+                            logger.info("Discarding stale MQTT message for %s: msg date %s < last update %s",
+                                        data["vin"], msg_date, last_update)
+                            return
+                    except (KeyError, AttributeError, ValueError):
+                        pass
                 charge_info = data["charging_state"]
                 programs = data["precond_state"].get("programs", None)
                 if programs:

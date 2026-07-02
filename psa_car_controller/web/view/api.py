@@ -190,6 +190,8 @@ def settings_section(section: str):
 @app.route('/vehicles/trips')
 def get_trips():
     try:
+        if not APP.myp.vehicles_list:
+            return jsonify({})
         car = APP.myp.vehicles_list[0]
         trips_by_vin = Trips.get_trips(Cars([car]))
         trips = trips_by_vin[car.vin]

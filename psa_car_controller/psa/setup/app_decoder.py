@@ -17,7 +17,6 @@ logger = logging.getLogger(__name__)
 GITHUB_USER = "flobz"
 GITHUB_REPO = "psa_apk"
 TIMEOUT_IN_S = 30
-app = PSACarController()
 
 
 def get_content_from_apk(filename: str, country_code: str) -> ApkParser:
@@ -137,5 +136,6 @@ class InitialSetup:
             chc = ChargeControl(self.psacc, vehicle.vin, 100, [0, 0])
             charge_controls[vehicle.vin] = chc
         charge_controls.save_config()
+        app = PSACarController()
         app.load_app()
         app.start_remote_control()

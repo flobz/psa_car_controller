@@ -7,8 +7,7 @@ from flask import Flask
 from werkzeug import run_simple
 from werkzeug.middleware.proxy_fix import ProxyFix
 
-from psa_car_controller.web.dash_custom import DashCustom
-
+from dash import Dash
 try:
     from werkzeug.middleware.dispatcher import DispatcherMiddleware
 except ImportError:
@@ -28,30 +27,27 @@ logger = logging.getLogger(__name__)
 
 
 class MyProxyFix(ProxyFix):
-    def __init__(self, dashapp):
+    def __init__(self, dashapp: Dash, static_prefix):
         self.flask_app = dashapp.server
-        self.dash_app = dash_app
+        self.dash_app = dashapp
+        self.static_prefix = static_prefix
         super().__init__(self.flask_app.wsgi_app, x_host=1, x_port=1, x_prefix=1)
 
     def __call__(self, environ, start_response):
-        prefix = environ.get("HTTP_X_INGRESS_PATH")
-        if prefix:
-            environ["HTTP_X_FORWARDED_PREFIX"] = prefix
-            self.flask_app.config['APPLICATION_ROOT'] = environ['SCRIPT_NAME'] = prefix
-            prefix += "/"
-            self.dash_app.requests_pathname_external_prefix = prefix
-            self.dash_app.config.assets_external_path = prefix
+        prefix = environ.get("HTTP_X_INGRESS_PATH") or environ.get("HTTP_X_FORWARDED_PREFIX") or self.static_prefix
+        self.dash_app.config.__dict__["_read_only"] = []
+
+        if prefix == "/":
+            self.dash_app.config.requests_pathname_prefix = ""
+            self.dash_app.config.url_base_pathname = None
         else:
-            # In Dash 4.0, requests_pathname_prefix is "/" when base_path is "/"
-            # but APPLICATION_ROOT should be None (not "/") for root-mounted apps
-            rpp = self.dash_app.config.requests_pathname_prefix
-            # APPLICATION_ROOT should not have trailing slash (Flask convention)
-            if rpp and rpp != "/":
-                self.flask_app.config['APPLICATION_ROOT'] = rpp.rstrip('/')
-            else:
-                self.flask_app.config['APPLICATION_ROOT'] = None
-            # requests_pathname_external_prefix should be empty string for root
-            self.dash_app.requests_pathname_external_prefix = rpp if rpp and rpp != "/" else ""
+            environ["HTTP_X_FORWARDED_PREFIX"] = prefix
+            if not prefix.endswith("/"):
+                prefix += "/"
+            self.dash_app.config.requests_pathname_prefix = prefix
+            self.dash_app.config.url_base_pathname = prefix
+        self.dash_app.config.assets_external_path = prefix
+
         return super().__call__(environ, start_response)
 
 
@@ -85,12 +81,12 @@ def config_flask(title, base_path, debug: bool, host, port, reloader=False,
     else:
         application = DispatcherMiddleware(Flask('dummy_app'), {base_path: app})
         requests_pathname_prefix = base_path + "/"
-    dash_app = DashCustom(external_stylesheets=[dbc.themes.BOOTSTRAP, dbc.icons.BOOTSTRAP],
-                          external_scripts=locale_url, title=title,
-                          server=app, requests_pathname_prefix=requests_pathname_prefix,
-                          suppress_callback_exceptions=True)
+    dash_app = Dash(external_stylesheets=[dbc.themes.BOOTSTRAP, dbc.icons.BOOTSTRAP],
+                    external_scripts=locale_url, title=title,
+                    server=app, requests_pathname_prefix=requests_pathname_prefix,
+                    suppress_callback_exceptions=True)
     dash_app.enable_dev_tools(debug)
-    app.wsgi_app = MyProxyFix(dash_app)
+    app.wsgi_app = MyProxyFix(dash_app, base_path)
     # keep this line
     importlib.import_module(view)
     if reload_view:

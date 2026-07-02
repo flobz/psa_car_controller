@@ -2,7 +2,6 @@ import logging
 
 from dash import callback_context, html, dcc
 from dash.exceptions import PreventUpdate
-from flask import request
 
 from psa_car_controller.web.app import dash_app
 import dash_bootstrap_components as dbc
@@ -55,9 +54,8 @@ def finish_oauth(n_clicks, code):  # pylint: disable=unused-argument
     if ctx.triggered:
         try:
             config_views.INITIAL_SETUP.connect(code)
-            return dbc.Alert(["PSA login finish !",
-                              html.A(" Go to otp config", href=request.url_root + "config_otp")],
-                             color="success")
+            return dbc.Alert(["PSA login finish !", html.A(" Go to otp config",
+                             href=dash_app.config.requests_pathname_prefix + "config_otp")], color="success")
         except Exception as e:
             logger.exception("finish_oauth:")
             return dbc.Alert(str(e), color="danger")

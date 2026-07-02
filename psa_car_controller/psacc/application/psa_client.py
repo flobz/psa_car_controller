@@ -6,7 +6,7 @@ from hashlib import md5
 from sqlite3.dbapi2 import IntegrityError
 
 from oauth2_client.credentials_manager import ServiceInformation
-from urllib3.exceptions import InvalidHeader
+from urllib3.exceptions import HTTPError
 
 from psa_car_controller.psa.connected_car_api.api.vehicles_api import VehiclesApi
 from psa_car_controller.psa.connected_car_api.rest import ApiException
@@ -110,7 +110,7 @@ class PSAClient:
                         if self._record_enabled:
                             self.record_info(car)
                         return res
-                except (ApiException, InvalidHeader) as ex:
+                except (ApiException, HTTPError) as ex:
                     logger.error("get_vehicle_info: ApiException: %s", ex, exc_info_debug=True)
             car.status = res
         return res
@@ -142,7 +142,7 @@ class PSAClient:
             for vehicle in res.embedded.vehicles:
                 self.vehicles_list.add(Car(vehicle.vin, vehicle.id, vehicle.brand, vehicle.label))
             self.vehicles_list.save_cars()
-        except (ApiException, InvalidHeader):
+        except (ApiException, HTTPError):
             logger.exception("get_vehicles:")
         return self.vehicles_list
 

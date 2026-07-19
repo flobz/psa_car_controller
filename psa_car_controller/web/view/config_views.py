@@ -234,7 +234,7 @@ def finishOtp(n_clicks, code_pin, sms_code):  # pylint: disable=unused-argument
             app.myp.remote_client.otp = otp_session
             app.myp.save_config()
             app.start_remote_control()
-            home = dash_app.config.requests_pathname_prefix or "/"
+            home = dash_app.get_relative_path("/")
             alert = dbc.Alert(
                 ["OTP config finished! Redirecting to home in 5 seconds… ",
                  html.A("Go to home now", href=home)], color="success")
@@ -251,5 +251,5 @@ def finishOtp(n_clicks, code_pin, sms_code):  # pylint: disable=unused-argument
     Input("otp-redirect-interval", "n_intervals"))
 def otp_redirect_home(n_intervals):
     if n_intervals and n_intervals > 0:
-        return dash_app.config.requests_pathname_prefix or "/"
+        return dash_app.get_relative_path("/")
     raise PreventUpdate()

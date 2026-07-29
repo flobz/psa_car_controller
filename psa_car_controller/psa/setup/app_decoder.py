@@ -57,6 +57,8 @@ class InitialSetup:
             data = res.json()
             if token := data.get("accessToken"):
                 self.token = token
+            elif token := data.get("token"):
+                self.token = token
             else:
                 raise ConnectionError("No access token in response:", res.text)
         except ConnectionError as e:

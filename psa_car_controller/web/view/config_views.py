@@ -6,6 +6,7 @@ from dash.exceptions import PreventUpdate
 
 from psa_car_controller.psa.otp.otp import new_otp_session
 from psa_car_controller.psa.setup.headless_oauth import HeadlessOAuthError, get_oauth_code_headless
+from psa_car_controller.web.view.config_oauth import get_oauth_config_layout
 from psa_car_controller.psacc.application.car_controller import PSACarController
 from psa_car_controller.psa.setup.app_decoder import InitialSetup
 from psa_car_controller.common.mylogger import LOG_FILE
@@ -121,7 +122,10 @@ def config_layout(activeTabs="log"):
     return dbc.Tabs(active_tab=activeTabs, children=[
         dbc.Tab([log_layout()], label="Log", tab_id="log"),
         dbc.Tab([setup_config_layout], label="User config", tab_id="login"),
-        dbc.Tab([config_otp_layout], label="OTP config", tab_id="otp")])
+        dbc.Tab([setup_config_manual_layout()], label = "Manual config", tab_id="manual"),
+        dbc.Tab([config_otp_layout], label="OTP config", tab_id="otp")
+        ]
+    )
 
 
 @dash_app.callback(

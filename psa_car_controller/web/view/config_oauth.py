@@ -52,6 +52,11 @@ def setup_config_manual_layout():
                     dbc.FormText("Enter PSA OAuth Code", color="secondary")
                 ]),
                 dbc.Row(dbc.Button("Submit", color="primary", id="finish-oauth")),
+                dcc.Loading(
+                    id="loading-2",
+                    children=[html.Div([html.Div(id="oauth-result")])],
+                    type="circle",
+                ),
             ])
         ]),
     ])

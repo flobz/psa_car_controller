@@ -126,6 +126,8 @@ def finish_oauth(n_clicks, code):  # pylint: disable=unused-argument
     if ctx.triggered:
         try:
             config_views.INITIAL_SETUP.connect(code)
+            config_views.app.myp = config_views.INITIAL_SETUP.psacc
+            config_views.app.is_good = True
             return dbc.Alert(["PSA login finish !", html.A(" Go to otp config",
                              href=dash_app.config.requests_pathname_prefix + "config_otp")], color="success")
         except Exception as e:

@@ -16,7 +16,8 @@ logger = logging.getLogger(__name__)
 def setup_config_manual_layout():
     return dbc.Col(md=12, lg=2, className="m-3", children=[
         dbc.Row(html.H2('Connection to PSA (Advanced)')),
-        dbc.Row(html.A("Please follow the instructions here.", href="https://github.com/flobz/psa_car_controller/discussions/779")),
+        dbc.Row(html.A("Please follow the instructions here.",
+                       href="https://github.com/flobz/psa_car_controller/discussions/779")),
         dbc.Row(className="ms-2", children=[
             dbc.Form([
                 html.Div(className="mb-3", children=[

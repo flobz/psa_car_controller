@@ -88,5 +88,5 @@ def get_control_tabs(config):
         return dbc.Tabs(
             id="control-tabs",
             active_tab="tab-" + config.myp.vehicles_list[0].vin,
-        children=tabs,
+            children=tabs,
         )

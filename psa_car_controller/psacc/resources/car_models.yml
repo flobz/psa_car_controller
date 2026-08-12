@@ -681,6 +681,14 @@
   reg: VR7ARHNSSP 
   max_elec_consumption: 70
   max_fuel_consumption: 30
+- !CarModel
+  name: C5 Aircross 1.5 BlueHDi 130
+  battery_power: 0
+  fuel_capacity: 53
+  abrp_name:
+  reg: VR7ACYHZ7T
+  max_elec_consumption: 0
+  max_fuel_consumption: 30
 - !ElecModel
   name: Combo-e Cargo XL
   battery_power: 50

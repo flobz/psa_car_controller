@@ -29,6 +29,8 @@ class TripParser:
 
     @staticmethod
     def get_elec_consumption(start, end):
+        if start[LEVEL] is None or end[LEVEL] is None:
+            return [0, 0]
         return [start[LEVEL] - end[LEVEL], 0]
 
     @staticmethod

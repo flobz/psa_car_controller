@@ -152,3 +152,4 @@ certs/
 *.log.*
 
 .vscode/
+.DS_Store

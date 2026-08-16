@@ -1,0 +1,24 @@
+[
+    {
+        "abrp_name": null,
+        "battery_power": 46,
+        "brand": "Peugeot",
+        "fuel_capacity": 44,
+        "label": "208",
+        "max_elec_consumption": 70,
+        "max_fuel_consumption": 30,
+        "vehicle_id": "1sdfdksnfk222",
+        "vin": "VRAAAAAAA"
+    },
+    {
+        "abrp_name": "peugeot:e208:20:50",
+        "battery_power": 46,
+        "brand": "Peugeot",
+        "fuel_capacity": 0,
+        "label": "e-208",
+        "max_elec_consumption": 70,
+        "max_fuel_consumption": 0,
+        "vehicle_id": "1sdfdksnfk222",
+        "vin": "VR3UHZKX"
+    }
+]

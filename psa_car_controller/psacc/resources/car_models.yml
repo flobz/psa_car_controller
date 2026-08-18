@@ -1069,3 +1069,11 @@
   abrp_name: citroen:ec5:25:75:aircross
   reg: VR7KCZKZ9S 
   max_elec_consumption: 70
+- !CarModel
+  name: Grandland Electric 73kWh AWD
+  battery_power: 73
+  fuel_capacity: 0
+  abrp_name: vauxhall:grandland:25:74:awd
+  reg: VXKKCZKZ6T
+  max_elec_consumption: 70
+  max_fuel_consumption: 0

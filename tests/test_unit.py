@@ -306,6 +306,18 @@ class TestUnit(unittest.TestCase):
                                    'consumption': 1.32,
                                    'consumption_fuel_km': 4.53}])
 
+    def test_elec_consumption_none_level(self):
+        from psa_car_controller.psacc.application.trip_parser import TripParser
+        start = {5: 50, 8: None}
+        end = {5: None, 8: None}
+        assert TripParser.get_elec_consumption(start, end) == [0, 0]
+
+    def test_thermal_consumption_none_level(self):
+        from psa_car_controller.psacc.application.trip_parser import TripParser
+        start = {5: None, 8: 80}
+        end = {5: None, 8: None}
+        assert TripParser.get_thermal_consumption(start, end) == [0, 0]
+
     def test_db_callback(self):
         old_dummy_value = dummy_value
         get_new_test_db()

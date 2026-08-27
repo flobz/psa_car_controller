@@ -25,35 +25,23 @@ class TripParser:
 
     @staticmethod
     def get_thermal_consumption(start, end):
-        try:
-            if start[LEVEL_FUEL] is None or end[LEVEL_FUEL] is None:
-                return [0, 0]
+        if start[LEVEL_FUEL] is not None and end[LEVEL_FUEL] is not None:
             return [0, start[LEVEL_FUEL] - end[LEVEL_FUEL]]
-        except (KeyError, IndexError, TypeError):
-            return [0, 0]
+        return [0, 0]
 
     @staticmethod
     def get_elec_consumption(start, end):
-        try:
-            start_level = start[LEVEL]
-            end_level = end[LEVEL]
-            if start_level is None or end_level is None:
-                return [0, 0]
-            return [start_level - end_level, 0]
-        except (KeyError, IndexError, TypeError):  # TypeError handles None start/end
-            return [0, 0]
+        if start[LEVEL] is not None and end[LEVEL] is not None:
+            return [start[LEVEL] - end[LEVEL], 0]
+        return [0, 0]
 
     @staticmethod
     def get_hybrid_consumption(start, end):
         res = []
-        try:
-            for energy in [LEVEL, LEVEL_FUEL]:
-                if start[energy] is not None and end[energy] is not None:
-                    res.append(start[energy] - end[energy])
-                else:
-                    res.append(0)
-        except (KeyError, IndexError, TypeError):
-            while len(res) < 2:
+        for energy in [LEVEL, LEVEL_FUEL]:
+            if start[energy] is not None and end[energy] is not None:
+                res.append(start[energy] - end[energy])
+            else:
                 res.append(0)
         return res
 
@@ -66,8 +54,8 @@ class TripParser:
             logger.debugv("charge detected")
             return True
         return False
-    # pylint: disable=unused-argument
 
+    # pylint: disable=unused-argument
     def __is_refuel(self, start, end, distance):
         fuel_consumption = self.get_level_consumption(start, end)[1]
         if fuel_consumption < 0:
@@ -76,13 +64,6 @@ class TripParser:
         return False
 
     def __is_recharging(self, start, end, distance):
-        try:
-            start_level = start[LEVEL]
-            end_level = end[LEVEL]
-            if start_level is None or end_level is None:
-                return False
-        except (KeyError, IndexError, TypeError):
-            return False
         decharge = self.get_level_consumption(start, end)[0]
         return TripParser.is_recharging(decharge, distance)
 

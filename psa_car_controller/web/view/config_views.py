@@ -96,6 +96,8 @@ config_otp_layout = dbc.Row(dbc.Col(className="col-md-12 col-lg-2 m-3", children
         html.Div([
             dbc.Button("Submit", color="primary", id="finish-otp"),
             html.Div(id="opt-result")]),
+        dcc.Location(id="otp-redirect-url", refresh=True),
+        dcc.Interval(id="otp-redirect-interval", interval=5000, n_intervals=0, disabled=True),
     ])]))
 
 
@@ -219,7 +221,8 @@ def askCode(n_clicks):  # pylint: disable=unused-argument
 
 
 @dash_app.callback(
-    Output("opt-result", "children"),
+    [Output("opt-result", "children"),
+     Output("otp-redirect-interval", "disabled")],
     Input("finish-otp", "n_clicks"),
     State("psa-pin", "value"),
     State("psa-code", "value"))
@@ -231,10 +234,22 @@ def finishOtp(n_clicks, code_pin, sms_code):  # pylint: disable=unused-argument
             app.myp.remote_client.otp = otp_session
             app.myp.save_config()
             app.start_remote_control()
-            return dbc.Alert(["OTP config finish !!! ", html.A(
-                "Go to home", href=dash_app.config.requests_pathname_prefix)], color="success")
+            home = dash_app.get_relative_path("/")
+            alert = dbc.Alert(
+                ["OTP config finished! Redirecting to home in 5 seconds… ",
+                 html.A("Go to home now", href=home)], color="success")
+            return alert, False  # enable the interval -> auto-redirect
         except Exception as e:
             res = str(e)
             logger.exception("finishOtp:")
-            return dbc.Alert(res, color="danger")
+            return dbc.Alert(res, color="danger"), True  # keep interval disabled on error
+    raise PreventUpdate()
+
+
+@dash_app.callback(
+    Output("otp-redirect-url", "href"),
+    Input("otp-redirect-interval", "n_intervals"))
+def otp_redirect_home(n_intervals):
+    if n_intervals and n_intervals > 0:
+        return dash_app.get_relative_path("/")
     raise PreventUpdate()

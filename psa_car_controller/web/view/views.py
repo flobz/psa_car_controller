@@ -76,12 +76,12 @@ def display_page(pathname, search):
     pathname = pathname[len(prefix) - 1:]
     query_params = parse_qs(urlparse(search).query)
     no_header = query_params.get("header", None) == ["false"]
-    if not APP.is_good or pathname == "/config_login":
+    if pathname == "/config_connect":
+        page = get_oauth_config_layout(query_params["url"][0])
+    elif not APP.is_good or pathname == "/config_login":
         page = config_layout("login")
     elif pathname == "/config":
         page = config_layout()
-    elif pathname == "/config_connect":
-        page = get_oauth_config_layout(query_params["url"][0])
     elif pathname == "/log":
         page = log_layout()
     elif pathname == "/config_otp":

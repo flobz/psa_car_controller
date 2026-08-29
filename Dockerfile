@@ -22,9 +22,9 @@ RUN  apt-get install -y --no-install-recommends $PYTHON_DEP curl && \
      apt-get clean ; \
      rm -rf /var/lib/apt/lists/*
 
-# Install Playwright and WebKit dependencies (skip on ARM where not available via pip)
+# Install Playwright and Chromium dependencies (skip on ARM where not available via pip)
 RUN pip3 install --break-system-packages playwright 2>/dev/null && \
-    playwright install --with-deps webkit 2>/dev/null || \
+    playwright install --with-deps chromium 2>/dev/null || \
     echo "Playwright not available on this architecture, headless auth will use manual fallback"
 
 COPY /docker_files/init.sh /init.sh

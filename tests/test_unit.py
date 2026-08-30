@@ -81,6 +81,7 @@ class TestUnit(unittest.TestCase):
         assert CarModelRepository().find_model_by_vin("VR3UHZKXZL").name == "e-208"
         assert CarModelRepository().find_model_by_vin("VR3UKZKXZM").name == "e-2008"
         assert CarModelRepository().find_model_by_vin("VXKUHZKXZL").name == "corsa-e"
+        assert CarModelRepository().find_model_by_vin("VXKUKZKW0S").name == "Mokka-e 2024+"
 
     def test_c02_signal_cache(self):
         start = datetime.utcnow().replace(tzinfo=UTC) - timedelta(minutes=30)

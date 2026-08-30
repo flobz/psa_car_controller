@@ -60,3 +60,21 @@ class TestUnit(unittest.TestCase):
         msg = MQTTMessage(topic=MQTT_EVENT_TOPIC.encode("utf-8"))
         msg.payload = message_without_charge_info
         remote_client._on_mqtt_message(None, None, msg)
+
+    @staticmethod
+    def _deserialize_status_with_doors(doors_state):
+        payload = {**ELECTRIC_CAR_STATUS, "doorsState": doors_state}
+        return ApiClient()._ApiClient__deserialize(payload, "Status")
+
+    def test_unknown_locked_state(self):
+        # the api reports "Unknown" on some cars, it must not break the whole status deserialization
+        status = self._deserialize_status_with_doors({"lockedState": ["Unknown"]})
+        self.assertEqual(["Unknown"], status.doors_state.locked_state)
+
+    def test_unexpected_doors_state(self):
+        # any value the api adds later is kept as is instead of raising
+        status = self._deserialize_status_with_doors(
+            {"lockedState": ["Bogus"], "opening": [{"identifier": "BogusDoor", "state": "BogusState"}]})
+        self.assertEqual(["Bogus"], status.doors_state.locked_state)
+        self.assertEqual("BogusDoor", status.doors_state.opening[0].identifier)
+        self.assertEqual("BogusState", status.doors_state.opening[0].state)

@@ -11,10 +11,13 @@
 """
 
 
+import logging
 import pprint
 import re  # noqa: F401
 
 import six
+
+logger = logging.getLogger(__name__)
 
 
 class DoorsState(object):
@@ -75,13 +78,14 @@ class DoorsState(object):
         :param locked_state: The locked_state of this DoorsState.  # noqa: E501
         :type: list[str]
         """
-        allowed_values = ["Unlocked", "Locked", "SuperLocked", "DriverDoorUnlocked", "CabinDoorsUnlocked", "CargoDoorsLocked", "CargoDoorsUnlocked", "RearDoorsUnlocked", "RearDoorsLocked"]  # noqa: E501
+        # Deviation from the generated code: the api reports "Unknown" on some cars and is free to
+        # add new values. Raising here would abort the whole status fetch (battery, position,
+        # charging), so unexpected values are logged and kept instead.
+        allowed_values = ["Unlocked", "Locked", "SuperLocked", "DriverDoorUnlocked", "CabinDoorsUnlocked", "CargoDoorsLocked", "CargoDoorsUnlocked", "RearDoorsUnlocked", "RearDoorsLocked", "Unknown"]  # noqa: E501
         if not set(locked_state).issubset(set(allowed_values)):
-            raise ValueError(
-                "Invalid values for `locked_state` [{0}], must be a subset of [{1}]"  # noqa: E501
-                .format(", ".join(map(str, set(locked_state) - set(allowed_values))),  # noqa: E501
-                        ", ".join(map(str, allowed_values)))
-            )
+            logger.warning("Unexpected values for `locked_state` [%s], expected a subset of [%s]",
+                           ", ".join(map(str, set(locked_state) - set(allowed_values))),
+                           ", ".join(map(str, allowed_values)))
 
         self._locked_state = locked_state
 

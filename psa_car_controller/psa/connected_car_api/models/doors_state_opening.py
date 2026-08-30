@@ -11,10 +11,13 @@
 """
 
 
+import logging
 import pprint
 import re  # noqa: F401
 
 import six
+
+logger = logging.getLogger(__name__)
 
 
 class DoorsStateOpening(object):
@@ -70,12 +73,11 @@ class DoorsStateOpening(object):
         :param identifier: The identifier of this DoorsStateOpening.  # noqa: E501
         :type: str
         """
+        # Deviation from the generated code: an unexpected value must not abort the whole status
+        # fetch, so it is logged and kept. See DoorsState.locked_state for the same treatment.
         allowed_values = ["Driver", "Passenger", "RearLeft", "RearRight", "Trunk", "RearWindow", "RoofWindow"]  # noqa: E501
         if identifier not in allowed_values:
-            raise ValueError(
-                "Invalid value for `identifier` ({0}), must be one of {1}"  # noqa: E501
-                .format(identifier, allowed_values)
-            )
+            logger.warning("Unexpected value for `identifier` (%s), expected one of %s", identifier, allowed_values)
 
         self._identifier = identifier
 
@@ -97,12 +99,10 @@ class DoorsStateOpening(object):
         :param state: The state of this DoorsStateOpening.  # noqa: E501
         :type: str
         """
+        # Deviation from the generated code: see the `identifier` setter above.
         allowed_values = ["Open", "Closed"]  # noqa: E501
         if state not in allowed_values:
-            raise ValueError(
-                "Invalid value for `state` ({0}), must be one of {1}"  # noqa: E501
-                .format(state, allowed_values)
-            )
+            logger.warning("Unexpected value for `state` (%s), expected one of %s", state, allowed_values)
 
         self._state = state
 

@@ -44,6 +44,9 @@ class CarStatus(Status):
             self.get_energy("Fuel").level = None
         if self.battery is None:
             self.battery = Battery()
+        if self.doors_state is None or not self.doors_state.locked_state:
+            # some cars never report a usable lock state, log the raw value to help diagnose it
+            logger.debug("doors lock state not available from api: %s", self.doors_state)
 
     def is_moving(self):
         try:

@@ -112,6 +112,9 @@ class PSAClient:
                         return res
                 except (ApiException, HTTPError) as ex:
                     logger.error("get_vehicle_info: ApiException: %s", ex, exc_info_debug=True)
+                except ValueError as ex:
+                    # an unexpected enum value from the api must not abort the whole status fetch
+                    logger.error("get_vehicle_info: invalid data: %s", ex, exc_info_debug=True)
             car.status = res
         return res
 

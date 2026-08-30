@@ -19,7 +19,7 @@
 
   ```bash
   pip3 install playwright
-  playwright install --with-deps chromium
+  playwright install --with-deps --only-shell chromium
   ```
 
   > If Playwright is not installed or the browser fails to start, automatic login falls back to the manual flow.

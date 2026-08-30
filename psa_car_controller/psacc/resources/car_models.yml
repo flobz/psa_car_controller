@@ -1100,3 +1100,10 @@
   reg: VXKKCZKZ6T
   max_elec_consumption: 70
   max_fuel_consumption: 0
+- !ElecModel
+  name: Mokka-e 2024+
+  battery_power: 51
+  fuel_capacity: 0
+  abrp_name:
+  reg: VXKUKZKW0S
+  max_elec_consumption: 70

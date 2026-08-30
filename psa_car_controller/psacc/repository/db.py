@@ -112,8 +112,12 @@ class Database:
             new_db = False
             logger.debug("Database already exist")
         make_backup = False
+        if not new_db and Database.battery_check_constraint_missing(conn):
+            Database.backup(conn)
+            conn.execute("ALTER TABLE battery RENAME TO battery_old;")
         conn.execute("CREATE TABLE IF NOT EXISTS battery (start_at DATETIME PRIMARY KEY,stop_at DATETIME,VIN TEXT, "
-                     "start_level INTEGER, end_level INTEGER, co2 INTEGER, kw INTEGER);")
+                     "start_level INTEGER, end_level INTEGER, co2 INTEGER, kw INTEGER, "
+                     "CHECK(stop_at IS NULL OR stop_at > start_at));")
         conn.execute("""CREATE TABLE IF NOT EXISTS battery_curve (start_at DATETIME, VIN TEXT, date DATETIME,
                         level INTEGER, UNIQUE(start_at, VIN, level));""")
         conn.execute("""CREATE TABLE IF NOT EXISTS
@@ -128,6 +132,8 @@ class Database:
                     make_backup = True
                 except sqlite3.OperationalError:
                     pass
+        Database.finish_battery_check_constraint_migration(conn)
+        conn.commit()
         if not new_db and make_backup:
             Database.backup(conn)
         conn.execute("DROP TRIGGER IF EXISTS update_trigger")
@@ -145,8 +151,8 @@ class Database:
         try:
             Database.get_db()
             return True
-        except sqlite3.OperationalError:
-            logger.fatal("Can't access to db file check permission")
+        except sqlite3.OperationalError as e:
+            logger.fatal("Can't access to db file check permission", exc_info=e)
         return False
 
     @staticmethod
@@ -174,6 +180,32 @@ class Database:
         if Database.__conn:
             Database.__conn.close_db()
             Database.__conn = None
+
+    @staticmethod
+    def battery_check_constraint_missing(conn):
+        # SQLite cannot ALTER TABLE to add a CHECK constraint. When an existing
+        # database predates the stop_at > start_at constraint, the table is renamed
+        # so that init_db recreates it with the constraint, then valid rows are
+        # copied back by finish_battery_check_constraint_migration.
+        sql = conn.execute("SELECT sql FROM sqlite_master WHERE type='table' AND name='battery'").fetchone()
+        if sql is None or "stop_at > start_at" in sql["sql"]:
+            return False
+        logger.info("Migrating battery table to add CHECK(stop_at > start_at) constraint")
+        return True
+
+    @staticmethod
+    def finish_battery_check_constraint_migration(conn):
+        # Copy valid rows from the pre-migration battery_old into the freshly
+        # created battery table, then drop the old one.
+        if conn.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='battery_old'").fetchone() is None:
+            return False
+        conn.execute("INSERT INTO battery SELECT * FROM battery_old WHERE stop_at IS NULL OR stop_at > start_at;")
+        dropped = conn.execute("SELECT COUNT(*) FROM battery_old").fetchone()[0] - \
+            conn.execute("SELECT COUNT(*) FROM battery").fetchone()[0]
+        if dropped:
+            logger.warning("Dropped %s battery row(s) with stop_at <= start_at", dropped)
+        conn.execute("DROP TABLE battery_old;")
+        return True
 
     @staticmethod
     def clean_battery(conn):
@@ -218,9 +250,9 @@ class Database:
         battery_curves = []
         res = conn.execute("""SELECT date, level, rate, autonomy
                                                 FROM battery_curve
-                                                WHERE start_at=? and date<=? and VIN=?
+                                                WHERE start_at=? and date<=? and date>=? and VIN=?
                                                 ORDER BY date asc;""",
-                           (start_at, stop_at, vin)).fetchall()
+                           (start_at, stop_at, start_at, vin)).fetchall()
         for row in res:
             battery_curves.append(BatteryCurveDto(**dict_key_to_lower_case(**row)))
         return battery_curves
@@ -386,5 +418,8 @@ class Database:
             if res == 0:
                 logger.error("Can't find battery row to update")
             conn.commit()
+        except sqlite3.IntegrityError:
+            logger.warning("Ignore charge with invalid date: start_at=%s stop_at=%s vin=%s",
+                           charge.start_at, charge.stop_at, charge.vin)
         finally:
             conn.close()

@@ -7,7 +7,6 @@ import threading
 from os import path
 
 import psa_car_controller
-from oauth2_client.credentials_manager import OAuthError
 
 from .charge_control import ChargeControls
 from .charging import Charging
@@ -98,12 +97,10 @@ class PSACarController(metaclass=Singleton):
             self.is_good = True
         else:
             self.is_good = False
-            try:
-                self.is_good = self.myp.manager.refresh_token_now()
-                if self.is_good:
-                    logger.info(str(self.myp.get_vehicles()))
-            except OAuthError:
-                self.is_good = False
+            self.is_good = self.myp.manager.refresh_token_now()
+            if self.is_good:
+                logger.info(str(self.myp.get_vehicles()))
+            else:
                 if self.args.web_conf:
                     logger.error("Please reconnect by going to config web page")
                 else:

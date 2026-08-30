@@ -253,6 +253,12 @@ class TestUnit(unittest.TestCase):
                "stop_at": date3.strftime('%Y-%m-%dT%H:%M:%S.000Z'), "start_level": start_level, "end_level": end_level}
         battery_curve_fix = get_battery_curve_fig(row, car)
         assert battery_curve_fix is not None
+        # The clientside JS rewrites start_at/stop_at to millisecond timestamps (date.getTime()),
+        # so the callback receives ints, not ISO strings.
+        row_ms = {"start_at": int(date0.timestamp() * 1000),
+                  "stop_at": int(date3.timestamp() * 1000), "start_level": start_level, "end_level": end_level}
+        battery_curve_fix_ms = get_battery_curve_fig(row_ms, car)
+        assert battery_curve_fix_ms is not None
         assert get_altitude_fig(trip) is not None
 
     def test_fuel_car(self):

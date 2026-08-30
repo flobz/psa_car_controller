@@ -47,7 +47,6 @@ scipy = [
     { version = "<1.11.0", python = "<3.8" },
     { version = "<1.8.0", python = "<3.8" }
 ]
-ipython = "^7.0.0"
 
 [tool.poetry.dev-dependencies]
 prospector = "1.12.1"
@@ -57,6 +56,7 @@ deepdiff = "^5.7.0"
 greenery = "^3.3.5"
 autopep8 = "2.3.2"
 pylint = "3.3.6"
+ipython = "^7.0.0"
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]

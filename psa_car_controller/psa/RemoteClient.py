@@ -10,6 +10,7 @@ from requests import RequestException
 
 from psa_car_controller.psacc.model.car import Cars
 from psa_car_controller.psa.AccountInformation import AccountInformation
+from psa_car_controller.psa.connected_car_api.models.doors_state import DoorsState
 from psa_car_controller.psa.RemoteCredentials import RemoteCredentials
 from psa_car_controller.psa.constants import INPROGRESS, DEFAULT_PRECONDITIONING_PROGRAM, IMMEDIATE_CHARGE, \
     DELAYED_CHARGE, REMOTE_URL
@@ -20,6 +21,10 @@ from psa_car_controller.psa.otp.otp import ConfigException, save_otp, load_otp
 
 logger = logging.getLogger(__name__)
 
+# The mqtt event stream reports the lock state as an integer, unlike the rest api which uses the
+# DoorsState.lockedState enum. Only these two values have been observed on a car (an Opel Mokka
+# Electric, confirmed against the /Doors command responses); anything else is logged, not guessed.
+MQTT_DOORS_LOCKING_STATE = {1: "Locked", 3: "Unlocked"}
 MQTT_SERVER = "mwa.mpsa.com"
 MQTT_RESP_TOPIC = "psa/RemoteServices/to/cid/"
 MQTT_EVENT_TOPIC = "psa/RemoteServices/events/MPHRTServices/"
@@ -38,6 +43,7 @@ class RemoteClient:
         self.remoteCredentials: RemoteCredentials = remoteCredentials
         self.manager = manager
         self.precond_programs = {}
+        self.lock_state = {}
         self.account_info = account_info
         self.headers = {
             "x-introspect-realm": self.account_info.realm,
@@ -90,9 +96,38 @@ class RemoteClient:
                 programs = data["precond_state"].get("programs", None)
                 if programs:
                     self.precond_programs[data["vin"]] = data["precond_state"]["programs"]
+                self._store_lock_state(data)
             self._fix_not_updated_api(charge_info, data["vin"])
         except KeyError:
             logger.exception("on_mqtt_message:")
+
+    def _store_lock_state(self, data):
+        # not every event carries doors_state, and older firmwares don't send it at all
+        locking_state = data.get("doors_state", {}).get("doors_locking_state")
+        if locking_state is None:
+            return
+        lock_state = MQTT_DOORS_LOCKING_STATE.get(locking_state)
+        if lock_state is None:
+            logger.warning("unknown doors_locking_state %s, please report it on github", locking_state)
+            return
+        vin = data["vin"]
+        self.lock_state[vin] = lock_state
+        self.apply_lock_state(self.vehicles_list.get_car_by_vin(vin))
+
+    def apply_lock_state(self, car):
+        """Fill the lock state from mqtt when the status api didn't provide one."""
+        if car is None or car.status is None:
+            return
+        lock_state = self.lock_state.get(car.vin)
+        if lock_state is None:
+            return
+        if car.status.doors_state is None:
+            car.status.doors_state = DoorsState()
+        elif car.status.doors_state.locked_state:
+            # the api knows better than we do, don't overwrite it
+            return
+        car.status.doors_state.locked_state = [lock_state]
+        logger.debug("lock state of %s set from mqtt: %s", car.vin, lock_state)
 
     def _fix_not_updated_api(self, charge_info, vin):
         if charge_info is not None and (charge_info.get('remaining_time', 0) != 0 or charge_info.get('rate', 0) != 0):

@@ -51,6 +51,18 @@ class RateLimitException(Exception):
         super().__init__(f"Rate limit exceeded for {func_name}")
 
 
+class AuthenticationRequiredException(Exception):
+    """Raised when no valid access token is available.
+
+    The refresh token is expired or was revoked, so the connection has to be
+    re-established from the config web page. Callers get this instead of a
+    TypeError from building an "Bearer None" authorization header.
+    """
+
+    def __init__(self, message="Not connected to the PSA API, please reconnect from the config web page"):
+        super().__init__(message)
+
+
 def get_positions(locations):
     latitude = 0
     longitude = 1

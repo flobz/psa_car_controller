@@ -3,7 +3,9 @@ import logging
 from flask import jsonify, request, Response as FlaskResponse
 from pydantic import BaseModel
 
-from psa_car_controller.common.utils import RateLimitException
+from oauth2_client.credentials_manager import OAuthError
+
+from psa_car_controller.common.utils import AuthenticationRequiredException, RateLimitException
 from psa_car_controller.psacc.application.car_controller import PSACarController
 from psa_car_controller.psacc.repository.db import Database
 from psa_car_controller.web.app import app
@@ -31,6 +33,28 @@ def json_response(json: str, status=200):
     )
 
 
+@app.errorhandler(AuthenticationRequiredException)
+def handle_authentication_required(error):
+    """Return a machine-readable 503 instead of a 500 traceback.
+
+    Without this, an expired refresh token surfaces as
+    "TypeError: can only concatenate str (not NoneType) to str" deep inside the
+    generated API client, which tells the caller nothing about what to do.
+    """
+    logger.error("API call rejected, not authenticated: %s", error)
+    return jsonify({"error": "authentication_required", "message": str(error)}), 503
+
+
+@app.errorhandler(OAuthError)
+def handle_oauth_error(error):
+    """An expired or revoked grant needs a new login, not a retry."""
+    logger.error("API call rejected, OAuth error: %s", error)
+    return jsonify({
+        "error": "authentication_required",
+        "message": f"OAuth error, please reconnect from the config web page: {error}",
+    }), 503
+
+
 @app.route('/get_vehicles')
 def get_vehicules():
     response = app.response_class(
@@ -44,8 +68,13 @@ def get_vehicules():
 @app.route('/get_vehicleinfo/<string:vin>')
 def get_vehicle_info(vin):
     from_cache = int(request.args.get('from_cache', 0)) == 1
+    info = APP.myp.get_vehicle_info(vin, from_cache)
+    if info is None:
+        # Every attempt failed upstream; say so rather than raising AttributeError.
+        logger.warning("get_vehicle_info returned no data for %s", vin)
+        return jsonify({"error": "no_data", "message": "No vehicle info available from the API"}), 502
     response = app.response_class(
-        response=json.dumps(APP.myp.get_vehicle_info(vin, from_cache).to_dict(), default=str),
+        response=json.dumps(info.to_dict(), default=str),
         status=200,
         mimetype='application/json'
     )

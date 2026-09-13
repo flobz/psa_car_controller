@@ -22,6 +22,7 @@ from psa_car_controller.psa.constants import realm_info, AUTHORIZE_SERVICE
 from .abrp import Abrp
 from psa_car_controller.psacc.repository.db import Database
 from psa_car_controller.common.mylogger import CustomLogger
+from psa_car_controller.common.utils import AuthenticationRequiredException
 
 SCOPE = ['openid profile']
 CARS_FILE = "cars.json"
@@ -83,7 +84,10 @@ class PSAClient:
         return realm_info[self.realm]['app_name']
 
     def api(self) -> VehiclesApi:
-        self.api_config.access_token = self.manager.access_token
+        access_token = self.manager.access_token
+        if not access_token:
+            raise AuthenticationRequiredException()
+        self.api_config.access_token = access_token
         api_instance = VehiclesApi(OauthAPIClient(self.api_config))
         return api_instance
 

@@ -155,40 +155,34 @@ def connectPSA(n_clicks, app_name, email, password, countrycode):  # pylint: dis
                                      href=dash_app.config.requests_pathname_prefix + "config_otp")], color="success")
         except HeadlessOAuthError as e:
             redirect_uri = parse.quote(auth_url)
+            debug_style = {"height": "150px", "font-family": "monospace", "font-size": "12px",
+                           "margin-bottom": "10px"}
+            debug_children = [
+                dbc.Label("Last URL:"),
+                dbc.Input(value=e.url, readonly=True, style={"margin-bottom": "10px"}),
+                dbc.Label("Console Logs:"),
+                dbc.Textarea(value="\n".join(e.logs), style=debug_style, readonly=True),
+                dbc.Label("HTML Content:"),
+                dbc.Textarea(value=e.html, style=debug_style, readonly=True),
+            ]
+            if e.screenshot:
+                debug_children[:0] = [
+                    dbc.Label("Screenshot of the last page:"),
+                    html.Img(src="data:image/png;base64," + e.screenshot,
+                             style={"width": "100%", "margin-bottom": "10px",
+                                    "border": "1px solid #ccc"}),
+                ]
             return dbc.Alert(
                 [
-                    html.P("Automatic login failed. Please complete manually: "),
-                    html.A(
-                        "Go to login",
-                        href=f"{dash_app.config.requests_pathname_prefix}config_connect?url={redirect_uri}"),
-                    html.Hr(),
-                    html.P("Debug information (please include in GitHub issue):"),
-                    dbc.Label("Last URL:"),
-                    dbc.Input(
-                        value=e.url,
-                        readonly=True,
-                        style={
-                            "margin-bottom": "10px"}),
-                    dbc.Label("Console Logs:"),
-                    dbc.Textarea(
-                        value="\n".join(
-                            e.logs),
-                        style={
-                            "height": "100px",
-                            "font-family": "monospace",
-                            "font-size": "12px",
-                            "margin-bottom": "10px"},
-                        readonly=True,
-                    ),
-                    dbc.Label("HTML Content:"),
-                    dbc.Textarea(
-                        value=e.html,
-                        style={
-                            "height": "200px",
-                            "font-family": "monospace",
-                            "font-size": "12px"},
-                        readonly=True,
-                    ),
+                    html.P(str(e), className="fw-bold"),
+                    html.P(["You can still finish the login by hand: ",
+                            html.A("Go to login",
+                                   href=f"{dash_app.config.requests_pathname_prefix}"
+                                        f"config_connect?url={redirect_uri}")]),
+                    html.Details([
+                        html.Summary("Debug information (please include in a GitHub issue)"),
+                        html.Div(debug_children, className="mt-2"),
+                    ]),
                 ],
                 color="warning")
         except Exception as e:  # pylint: disable=broad-except

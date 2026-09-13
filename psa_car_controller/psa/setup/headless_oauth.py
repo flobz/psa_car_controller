@@ -1,3 +1,4 @@
+import asyncio
 import base64
 import logging
 import os
@@ -52,6 +53,10 @@ class PlaywrightNotInstalled(Exception):
 
 class FormException(Exception):
     """Exception raised when form submit fails."""
+
+
+class OAuthTimeout(RuntimeError):
+    """Raised when the authorization code never arrived, with the likely reason."""
 
 
 def _fill_credentials(page: Page, email, password):
@@ -114,7 +119,29 @@ def get_code(page: Page, scheme: str, email: str, password: str) -> str:
 
         time.sleep(1)
 
-    raise RuntimeError("Can't find oauth2 code")
+    # Prefer the error message the login form itself displays (wrong password, ...)
+    try:
+        check_for_error(page)
+    except FormException:
+        raise
+    except Exception:  # pylint: disable=broad-except
+        logger.debug("Could not read form errors", exc_info=True)
+    raise OAuthTimeout(_timeout_reason(page, credentials_filled))
+
+
+def _timeout_reason(page: Page, credentials_filled: bool) -> str:
+    """Explain, in user terms, why no authorization code was received."""
+    if not credentials_filled:
+        return (f"the login form never appeared within 90s (last page: {page.url}). "
+                "The Stellantis site may be down, unreachable from this container, "
+                "or it served a captcha / anti-bot page.")
+    if page.is_visible(EMAIL_SELECTOR):
+        return ("the login form was still displayed after submitting the credentials. "
+                "The email or password is most likely wrong, or the site asked for an "
+                "additional verification step.")
+    return (f"login succeeded but the authorization page never redirected back to the app "
+            f"(last page: {page.url}). The consent button may have changed and is no longer "
+            "recognized.")
 
 
 def _launch_browser(p):
@@ -160,7 +187,8 @@ def _run_headless_oauth(auth_url: str, email: str, password: str,  # pylint: dis
             page.goto(auth_url, wait_until="domcontentloaded", timeout=TIMEOUT_MS)
             return get_code(page, scheme, email, password)
         except (playwright_sync.TimeoutError, RuntimeError, FormException) as e:
-            logger.exception("Headless OAuth failed: %s", e)
+            logger.warning("Automatic login failed: %s", e)
+            logger.debug("Headless OAuth traceback", exc_info=e)
             screenshot_b64 = None
             screenshot_page = pages[-1] if pages else page
             try:
@@ -168,18 +196,28 @@ def _run_headless_oauth(auth_url: str, email: str, password: str,  # pylint: dis
                 screenshot_b64 = base64.b64encode(screenshot_bytes).decode("ascii")
             except Exception as exc:  # pylint: disable=broad-except
                 logger.debug("Could not capture screenshot: %s", exc)
-            try:
-                check_for_error(page)
-            except Exception:  # pylint: disable=broad-except
-                logger.debug("Could not check for form errors", exc_info=True)
             raise HeadlessOAuthError(
-                "Headless OAuth failed: could not capture authorization code.",
+                f"Automatic login failed: {e}",
                 url=page.url, html=page.content(), logs=console_logs,
                 screenshot=screenshot_b64
             ) from e
         finally:
             if headless:
                 browser.close()
+
+
+def _event_loop_running() -> bool:
+    """Whether an asyncio event loop is running in this thread.
+
+    Checked in a helper so the control-flow ``RuntimeError`` raised by
+    ``get_running_loop`` does not get chained onto later exceptions as a
+    misleading "During handling of the above exception" traceback.
+    """
+    try:
+        asyncio.get_running_loop()
+    except RuntimeError:
+        return False
+    return True
 
 
 def get_oauth_code_headless(auth_url: str, email: str, password: str,
@@ -190,10 +228,7 @@ def get_oauth_code_headless(auth_url: str, email: str, password: str,
     Dash callback). When that is the case, dispatch the work to a dedicated thread
     that has no event loop.
     """
-    try:
-        import asyncio  # pylint: disable=import-outside-toplevel
-        asyncio.get_running_loop()
-    except (RuntimeError, ImportError):
+    if not _event_loop_running():
         # No running loop: safe to call the sync API directly.
         return _run_headless_oauth(auth_url, email, password, scheme)
 

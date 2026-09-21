@@ -59,7 +59,7 @@ def _fill_credentials(page: Page, email, password):
     logger.info("Filling credentials")
     # Use type instead of fill to be more human-like and avoid some bot detection
     page.click(EMAIL_SELECTOR)
-    page.type(EMAIL_SELECTOR, email, delay=50)
+    page.type(EMAIL_SELECTOR, email.strip().lower(), delay=50)
     page.click(PASSWORD_SELECTOR)
     page.type(PASSWORD_SELECTOR, password, delay=50)
 
@@ -168,12 +168,19 @@ def _run_headless_oauth(auth_url: str, email: str, password: str,  # pylint: dis
                 screenshot_b64 = base64.b64encode(screenshot_bytes).decode("ascii")
             except Exception as exc:  # pylint: disable=broad-except
                 logger.debug("Could not capture screenshot: %s", exc)
+            form_error = None
             try:
                 check_for_error(page)
+            except FormException as fe:
+                # The real cause of the failure, e.g. Gigya error 403042
+                # ("invalid login or password"): the login screen is
+                # re-rendered in place, which is why the submit button
+                # never detached.
+                form_error = f"Headless OAuth failed: {fe}"
             except Exception:  # pylint: disable=broad-except
                 logger.debug("Could not check for form errors", exc_info=True)
             raise HeadlessOAuthError(
-                "Headless OAuth failed: could not capture authorization code.",
+                form_error or "Headless OAuth failed: could not capture authorization code.",
                 url=page.url, html=page.content(), logs=console_logs,
                 screenshot=screenshot_b64
             ) from e

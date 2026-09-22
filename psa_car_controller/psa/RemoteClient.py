@@ -123,9 +123,6 @@ class RemoteClient:
             return
         if car.status.doors_state is None:
             car.status.doors_state = DoorsState()
-        elif car.status.doors_state.locked_state:
-            # the api knows better than we do, don't overwrite it
-            return
         car.status.doors_state.locked_state = [lock_state]
         logger.debug("lock state of %s set from mqtt: %s", car.vin, lock_state)
 

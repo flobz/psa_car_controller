@@ -103,7 +103,10 @@ class RemoteClient:
                     logger.warning("charge begin but API isn't updated")
                     time.sleep(60)
                     self.wakeup(vin)
-            except (IndexError, AttributeError, RateLimitException):
+            except RateLimitException as e:
+                # expected when the car is woken up too often, no need for a traceback
+                logger.warning("Can't wake up %s: %s", vin, e)
+            except (IndexError, AttributeError):
                 logger.exception("on_mqtt_message:")
 
     def start(self):

@@ -21,9 +21,9 @@ from psa_car_controller.psa.otp.otp import ConfigException, save_otp, load_otp
 
 logger = logging.getLogger(__name__)
 
-# The mqtt event stream reports the lock state as an integer, unlike the rest api which uses the
-# DoorsState.lockedState enum. Only these two values have been observed on a car (an Opel Mokka
-# Electric, confirmed against the /Doors command responses); anything else is logged, not guessed.
+# mqtt reports the lock state as an int, unlike the rest api's DoorsState.lockedState enum.
+# Only these two values have been observed on a real car (an Opel Mokka Electric, confirmed
+# against the /Doors command responses).
 MQTT_DOORS_LOCKING_STATE = {1: "Locked", 3: "Unlocked"}
 MQTT_SERVER = "mwa.mpsa.com"
 MQTT_RESP_TOPIC = "psa/RemoteServices/to/cid/"
@@ -102,20 +102,30 @@ class RemoteClient:
             logger.exception("on_mqtt_message:")
 
     def _store_lock_state(self, data):
-        # not every event carries doors_state, and it can be present but null
+        # doors_state can be absent or explicitly null depending on the event
         locking_state = (data.get("doors_state") or {}).get("doors_locking_state")
         if locking_state is None:
             return
-        lock_state = MQTT_DOORS_LOCKING_STATE.get(locking_state)
+        lock_state = self._decode_lock_state(locking_state)
         if lock_state is None:
-            logger.warning("unknown doors_locking_state %s, please report it on github", locking_state)
             return
         vin = data["vin"]
         self.lock_state[vin] = lock_state
         self.apply_lock_state(self.vehicles_list.get_car_by_vin(vin))
 
+    @staticmethod
+    def _decode_lock_state(locking_state):
+        lock_state = MQTT_DOORS_LOCKING_STATE.get(locking_state)
+        if lock_state is None:
+            logger.warning("unknown doors_locking_state %s, please report it on github", locking_state)
+        return lock_state
+
     def apply_lock_state(self, car):
-        """Fill the lock state from mqtt when the status api didn't provide one."""
+        """Overwrite car.status's doors lock state with the last one seen on mqtt.
+
+        mqtt pushes changes live; the rest api is polled every ~2 min and on some cars never
+        reports lockedState at all, so mqtt takes precedence whenever we have a value for it.
+        """
         if car is None or car.status is None:
             return
         lock_state = self.lock_state.get(car.vin)

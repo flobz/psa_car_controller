@@ -1,6 +1,7 @@
 from unittest.mock import MagicMock, patch
 
 from psa_car_controller.psa.connected_car_api import Vehicles, ApiClient
+from psa_car_controller.psa.connected_car_api.models.doors_state import DoorsState
 from psa_car_controller.psa.constants import DISCONNECTED
 from psa_car_controller.psacc.model.car import Car, Cars
 from tests.data.car_status import ELECTRIC_CAR_STATUS
@@ -111,8 +112,8 @@ class TestMqttLockState(unittest.TestCase):
         self.remote_client._on_mqtt_message(None, None, msg)
         self.assertEqual({}, self.remote_client.lock_state)
 
-    def test_api_value_wins(self):
-        self._send_event(1)
-        self.car.status.doors_state.locked_state = ["Unlocked"]
-        self.remote_client.apply_lock_state(self.car)
+    def test_mqtt_overwrites_api_value(self):
+        # mqtt is live, the rest api lags behind it, so mqtt wins on conflict
+        self.car.status.doors_state = DoorsState(locked_state=["Locked"])
+        self._send_event(3)
         self.assertEqual(["Unlocked"], self.car.status.doors_state.locked_state)

@@ -60,11 +60,10 @@ class RemoteClient:
             logger.info("subscribe to %s", topic)
 
     def _on_mqtt_disconnect(self, client, userdata, result_code):  # pylint: disable=unused-argument
-        logger.warning("Disconnected with result code %d", result_code)
+        # the client reconnects on its own, so report the reason on a single line
+        logger.warning("MQTT disconnected (%d): %s", result_code, mqtt.error_string(result_code))
         if result_code == 1:
             self._refresh_remote_token(force=True)
-        else:
-            logger.warning(mqtt.error_string(result_code))
 
     def _on_mqtt_message(self, client, userdata, msg):  # pylint: disable=unused-argument
         try:

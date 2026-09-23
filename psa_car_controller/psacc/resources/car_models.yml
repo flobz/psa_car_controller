@@ -349,6 +349,14 @@
   max_elec_consumption: 70
   max_fuel_consumption: 30
 - !CarModel
+  name: 508 SW II Hybrid 180CV
+  battery_power: 12.4
+  fuel_capacity: 43
+  abrp_name:
+  reg: VR3F4DGL1R 
+  max_elec_consumption: 70
+  max_fuel_consumption: 30
+- !CarModel
   name: 508 Hybrid
   battery_power: 11.5
   fuel_capacity: 43

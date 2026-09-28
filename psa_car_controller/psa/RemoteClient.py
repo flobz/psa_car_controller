@@ -3,6 +3,7 @@ import logging
 import threading
 from datetime import datetime
 from os import environ
+from typing import Optional
 import time
 
 import paho.mqtt.client as mqtt
@@ -29,6 +30,11 @@ MQTT_SERVER = "mwa.mpsa.com"
 MQTT_RESP_TOPIC = "psa/RemoteServices/to/cid/"
 MQTT_EVENT_TOPIC = "psa/RemoteServices/events/MPHRTServices/"
 MQTT_TOKEN_TTL = 890
+# minimum delay between two remote token refresh attempts: the broker closes the socket without
+# CONNACK when the access token is expired, and paho reconnects at least every
+# MAX_REFRESH_DELAY seconds, so refreshing on every disconnect would burn the
+# refresh_token_now() rate limit (6 per 30 min) during a mere network outage.
+MAX_REFRESH_DELAY = 120
 
 
 class RemoteException(Exception):
@@ -55,6 +61,7 @@ class RemoteClient:
         self.otp = None
         self._lock = threading.Lock()
         self.update_thread: threading.Timer = None
+        self.remote_token_last_update: Optional[datetime] = None
 
     def __on_mqtt_connect(self, client, userdata, result_code, _):  # pylint: disable=unused-argument
         logger.info("Connected with result code %s", result_code)
@@ -68,6 +75,11 @@ class RemoteClient:
     def _on_mqtt_disconnect(self, client, userdata, result_code):  # pylint: disable=unused-argument
         logger.warning("Disconnected with result code %d", result_code)
         if result_code == 1:
+            self._refresh_remote_token(force=True)
+        elif result_code == 7:
+            # the broker closes the socket without CONNACK when the access token is expired:
+            # paho then retries forever with the same stale token unless it is refreshed here.
+            # Throttling is handled inside _refresh_remote_token.
             self._refresh_remote_token(force=True)
         else:
             logger.warning(mqtt.error_string(result_code))
@@ -211,6 +223,17 @@ class RemoteClient:
             if not force and not bad_remote_token and self.remoteCredentials.last_update:
                 last_update: datetime = self.remoteCredentials.last_update
                 if (datetime.now() - last_update).total_seconds() < MQTT_TOKEN_TTL:
+                    return True
+            if force and self.remote_token_last_update is not None:
+                # throttle forced refreshes (e.g. one per paho reconnect attempt on rc 7):
+                # a stale token makes the broker drop the socket, and paho retries at most every
+                # MAX_REFRESH_DELAY seconds, so refreshing more often than that is either
+                # useless (network outage: the token isn't the problem) or harmful
+                # (it burns the refresh_token_now() rate limit: 6 per 30 min).
+                since_last_refresh = (datetime.now() - self.remote_token_last_update).total_seconds()
+                if since_last_refresh < MAX_REFRESH_DELAY:
+                    logger.debug("remote token refreshed %.0fs ago, skipping forced refresh",
+                                 since_last_refresh)
                     return True
             try:
                 if not self.manager.refresh_token_now():

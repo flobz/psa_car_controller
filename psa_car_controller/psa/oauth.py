@@ -77,6 +77,7 @@ class OpenIdCredentialManager(CredentialManager):
     def refresh_token_now(self):
         try:
             self._refresh_token()
+            logger.info("access token refreshed")
             for refresh_callback in self.refresh_callbacks:
                 refresh_callback()
             return True

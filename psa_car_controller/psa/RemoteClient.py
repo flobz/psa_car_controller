@@ -73,7 +73,8 @@ class RemoteClient:
             logger.info("subscribe to %s", topic)
 
     def _on_mqtt_disconnect(self, client, userdata, result_code):  # pylint: disable=unused-argument
-        logger.warning("Disconnected with result code %d", result_code)
+        # the client reconnects on its own, so report the reason on a single line
+        logger.warning("MQTT disconnected (%d): %s", result_code, mqtt.error_string(result_code))
         if result_code == 1:
             self._refresh_remote_token(force=True)
         elif result_code == 7:
@@ -81,8 +82,6 @@ class RemoteClient:
             # paho then retries forever with the same stale token unless it is refreshed here.
             # Throttling is handled inside _refresh_remote_token.
             self._refresh_remote_token(force=True)
-        else:
-            logger.warning(mqtt.error_string(result_code))
 
     def _on_mqtt_message(self, client, userdata, msg):  # pylint: disable=unused-argument
         try:
@@ -157,7 +156,10 @@ class RemoteClient:
                     logger.warning("charge begin but API isn't updated")
                     time.sleep(60)
                     self.wakeup(vin)
-            except (IndexError, AttributeError, RateLimitException):
+            except RateLimitException as e:
+                # expected when the car is woken up too often, no need for a traceback
+                logger.warning("Can't wake up %s: %s", vin, e)
+            except (IndexError, AttributeError):
                 logger.exception("on_mqtt_message:")
 
     def start(self):

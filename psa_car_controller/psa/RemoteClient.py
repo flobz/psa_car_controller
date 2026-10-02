@@ -35,6 +35,12 @@ MQTT_TOKEN_TTL = 890
 # MAX_REFRESH_DELAY seconds, so refreshing on every disconnect would burn the
 # refresh_token_now() rate limit (6 per 30 min) during a mere network outage.
 MAX_REFRESH_DELAY = 120
+# The remote refresh token's server-side lifetime is about 24h: a grant attempted 24h
+# (plus a few seconds) after the previous one fails with 'invalid_grant', and each grant
+# rotates the token. The __keep_mqtt timer is the ONLY periodic refresh on an idle car,
+# so it must run well within that lifetime: 8h keeps the chain rotating forever and
+# survives one missed cycle.
+KEEPALIVE_PERIOD = 3600 * 8
 
 
 class RemoteException(Exception):
@@ -187,13 +193,12 @@ class RemoteClient:
             self.update_thread.join(timeout=TIMEOUT_IN_S)
 
     def __keep_mqtt(self):  # avoid token expiration
-        timeout = 3600 * 24  # 1 day
         if len(self.vehicles_list) > 0:
             try:
                 self.wakeup(self.vehicles_list[0].vin)
             except Exception:
                 logger.exception("__keep_mqtt")
-        self.update_thread = threading.Timer(timeout, self.__keep_mqtt)
+        self.update_thread = threading.Timer(KEEPALIVE_PERIOD, self.__keep_mqtt)
         self.update_thread.daemon = True
         self.update_thread.start()
 
@@ -265,7 +270,7 @@ class RemoteClient:
             except RateLimitException as e:
                 logger.error("Can't refresh remote token please wait... %s", e)
                 return False
-            except (RequestException, KeyError, AttributeError, RemoteException):
+            except (RequestException, KeyError, AttributeError, RemoteException, ConfigException):
                 logger.exception("Can't refresh remote token, please redo otp procedure")
                 return False
 
@@ -282,7 +287,12 @@ class RemoteClient:
             otp_code = self.otp.get_otp_code()
         except ConfigException:
             logger.exception("get_otp_code:")
-            self.load_otp(force_new=True)
+            # load_otp() re-reads otp.bin from disk: it is the ONLY recovery when the pickled
+            # session is desynchronized with the server. force_new would NOT reload it (it
+            # always takes the "Please redo otp config" branch and returns False), so the old
+            # code retried the very session that just failed.
+            if not self.load_otp():
+                raise
             otp_code = self.otp.get_otp_code()
         save_otp(self.otp)
         return otp_code

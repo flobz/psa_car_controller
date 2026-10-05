@@ -41,6 +41,7 @@ class OpenIdCredentialManager(CredentialManager):
         self.refresh_callbacks = []
         self.code_verifier = None
         self.redirect_uri = None
+        self.last_refresh_error: Optional[Exception] = None
 
     def _grant_password_request_realm(self, login: str, password: str, realm: str) -> dict:
         return {"grant_type": 'password', "username": login, "scope": ' '.join(self.service_information.scopes),
@@ -80,6 +81,7 @@ class OpenIdCredentialManager(CredentialManager):
         # response (RemoteDisconnected), leaving the caller with a stale
         # token that then fails every API call with 401 until the next
         # successful refresh. Retry a few times with backoff before giving up.
+        self.last_refresh_error = None
         max_attempts = 3
         for attempt in range(1, max_attempts + 1):
             try:
@@ -89,16 +91,20 @@ class OpenIdCredentialManager(CredentialManager):
                     refresh_callback()
                 return True
             except OAuthError as e:
+                # the refresh token is rejected, only a new authentication can fix it
+                self.last_refresh_error = e
                 logger.error("Can't refresh token: %s", e)
                 break
             except RequestException as e:
+                # the server is unreachable, the token itself might still be fine
+                self.last_refresh_error = e
                 if attempt < max_attempts:
                     delay = 2 ** attempt
-                    logger.warning("Can't refresh token: %s - retrying in %ss (attempt %d/%d)",
-                                   e, delay, attempt, max_attempts)
+                    logger.warning("Can't reach the PSA server to refresh the token: %s - retrying in %ss "
+                                   "(attempt %d/%d)", e, delay, attempt, max_attempts)
                     time.sleep(delay)
                 else:
-                    logger.error("Can't refresh token: %s", e)
+                    logger.error("Can't reach the PSA server to refresh the token: %s", e)
         return False
 
     def request(self, method, url, **kwargs):  # pylint: disable=W0221

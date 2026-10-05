@@ -1,7 +1,7 @@
 import json
 import logging
 import threading
-from datetime import datetime
+from datetime import datetime, timezone
 from os import environ
 from typing import Optional
 import time
@@ -68,9 +68,16 @@ class RemoteClient:
         self._lock = threading.Lock()
         self.update_thread: threading.Timer = None
         self.remote_token_last_update: Optional[datetime] = None
+        # consecutive disconnects because the broker refused the remote credentials, reset on a
+        # successful connect: exposed on /health so a dead remote control doesn't go unnoticed
+        self.mqtt_auth_failures = 0
+        self.mqtt_last_connect: Optional[datetime] = None
 
     def __on_mqtt_connect(self, client, userdata, result_code, _):  # pylint: disable=unused-argument
         logger.info("Connected with result code %s", result_code)
+        if result_code == 0:
+            self.mqtt_auth_failures = 0
+            self.mqtt_last_connect = datetime.now(timezone.utc)
         topics = [MQTT_RESP_TOPIC + self.account_info.get_mqtt_customer_id() + "/#"]
         for car in self.vehicles_list:
             topics.append(MQTT_EVENT_TOPIC + car.vin)
@@ -87,6 +94,9 @@ class RemoteClient:
             # paho then retries forever with the same stale token unless it is refreshed here.
             # Throttling is handled inside _refresh_remote_token.
             self._refresh_remote_token(force=True)
+        elif result_code == mqtt.MQTT_ERR_CONN_REFUSED:
+            self.mqtt_auth_failures += 1
+            logger.warning("%s (%d consecutive)", mqtt.error_string(result_code), self.mqtt_auth_failures)
         else:
             logger.warning(mqtt.error_string(result_code))
 
@@ -166,7 +176,11 @@ class RemoteClient:
             except (IndexError, AttributeError, RateLimitException):
                 logger.exception("on_mqtt_message:")
 
+    def is_mqtt_connected(self) -> bool:
+        return self.mqtt_client is not None and self.mqtt_client.is_connected()
+
     def start(self):
+        self.mqtt_auth_failures = 0
         if self.load_otp():
             self.mqtt_client = mqtt.Client(clean_session=True, protocol=mqtt.MQTTv311)
             if environ.get("MQTT_LOG", "0") == "1":
@@ -184,6 +198,7 @@ class RemoteClient:
         return False
 
     def stop(self):
+        self.mqtt_auth_failures = 0
         if self.mqtt_client:
             logger.info("stop mqtt...")
             self.mqtt_client.on_disconnect = None

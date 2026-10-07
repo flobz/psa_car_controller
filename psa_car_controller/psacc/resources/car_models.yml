@@ -5,6 +5,13 @@
   abrp_name: citroen:e-jumpy:46
   reg: VF7VTZKU8R
   max_elec_consumption: 50
+  - !ElecModel
+  name: ë-C3 44 kWh
+  battery_power: 44
+  fuel_capacity: 0
+  abrp_name: citroen:e-c3:44
+  reg: VR7CBZYA4T
+  max_elec_consumption: 50
 - !ElecModel
   name: E-5008 100 kWh GT LR
   battery_power: 99

@@ -209,6 +209,7 @@ class TestUnit(unittest.TestCase):
         res = trip.get_info()
         assert compare_dict(res, {'consumption_km': 24.21052631578947,
                                   'start_at': date0,
+                                  'end_at': date2,
                                   'consumption_by_temp': None,
                                   'positions': {'lat': [latitude], 'long': [longitude]},
                                   'duration': 40.0, 'speed_average': 28.5, 'distance': 19.0, 'mileage': 30.0,
@@ -273,6 +274,7 @@ class TestUnit(unittest.TestCase):
         res = trips[car.vin].get_trips_as_dict()
         assert compare_dict(res, [{'consumption_km': 6.947368421052632,
                                    'start_at': date0,
+                                   'end_at': date2,
                                    'consumption_by_temp': None,
                                    'positions': {'lat': [latitude],
                                                  'long': [longitude]},
@@ -301,6 +303,7 @@ class TestUnit(unittest.TestCase):
         res = trips[car.vin].get_trips_as_dict()
         assert compare_dict(res, [{'consumption_km': 6.947368421052632,
                                    'start_at': start,
+                                   'end_at': end,
                                    'consumption_by_temp': None,
                                    'positions': {'lat': [latitude],
                                                  'long': [longitude]},

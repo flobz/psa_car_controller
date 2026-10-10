@@ -157,7 +157,9 @@ class RemoteClient:
         logger.debug("lock state of %s set from mqtt: %s", car.vin, lock_state)
 
     def _fix_not_updated_api(self, charge_info, vin):
-        if charge_info is not None and (charge_info.get('remaining_time', 0) != 0 or charge_info.get('rate', 0) != 0):
+        # Only a real charging rate counts: some cars (seen on an e-2008) keep reporting a stale
+        # remaining_time while unplugged, so every answer to a wakeup triggered another wakeup.
+        if charge_info is not None and charge_info.get('rate', 0) != 0:
             try:
                 car = self.vehicles_list.get_car_by_vin(vin=vin)
                 if car and car.status.get_energy('Electric').charging.status != INPROGRESS:

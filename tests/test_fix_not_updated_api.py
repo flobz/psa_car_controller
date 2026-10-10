@@ -77,6 +77,16 @@ class TestFixNotUpdatedApi(unittest.TestCase):
         FakeTimer.created[0].fire()
         self.wakeup.assert_called_once_with(VIN)
 
+    def test_stale_remaining_time_without_charging_rate_is_ignored(self):
+        # GIVEN an unplugged car which keeps reporting a stale remaining_time (seen on an e-2008)
+        # WHEN it answers a wakeup
+        self.rc._on_mqtt_message(None, None, event({"rate": 0, "remaining_time": 635}))
+
+        # THEN no new wakeup is scheduled, otherwise every answer would trigger another wakeup
+        self.assertEqual([], FakeTimer.created)
+        self.sleep.assert_not_called()
+        self.wakeup.assert_not_called()
+
     def test_repeated_events_schedule_one_wakeup_per_vin(self):
         for _ in range(5):
             self.rc._on_mqtt_message(None, None, event({"rate": 4}))

@@ -4,7 +4,6 @@ import threading
 from datetime import datetime
 from os import environ
 from typing import Optional
-import time
 
 import paho.mqtt.client as mqtt
 from requests import RequestException
@@ -67,6 +66,9 @@ class RemoteClient:
         self.otp = None
         self._lock = threading.Lock()
         self.update_thread: threading.Timer = None
+        self._api_update_lock = threading.Lock()
+        self._api_update_timers = {}
+        self._api_update_stopped = False
         self.remote_token_last_update: Optional[datetime] = None
 
     def __on_mqtt_connect(self, client, userdata, result_code, _):  # pylint: disable=unused-argument
@@ -159,14 +161,37 @@ class RemoteClient:
             try:
                 car = self.vehicles_list.get_car_by_vin(vin=vin)
                 if car and car.status.get_energy('Electric').charging.status != INPROGRESS:
-                    # fix a psa server bug where charge beginning without status api being properly updated
-                    logger.warning("charge begin but API isn't updated")
-                    time.sleep(60)
-                    self.wakeup(vin)
-            except (IndexError, AttributeError, RateLimitException):
+                    # fix a psa server bug where charge beginning without status api being properly updated.
+                    # The delayed wakeup runs on a timer: sleeping here blocked the paho network thread
+                    # for 60s, as long as the mqtt keepalive, so the broker dropped the connection (rc 16).
+                    with self._api_update_lock:
+                        if self._api_update_stopped or vin in self._api_update_timers:
+                            return
+                        logger.warning("charge begin but API isn't updated")
+                        timer = threading.Timer(60, self._delayed_api_update, args=[vin])
+                        timer.daemon = True
+                        self._api_update_timers[vin] = timer
+                        timer.start()
+            except (IndexError, AttributeError):
                 logger.exception("on_mqtt_message:")
 
+    def _delayed_api_update(self, vin):
+        with self._api_update_lock:
+            if self._api_update_stopped:
+                return
+        try:
+            car = self.vehicles_list.get_car_by_vin(vin=vin)
+            if car and car.status.get_energy('Electric').charging.status != INPROGRESS:
+                self.wakeup(vin)
+        except Exception:  # pylint: disable=broad-except
+            logger.exception("_delayed_api_update:")
+        finally:
+            with self._api_update_lock:
+                self._api_update_timers.pop(vin, None)
+
     def start(self):
+        with self._api_update_lock:
+            self._api_update_stopped = False
         if self.load_otp():
             self.mqtt_client = mqtt.Client(clean_session=True, protocol=mqtt.MQTTv311)
             if environ.get("MQTT_LOG", "0") == "1":
@@ -184,6 +209,12 @@ class RemoteClient:
         return False
 
     def stop(self):
+        with self._api_update_lock:
+            self._api_update_stopped = True
+            timers = list(self._api_update_timers.values())
+            self._api_update_timers.clear()
+        for timer in timers:
+            timer.cancel()
         if self.mqtt_client:
             logger.info("stop mqtt...")
             self.mqtt_client.on_disconnect = None

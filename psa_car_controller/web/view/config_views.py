@@ -142,6 +142,10 @@ def connectPSA(n_clicks, app_name, email, password, countrycode):  # pylint: dis
             INITIAL_SETUP = InitialSetup(app_name, email, password, countrycode)
             auth_url = INITIAL_SETUP.psacc.manager.generate_redirect_url()
             scheme = INITIAL_SETUP.psacc.manager.redirect_uri.split("://")[0]
+        except ConnectionError as e:
+            # the details are already logged
+            logger.error("Initial setup failed: %s", e)
+            return dbc.Alert(str(e), color="danger")
         except Exception as e:
             logger.exception(e)
             return dbc.Alert(str(e), color="danger")

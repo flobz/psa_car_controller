@@ -255,8 +255,12 @@ class RemoteClient:
     def _refresh_remote_token(self, force=False) -> bool:
         with self._lock:
             bad_remote_token = self.remoteCredentials.refresh_token is None
-            if not force and not bad_remote_token and self.remoteCredentials.last_update:
-                last_update: datetime = self.remoteCredentials.last_update
+            if not force and not bad_remote_token:
+                # remoteCredentials.last_update only moves when PSA hands out a new remote
+                # refresh token, which a refresh usually doesn't: also count our own refreshes,
+                # or every publish refreshes and burns the refresh_token_now() rate limit.
+                last_update: datetime = max(filter(None, (self.remoteCredentials.last_update,
+                                                          self.remote_token_last_update)))
                 if (datetime.now() - last_update).total_seconds() < MQTT_TOKEN_TTL:
                     return True
             if force and self.remote_token_last_update is not None:

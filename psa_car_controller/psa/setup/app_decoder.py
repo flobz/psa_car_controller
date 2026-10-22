@@ -2,6 +2,8 @@
 import json
 import logging
 import traceback
+from os import path
+from typing import Optional
 
 import requests
 
@@ -9,7 +11,7 @@ from psa_car_controller.psa.constants import BRAND
 from psa_car_controller.psa.setup.apk_parser import ApkParser
 from psa_car_controller.psa.setup.github import urlretrieve_from_github
 from psa_car_controller.psacc.application.car_controller import PSACarController
-from psa_car_controller.psacc.application.psa_client import PSAClient
+from psa_car_controller.psacc.application.psa_client import PSAClient, DEFAULT_CONFIG_FILENAME
 from psa_car_controller.psacc.application.charge_control import ChargeControl, ChargeControls
 
 logger = logging.getLogger(__name__)
@@ -40,6 +42,27 @@ class InitialSetup:
         self.user_info = None
         self.customer_id = None
         try:
+            self.token = self.__fetch_brand_token(apk_parser, client_email, client_password)
+            self.user_info = self.__fetch_user_info()
+        except ConnectionError:
+            # The brand login only provides the customer id and the car labels. When config.json
+            # already has them, the OAuth login alone is enough to renew the connection.
+            self.psacc = self.__load_existing_config()
+            if self.psacc is None:
+                raise
+            logger.warning("The brand login service failed, renewing only the OAuth tokens of %s",
+                           DEFAULT_CONFIG_FILENAME)
+            self.customer_id = self.psacc.customer_id
+            return
+        self.customer_id = BRAND[self.package_name]["brand_code"] + "-" + self.user_info["id"]
+
+        self.psacc = PSAClient(None, self.client_id, self.client_secret,
+                               None, self.customer_id, BRAND[self.package_name]["realm"],
+                               self.country_code, BRAND[self.package_name]["brand_code"])
+
+    @staticmethod
+    def __fetch_brand_token(apk_parser: ApkParser, client_email, client_password) -> str:
+        try:
             res = requests.post(apk_parser.host_brandid_prod + "/GetAccessToken",
                                 headers={
                                     "Connection": "Keep-Alive",
@@ -55,14 +78,6 @@ class InitialSetup:
                                 timeout=TIMEOUT_IN_S
                                 )
             data = res.json()
-            if token := data.get("accessToken"):
-                self.token = token
-            elif token := data.get("token"):
-                self.token = token
-            else:
-                raise ConnectionError("No access token in response:", res.text)
-        except ConnectionError as e:
-            raise e
         except Exception as ex:
             msg = traceback.format_exc() + f"\nHOST_BRANDID : {apk_parser.host_brandid_prod} " \
                 f"sitecode: {apk_parser.site_code}"
@@ -71,15 +86,27 @@ class InitialSetup:
             except BaseException:
                 pass
             logger.error(msg)
-            raise ConnectionError(msg) from ex
+            # the details are in the log, the user only needs to know what to do
+            raise ConnectionError("The login service of the brand did not answer correctly. This is usually a "
+                                  "temporary problem on the Stellantis side, please try again later.") from ex
+        token = data.get("accessToken") or data.get("token")
+        if not token:
+            logger.error("No access token in response: %s", res.text)
+            raise ConnectionError(f"The login was refused: {data.get('returnCode', res.text)}")
+        return token
 
-        # Psacc
-        self.user_info = self.__fetch_user_info()
-        self.customer_id = BRAND[self.package_name]["brand_code"] + "-" + self.user_info["id"]
-
-        self.psacc = PSAClient(None, self.client_id, self.client_secret,
-                               None, self.customer_id, BRAND[self.package_name]["realm"],
-                               self.country_code, BRAND[self.package_name]["brand_code"])
+    def __load_existing_config(self) -> Optional[PSAClient]:
+        if not path.isfile(DEFAULT_CONFIG_FILENAME):
+            return None
+        try:
+            psacc = PSAClient.load_config(DEFAULT_CONFIG_FILENAME)
+        except Exception:  # pylint: disable=broad-except
+            logger.exception("Can't reuse %s", DEFAULT_CONFIG_FILENAME)
+            return None
+        if psacc.realm != BRAND[self.package_name]["realm"]:
+            # configured for another brand, its customer id doesn't apply
+            return None
+        return psacc
 
     def __fetch_user_info(self):
         try:
@@ -111,7 +138,8 @@ class InitialSetup:
             except BaseException:
                 pass
             logger.error(msg)
-            raise ConnectionError(msg) from ex
+            raise ConnectionError("Can't get the account information from the brand, this is usually a "
+                                  "temporary problem on the Stellantis side, please try again later.") from ex
         return res_dict
 
     def connect(self, code, config_prefix=""):
@@ -123,7 +151,7 @@ class InitialSetup:
             raise ValueError(
                 "No vehicle in your account is compatible with this API, you vehicle is probably too old...")
 
-        for vehicle in self.user_info["vehicles"]:
+        for vehicle in self.user_info["vehicles"] if self.user_info else []:
             if vin := vehicle.get("vin"):
                 car = self.psacc.vehicles_list.get_car_by_vin(vin)
                 if car is not None and "short_label" in vehicle and car.label == "unknown":

@@ -1,13 +1,13 @@
 import json
 import logging
 import threading
-from datetime import datetime
+from datetime import datetime, timezone
 from os import environ
 from typing import Optional
 import time
 
 import paho.mqtt.client as mqtt
-from requests import RequestException
+from requests import RequestException, Timeout
 
 from psa_car_controller.psacc.model.car import Cars
 from psa_car_controller.psa.AccountInformation import AccountInformation
@@ -41,10 +41,21 @@ MAX_REFRESH_DELAY = 120
 # so it must run well within that lifetime: 8h keeps the chain rotating forever and
 # survives one missed cycle.
 KEEPALIVE_PERIOD = 3600 * 8
+# the SMS endpoint regularly takes longer than the default timeout to answer
+SMS_TIMEOUT_IN_S = 20
 
 
 class RemoteException(Exception):
     pass
+
+
+class SmsRequestException(RemoteException):
+    """The SMS code could not be requested: hint tells the user what to do, details what happened."""
+
+    def __init__(self, hint: str, details: str):
+        super().__init__(f"{hint} ({details})")
+        self.hint = hint
+        self.details = details
 
 
 class RemoteClient:
@@ -68,9 +79,16 @@ class RemoteClient:
         self._lock = threading.Lock()
         self.update_thread: threading.Timer = None
         self.remote_token_last_update: Optional[datetime] = None
+        # consecutive disconnects because the broker refused the remote credentials, reset on a
+        # successful connect: exposed on /health so a dead remote control doesn't go unnoticed
+        self.mqtt_auth_failures = 0
+        self.mqtt_last_connect: Optional[datetime] = None
 
     def __on_mqtt_connect(self, client, userdata, result_code, _):  # pylint: disable=unused-argument
         logger.info("Connected with result code %s", result_code)
+        if result_code == 0:
+            self.mqtt_auth_failures = 0
+            self.mqtt_last_connect = datetime.now(timezone.utc)
         topics = [MQTT_RESP_TOPIC + self.account_info.get_mqtt_customer_id() + "/#"]
         for car in self.vehicles_list:
             topics.append(MQTT_EVENT_TOPIC + car.vin)
@@ -79,7 +97,8 @@ class RemoteClient:
             logger.info("subscribe to %s", topic)
 
     def _on_mqtt_disconnect(self, client, userdata, result_code):  # pylint: disable=unused-argument
-        logger.warning("Disconnected with result code %d", result_code)
+        # the client reconnects on its own, so report the reason on a single line
+        logger.warning("MQTT disconnected (%d): %s", result_code, mqtt.error_string(result_code))
         if result_code == 1:
             self._refresh_remote_token(force=True)
         elif result_code == 7:
@@ -87,6 +106,9 @@ class RemoteClient:
             # paho then retries forever with the same stale token unless it is refreshed here.
             # Throttling is handled inside _refresh_remote_token.
             self._refresh_remote_token(force=True)
+        elif result_code == mqtt.MQTT_ERR_CONN_REFUSED:
+            self.mqtt_auth_failures += 1
+            logger.warning("%s (%d consecutive)", mqtt.error_string(result_code), self.mqtt_auth_failures)
         else:
             logger.warning(mqtt.error_string(result_code))
 
@@ -163,10 +185,17 @@ class RemoteClient:
                     logger.warning("charge begin but API isn't updated")
                     time.sleep(60)
                     self.wakeup(vin)
-            except (IndexError, AttributeError, RateLimitException):
+            except RateLimitException as e:
+                # expected when the car is woken up too often, no need for a traceback
+                logger.warning("Can't wake up %s: %s", vin, e)
+            except (IndexError, AttributeError):
                 logger.exception("on_mqtt_message:")
 
+    def is_mqtt_connected(self) -> bool:
+        return self.mqtt_client is not None and self.mqtt_client.is_connected()
+
     def start(self):
+        self.mqtt_auth_failures = 0
         if self.load_otp():
             self.mqtt_client = mqtt.Client(clean_session=True, protocol=mqtt.MQTTv311)
             if environ.get("MQTT_LOG", "0") == "1":
@@ -184,6 +213,7 @@ class RemoteClient:
         return False
 
     def stop(self):
+        self.mqtt_auth_failures = 0
         if self.mqtt_client:
             logger.info("stop mqtt...")
             self.mqtt_client.on_disconnect = None
@@ -225,8 +255,12 @@ class RemoteClient:
     def _refresh_remote_token(self, force=False) -> bool:
         with self._lock:
             bad_remote_token = self.remoteCredentials.refresh_token is None
-            if not force and not bad_remote_token and self.remoteCredentials.last_update:
-                last_update: datetime = self.remoteCredentials.last_update
+            if not force and not bad_remote_token:
+                # remoteCredentials.last_update only moves when PSA hands out a new remote
+                # refresh token, which a refresh usually doesn't: also count our own refreshes,
+                # or every publish refreshes and burns the refresh_token_now() rate limit.
+                last_update: datetime = max(filter(None, (self.remoteCredentials.last_update,
+                                                          self.remote_token_last_update)))
                 if (datetime.now() - last_update).total_seconds() < MQTT_TOKEN_TTL:
                     return True
             if force and self.remote_token_last_update is not None:
@@ -240,6 +274,9 @@ class RemoteClient:
                     logger.debug("remote token refreshed %.0fs ago, skipping forced refresh",
                                  since_last_refresh)
                     return True
+            if self.manager.needs_login and not self.manager.rejected_grant_retry_due():
+                logger.debug("Can't refresh remote token: waiting for a new login")
+                return False
             try:
                 if not self.manager.refresh_token_now():
                     logger.error("Can't refresh remote token: access token refresh failed")
@@ -275,13 +312,25 @@ class RemoteClient:
                 return False
 
     def get_sms_otp_code(self):
-        res = self.manager.post(
-            "https://api.groupe-psa.com/applications/cvs/v4/mobile/smsCode?client_id=" + self.account_info.client_id,
-            headers=self.headers, timeout=TIMEOUT_IN_S)
+        url = "https://api.groupe-psa.com/applications/cvs/v4/mobile/smsCode?client_id=" + self.account_info.client_id
+        try:
+            res = self.manager.post(url, headers=self.headers, timeout=SMS_TIMEOUT_IN_S)
+        except Timeout as e:
+            logger.error("SMS code request timed out: %s", e)
+            raise SmsRequestException(f"PSA didn't answer within {SMS_TIMEOUT_IN_S} seconds. Its servers are slow "
+                                      "at times, please try again in a few minutes.", str(e)) from e
+        except RequestException as e:
+            logger.error("SMS code request failed: %s", e)
+            raise SmsRequestException("PSA can't be reached. Check the internet connection of this server, "
+                                      "or try again later.", str(e)) from e
         logger.info("SMS code request: HTTP %s", res.status_code)
         if not res.ok:
             logger.error("SMS code request failed: HTTP %s %s", res.status_code, res.text)
-            raise RemoteException(f"SMS request failed: HTTP {res.status_code} {res.text}")
+            if res.status_code in (401, 403):
+                hint = "PSA refused the request. Reconnect from the User config tab first, then ask for the SMS again."
+            else:
+                hint = "PSA couldn't send the SMS, please try again later."
+            raise SmsRequestException(hint, f"HTTP {res.status_code} {res.text}")
         return res
 
     # 6 otp by day

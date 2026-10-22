@@ -1,7 +1,10 @@
 import unittest
 from unittest.mock import MagicMock
 
-from psa_car_controller.psa.RemoteClient import RemoteClient, RemoteException
+from requests import ConnectionError as RequestsConnectionError, ReadTimeout
+
+from psa_car_controller.psa.RemoteClient import RemoteClient, RemoteException, SMS_TIMEOUT_IN_S, \
+    SmsRequestException
 
 from tests.utils import get_rc
 
@@ -39,6 +42,32 @@ class TestSmsOtpCode(unittest.TestCase):
             remote_client.get_sms_otp_code()
         self.assertIn("401", str(ctx.exception))
         self.assertIn("invalid_token", str(ctx.exception))
+        self.assertIn("Reconnect", ctx.exception.hint)
+
+    def test_sms_request_uses_the_longer_timeout(self):
+        remote_client = get_remote_client(202)
+        remote_client.get_sms_otp_code()
+        self.assertEqual(SMS_TIMEOUT_IN_S, remote_client.manager.post.call_args.kwargs["timeout"])
+
+    def test_sms_request_timeout_says_to_try_again(self):
+        # GIVEN PSA doesn't answer in time
+        remote_client = get_remote_client(202)
+        remote_client.manager.post.side_effect = ReadTimeout("Read timed out.")
+
+        # WHEN an SMS code is requested
+        # THEN the user is told to try again rather than shown the raw error
+        with self.assertRaises(SmsRequestException) as ctx:
+            remote_client.get_sms_otp_code()
+        self.assertIn("try again", ctx.exception.hint)
+        self.assertIn("Read timed out", ctx.exception.details)
+
+    def test_sms_request_without_connection(self):
+        remote_client = get_remote_client(202)
+        remote_client.manager.post.side_effect = RequestsConnectionError("Name or service not known")
+
+        with self.assertRaises(SmsRequestException) as ctx:
+            remote_client.get_sms_otp_code()
+        self.assertIn("internet connection", ctx.exception.hint)
 
 
 if __name__ == '__main__':

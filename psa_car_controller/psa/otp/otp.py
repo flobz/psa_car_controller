@@ -61,6 +61,33 @@ class ConfigException(Exception):
     """Raise exception if otp config isn't correct"""
 
 
+FAQ_ACTIVATION_URL = "https://github.com/flobz/psa_car_controller/blob/master/FAQ.md#2-error-during-activation"
+RESET_FROM_PHONE_APP = ("To reset them, uninstall and reinstall the phone app of your car brand (MyPeugeot, MyOpel, "
+                        "MyCitroen or MyDS), log in and start a remote command such as preconditioning: the app "
+                        "then offers to reset the remote control access. Afterwards, request a new SMS here and "
+                        "activate again.")
+# what the errors of the OTP server (inWebo) mean and what the user can do about them
+ACTIVATION_ERROR_HINTS = {
+    "NOK:MAXNBTOOLS": "Your PSA account already has the maximum number of devices activated for remote control. "
+                      "Every activation adds one, from here or from a phone app, and old ones are not removed. "
+                      + RESET_FROM_PHONE_APP,
+    "NOK:FORBIDDEN": "PSA blocked the activation, usually after too many SMS activations on this account. "
+                     + RESET_FROM_PHONE_APP,
+}
+
+
+class ActivationException(ConfigException):
+    """The OTP server refused an activation step: hint tells the user what to do."""
+
+    def __init__(self, step: str, response):
+        super().__init__(f"Error during activation {step}: {response}")
+        self.code = response.get("err") if isinstance(response, dict) else None
+        self.hint = ACTIVATION_ERROR_HINTS.get(
+            self.code,
+            f"PSA refused the activation ({self.code}). Check that you entered the PIN of the phone app and the "
+            "code of the latest SMS, then try again.")
+
+
 class Otp:
     OTP_TWICE = 10
     OK = 0
@@ -191,7 +218,7 @@ class Otp:
             elif self.mode == Otp.OTP_MODE:
                 self.challenge = xml["challenge"]
             return True
-        raise ConfigException(xml)
+        raise ActivationException("start", xml)
 
     def activation_finalyze(self, random_bytes=None):
         R = self.get_r()
@@ -210,7 +237,7 @@ class Otp:
         params.update(R)
         xml = self.request(params)
         if xml["err"] != "OK":
-            raise ConfigException(f"Error during activation finalize: {xml}")
+            raise ActivationException("finalize", xml)
         self.data.synchro(xml, self.generate_kma(self.codepin))
 
         if self.mode == Otp.OTP_MODE:

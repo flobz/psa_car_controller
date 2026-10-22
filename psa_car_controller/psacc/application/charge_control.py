@@ -68,8 +68,9 @@ class ChargeControl:
         if (datetime.utcnow().replace(tzinfo=pytz.UTC) - last_update).total_seconds() > 60 * wakeup_timeout:
             try:
                 self.psacc.remote_client.wakeup(self.vin)
-            except RateLimitException:
-                logger.exception("force_update:")
+            except RateLimitException as e:
+                # expected when the car is woken up too often, no need for a traceback
+                logger.warning("Can't wake up %s: %s", self.vin, e)
 
     def __is_approaching_scheduled_time(self, now: datetime):
         scheduled_hour, scheduled_minute = self.psacc.remote_client.get_charge_hour(self.vin)

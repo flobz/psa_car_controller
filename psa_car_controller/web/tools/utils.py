@@ -47,6 +47,18 @@ def dash_date_to_datetime(st):
     return datetime.strptime(st, "%Y-%m-%dT%H:%M:%S.000Z").replace(tzinfo=UTC)
 
 
+def create_error_alert(title: str, hints: typing.List[str], details: str,
+                       link: typing.Optional[typing.Tuple[str, str]] = None) -> dbc.Alert:
+    """A warning saying what failed and what to do, with the technical details in small print."""
+    children = [html.H5(title, className="alert-heading")]
+    children += [html.P(hint, className="mb-1") for hint in hints]
+    if link:
+        text, href = link
+        children.append(html.P(html.A(text, href=href, target="_blank"), className="mb-1"))
+    children.append(html.Small(details, className="text-muted"))
+    return dbc.Alert(children, color="warning")
+
+
 def create_card(card: dict):
     res = []
     for tile, value in card.items():

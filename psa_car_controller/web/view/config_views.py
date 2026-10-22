@@ -4,12 +4,14 @@ from urllib import parse
 from dash import callback_context, html, dcc
 from dash.exceptions import PreventUpdate
 
-from psa_car_controller.psa.otp.otp import new_otp_session
+from psa_car_controller.psa.otp.otp import ActivationException, FAQ_ACTIVATION_URL, new_otp_session
+from psa_car_controller.psa.RemoteClient import SmsRequestException
 from psa_car_controller.psa.setup.headless_oauth import HeadlessOAuthError, get_oauth_code_headless
 from psa_car_controller.psacc.application.car_controller import PSACarController
 from psa_car_controller.psa.setup.app_decoder import InitialSetup
 from psa_car_controller.common.mylogger import LOG_FILE
 from psa_car_controller.web.app import dash_app
+from psa_car_controller.web.tools.utils import create_error_alert
 import dash_bootstrap_components as dbc
 from dash.dependencies import Output, Input, State
 
@@ -142,6 +144,10 @@ def connectPSA(n_clicks, app_name, email, password, countrycode):  # pylint: dis
             INITIAL_SETUP = InitialSetup(app_name, email, password, countrycode)
             auth_url = INITIAL_SETUP.psacc.manager.generate_redirect_url()
             scheme = INITIAL_SETUP.psacc.manager.redirect_uri.split("://")[0]
+        except ConnectionError as e:
+            # the details are already logged
+            logger.error("Initial setup failed: %s", e)
+            return dbc.Alert(str(e), color="danger")
         except Exception as e:
             logger.exception(e)
             return dbc.Alert(str(e), color="danger")
@@ -155,40 +161,34 @@ def connectPSA(n_clicks, app_name, email, password, countrycode):  # pylint: dis
                                      href=dash_app.config.requests_pathname_prefix + "config_otp")], color="success")
         except HeadlessOAuthError as e:
             redirect_uri = parse.quote(auth_url)
+            debug_style = {"height": "150px", "font-family": "monospace", "font-size": "12px",
+                           "margin-bottom": "10px"}
+            debug_children = [
+                dbc.Label("Last URL:"),
+                dbc.Input(value=e.url, readonly=True, style={"margin-bottom": "10px"}),
+                dbc.Label("Console Logs:"),
+                dbc.Textarea(value="\n".join(e.logs), style=debug_style, readonly=True),
+                dbc.Label("HTML Content:"),
+                dbc.Textarea(value=e.html, style=debug_style, readonly=True),
+            ]
+            if e.screenshot:
+                debug_children[:0] = [
+                    dbc.Label("Screenshot of the last page:"),
+                    html.Img(src="data:image/png;base64," + e.screenshot,
+                             style={"width": "100%", "margin-bottom": "10px",
+                                    "border": "1px solid #ccc"}),
+                ]
             return dbc.Alert(
                 [
-                    html.P("Automatic login failed. Please complete manually: "),
-                    html.A(
-                        "Go to login",
-                        href=f"{dash_app.config.requests_pathname_prefix}config_connect?url={redirect_uri}"),
-                    html.Hr(),
-                    html.P("Debug information (please include in GitHub issue):"),
-                    dbc.Label("Last URL:"),
-                    dbc.Input(
-                        value=e.url,
-                        readonly=True,
-                        style={
-                            "margin-bottom": "10px"}),
-                    dbc.Label("Console Logs:"),
-                    dbc.Textarea(
-                        value="\n".join(
-                            e.logs),
-                        style={
-                            "height": "100px",
-                            "font-family": "monospace",
-                            "font-size": "12px",
-                            "margin-bottom": "10px"},
-                        readonly=True,
-                    ),
-                    dbc.Label("HTML Content:"),
-                    dbc.Textarea(
-                        value=e.html,
-                        style={
-                            "height": "200px",
-                            "font-family": "monospace",
-                            "font-size": "12px"},
-                        readonly=True,
-                    ),
+                    html.P(str(e), className="fw-bold"),
+                    html.P(["You can still finish the login by hand: ",
+                            html.A("Go to login",
+                                   href=f"{dash_app.config.requests_pathname_prefix}"
+                                        f"config_connect?url={redirect_uri}")]),
+                    html.Details([
+                        html.Summary("Debug information (please include in a GitHub issue)"),
+                        html.Div(debug_children, className="mt-2"),
+                    ]),
                 ],
                 color="warning")
         except Exception as e:  # pylint: disable=broad-except
@@ -214,6 +214,8 @@ def askCode(n_clicks):  # pylint: disable=unused-argument
         try:
             app.myp.remote_client.get_sms_otp_code()
             return dbc.Alert("SMS sent", color="success")
+        except SmsRequestException as e:
+            return create_error_alert("The SMS could not be requested", [e.hint], e.details)
         except Exception as e:
             res = str(e)
             return dbc.Alert(res, color="danger")
@@ -239,6 +241,15 @@ def finishOtp(n_clicks, code_pin, sms_code):  # pylint: disable=unused-argument
                 ["OTP config finished! Redirecting to home in 5 seconds… ",
                  html.A("Go to home now", href=home)], color="success")
             return alert, False  # enable the interval -> auto-redirect
+        except ActivationException as e:
+            logger.error("finishOtp: %s", e)
+            hints = [e.hint]
+            # a failed activation leaves the previous one in use
+            if app.myp.remote_client.is_mqtt_connected():
+                hints.append("Remote control is working right now with the previous activation, so there is no "
+                             "need to activate it again.")
+            return create_error_alert("The remote control could not be activated", hints, str(e),
+                                      ("More in the FAQ", FAQ_ACTIVATION_URL)), True
         except Exception as e:
             res = str(e)
             logger.exception("finishOtp:")

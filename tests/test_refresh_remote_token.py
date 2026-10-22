@@ -3,7 +3,7 @@ from datetime import datetime, timedelta
 from unittest.mock import MagicMock
 from unittest import mock
 
-from psa_car_controller.psa.RemoteClient import KEEPALIVE_PERIOD, MAX_REFRESH_DELAY, RemoteClient
+from psa_car_controller.psa.RemoteClient import KEEPALIVE_PERIOD, MAX_REFRESH_DELAY, MQTT_TOKEN_TTL, RemoteClient
 from psa_car_controller.psa.RemoteCredentials import RemoteCredentials
 from psa_car_controller.psa.otp.otp import ConfigException
 
@@ -14,6 +14,7 @@ def get_remote_client(remote_refresh_token="remote_refresh_token"):
     remote_client: RemoteClient = get_rc()
     remote_client.manager = MagicMock()
     remote_client.manager.refresh_token_now.return_value = True
+    remote_client.manager.needs_login = False
     res = MagicMock()
     res.json.return_value = {"access_token": "access_token"}
     remote_client.manager.post.return_value = res
@@ -75,6 +76,32 @@ class TestRefreshRemoteToken(unittest.TestCase):
         # THEN no refresh is performed
         self.assertTrue(refreshed)
         remote_client.manager.refresh_token_now.assert_not_called()
+
+    def test_unforced_refresh_reuses_a_just_refreshed_token(self):
+        # GIVEN a remote client whose remote credentials were never updated (PSA doesn't
+        # return a new remote refresh token on a refresh, so last_update stays at the epoch)
+        remote_client = get_remote_client()
+
+        # WHEN two publishes ask for a refresh within MQTT_TOKEN_TTL
+        self.assertTrue(remote_client._refresh_remote_token())
+        self.assertTrue(remote_client._refresh_remote_token())
+
+        # THEN only the first one refreshes: each refresh used to call refresh_token_now()
+        # and burn its rate limit (6 per 30 min), so a wakeup per minute blocked commands
+        remote_client.manager.refresh_token_now.assert_called_once()
+        remote_client.manager.post.assert_called_once()
+
+    def test_unforced_refresh_after_ttl(self):
+        # GIVEN a remote client whose token was refreshed MQTT_TOKEN_TTL ago
+        remote_client = get_remote_client()
+        remote_client.remote_token_last_update = datetime.now() - timedelta(seconds=MQTT_TOKEN_TTL)
+
+        # WHEN a refresh is requested without force
+        refreshed = remote_client._refresh_remote_token()
+
+        # THEN the token is refreshed
+        self.assertTrue(refreshed)
+        remote_client.manager.refresh_token_now.assert_called_once()
 
     def test_keepalive_period_is_well_under_token_lifetime(self):
         # Regression test for Sentry issue 150805222 / the daily invalid_grant: the remote
@@ -144,6 +171,19 @@ class TestRefreshRemoteToken(unittest.TestCase):
         with self.assertRaises(ConfigException):
             with mock.patch("psa_car_controller.psa.RemoteClient.load_otp", return_value=None):
                 remote_client.get_otp_code()
+
+    def test_no_refresh_while_waiting_for_a_new_login(self):
+        # GIVEN a remote client whose PSA refresh token was just rejected
+        remote_client = get_remote_client()
+        remote_client.manager.needs_login = True
+        remote_client.manager.rejected_grant_retry_due.return_value = False
+
+        # WHEN a forced refresh is requested
+        refreshed = remote_client._refresh_remote_token(force=True)
+
+        # THEN PSA isn't asked again with the rejected token
+        self.assertFalse(refreshed)
+        remote_client.manager.refresh_token_now.assert_not_called()
 
 
 if __name__ == '__main__':

@@ -4,13 +4,14 @@ from urllib import parse
 from dash import callback_context, html, dcc
 from dash.exceptions import PreventUpdate
 
-from psa_car_controller.psa.otp.otp import new_otp_session
+from psa_car_controller.psa.otp.otp import ActivationException, FAQ_ACTIVATION_URL, new_otp_session
 from psa_car_controller.psa.RemoteClient import SmsRequestException
 from psa_car_controller.psa.setup.headless_oauth import HeadlessOAuthError, get_oauth_code_headless
 from psa_car_controller.psacc.application.car_controller import PSACarController
 from psa_car_controller.psa.setup.app_decoder import InitialSetup
 from psa_car_controller.common.mylogger import LOG_FILE
 from psa_car_controller.web.app import dash_app
+from psa_car_controller.web.tools.utils import create_error_alert
 import dash_bootstrap_components as dbc
 from dash.dependencies import Output, Input, State
 
@@ -214,10 +215,7 @@ def askCode(n_clicks):  # pylint: disable=unused-argument
             app.myp.remote_client.get_sms_otp_code()
             return dbc.Alert("SMS sent", color="success")
         except SmsRequestException as e:
-            return dbc.Alert([html.H5("The SMS could not be requested", className="alert-heading"),
-                              html.P(e.hint, className="mb-1"),
-                              html.Small(e.details, className="text-muted")],
-                             color="warning")
+            return create_error_alert("The SMS could not be requested", [e.hint], e.details)
         except Exception as e:
             res = str(e)
             return dbc.Alert(res, color="danger")
@@ -243,6 +241,15 @@ def finishOtp(n_clicks, code_pin, sms_code):  # pylint: disable=unused-argument
                 ["OTP config finished! Redirecting to home in 5 seconds… ",
                  html.A("Go to home now", href=home)], color="success")
             return alert, False  # enable the interval -> auto-redirect
+        except ActivationException as e:
+            logger.error("finishOtp: %s", e)
+            hints = [e.hint]
+            # a failed activation leaves the previous one in use
+            if app.myp.remote_client.is_mqtt_connected():
+                hints.append("Remote control is working right now with the previous activation, so there is no "
+                             "need to activate it again.")
+            return create_error_alert("The remote control could not be activated", hints, str(e),
+                                      ("More in the FAQ", FAQ_ACTIVATION_URL)), True
         except Exception as e:
             res = str(e)
             logger.exception("finishOtp:")

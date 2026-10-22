@@ -28,6 +28,8 @@ class TestApiRequiresAccessToken(TestCase):
         client = PSAClient.__new__(PSAClient)  # bypass __init__, it does I/O
         client.manager = MagicMock()
         client.manager.access_token = token
+        client.manager.needs_login = False
+        client.manager.rejected_grant_retry_due.return_value = False
         client.api_config = Oauth2PSACCApiConfig()  # real config: the API client reads attributes off it
         return client
 

@@ -22,7 +22,7 @@ from psa_car_controller.psa.constants import realm_info, AUTHORIZE_SERVICE
 from .abrp import Abrp
 from psa_car_controller.psacc.repository.db import Database
 from psa_car_controller.common.mylogger import CustomLogger
-from psa_car_controller.common.utils import AuthenticationRequiredException
+from psa_car_controller.common.utils import AuthenticationRequiredException, RateLimitException
 
 SCOPE = ['openid profile']
 CARS_FILE = "cars.json"
@@ -83,10 +83,19 @@ class PSAClient:
     def get_app_name(self):
         return realm_info[self.realm]['app_name']
 
+    def is_authenticated(self) -> bool:
+        return bool(self.manager.access_token) and not self.manager.needs_login
+
     def api(self) -> VehiclesApi:
-        access_token = self.manager.access_token
-        if not access_token:
+        if self.manager.rejected_grant_retry_due():
+            try:
+                self.manager.refresh_token_now()
+            except RateLimitException as e:
+                logger.debug("Can't retry the rejected refresh token now: %s", e)
+        if not self.is_authenticated():
+            # don't call PSA with a token it already refused, until a new login
             raise AuthenticationRequiredException()
+        access_token = self.manager.access_token
         self.api_config.access_token = access_token
         api_instance = VehiclesApi(OauthAPIClient(self.api_config))
         return api_instance
@@ -135,6 +144,9 @@ class PSAClient:
                     self.get_vehicle_info(car.vin)
                 for callback in self.info_callback:
                     callback()
+            except AuthenticationRequiredException:
+                # already reported when the token was rejected, no traceback every refresh
+                logger.debug("refresh_vehicle_info: not connected")
             except BaseException:
                 logger.exception("refresh_vehicle_info: ")
 

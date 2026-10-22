@@ -11,12 +11,16 @@ from typing import Optional
 from oauth2_client.credentials_manager import CredentialManager, OAuthError, ServiceInformation
 from requests import Response, RequestException
 
-from psa_car_controller.common.utils import rate_limit, TIMEOUT_IN_S
+from psa_car_controller.common.utils import rate_limit, RateLimitException, TIMEOUT_IN_S
 from psa_car_controller.psa import connected_car_api
 from psa_car_controller.psa.connected_car_api import ApiClient
 from psa_car_controller.psa.connected_car_api.rest import ApiException
 
 logger = logging.getLogger(__name__)
+
+# PSA has answered invalid_grant during outages of its own, so a rejected refresh token is
+# tried again now and then instead of being given up on, but not on every API call.
+REJECTED_GRANT_RETRY_DELAY = 1800
 
 
 def generate_sha256_pkce(length: int) -> Tuple[str, str]:
@@ -42,6 +46,8 @@ class OpenIdCredentialManager(CredentialManager):
         self.code_verifier = None
         self.redirect_uri = None
         self.last_refresh_error: Optional[Exception] = None
+        # monotonic time of the last refresh PSA rejected, None while the grant is fine
+        self.grant_rejected_at: Optional[float] = None
 
     def _grant_password_request_realm(self, login: str, password: str, realm: str) -> dict:
         return {"grant_type": 'password', "username": login, "scope": ' '.join(self.service_information.scopes),
@@ -75,6 +81,19 @@ class OpenIdCredentialManager(CredentialManager):
     def access_token(self):
         return self._access_token
 
+    @property
+    def needs_login(self) -> bool:
+        """True once PSA rejected the refresh token: only a new login can fix it."""
+        return self.grant_rejected_at is not None
+
+    def rejected_grant_retry_due(self) -> bool:
+        return self.needs_login and time.monotonic() - self.grant_rejected_at >= REJECTED_GRANT_RETRY_DELAY
+
+    def _process_token_response(self, token_response: dict, refresh_token_mandatory: bool):
+        super()._process_token_response(token_response, refresh_token_mandatory)
+        # a new login or a successful refresh: the grant is good again
+        self.grant_rejected_at = None
+
     @rate_limit(6, 1800)
     def refresh_token_now(self):
         # The PSA token endpoint sometimes drops the connection without a
@@ -93,7 +112,11 @@ class OpenIdCredentialManager(CredentialManager):
             except OAuthError as e:
                 # the refresh token is rejected, only a new authentication can fix it
                 self.last_refresh_error = e
-                logger.error("Can't refresh token: %s", e)
+                if self.needs_login:
+                    logger.warning("The refresh token is still rejected, waiting for a new login: %s", e)
+                else:
+                    logger.error("Can't refresh token, please reconnect from the config web page: %s", e)
+                self.grant_rejected_at = time.monotonic()
                 break
             except RequestException as e:
                 # the server is unreachable, the token itself might still be fine
@@ -149,6 +172,14 @@ class OauthAPIClient(ApiClient):
                                                                collection_formats,
                                                                _preload_content, _request_timeout))
             except ApiException as e:
-                if attempt == 1 or e.reason != 'Unauthorized' or not self.configuration.refresh_callback():
+                if attempt == 1 or e.reason != 'Unauthorized' or not self.__refresh():
                     raise e
             return None
+
+    def __refresh(self) -> bool:
+        try:
+            return self.configuration.refresh_callback()
+        except RateLimitException as e:
+            # the caller gets the 401 rather than an unrelated rate limit error
+            logger.warning("Can't refresh the access token now: %s", e)
+            return False

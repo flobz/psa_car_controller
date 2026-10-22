@@ -254,6 +254,9 @@ class RemoteClient:
                     logger.debug("remote token refreshed %.0fs ago, skipping forced refresh",
                                  since_last_refresh)
                     return True
+            if self.manager.needs_login and not self.manager.rejected_grant_retry_due():
+                logger.debug("Can't refresh remote token: waiting for a new login")
+                return False
             try:
                 if not self.manager.refresh_token_now():
                     logger.error("Can't refresh remote token: access token refresh failed")

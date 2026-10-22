@@ -61,7 +61,7 @@ def health():
     # myp is not set yet when the app waits for its first configuration (--web-conf)
     myp = getattr(APP, "myp", None)
     body, status = get_health(myp.remote_client if myp else None, APP.remote_control,
-                              get_max_mqtt_auth_failures())
+                              get_max_mqtt_auth_failures(), myp.is_authenticated() if myp else False)
     return jsonify(body), status
 
 

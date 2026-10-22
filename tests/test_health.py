@@ -109,7 +109,15 @@ class TestHealth(unittest.TestCase):
         refuse(remote_client, MAX_FAILURES)
         body, status = get_health(remote_client, False, MAX_FAILURES)
         self.assertEqual(200, status)
-        self.assertEqual({"remote_control": False}, body)
+        self.assertEqual({"api_authenticated": True, "remote_control": False}, body)
+
+    def test_rejected_api_login_is_reported_but_stays_healthy(self):
+        # a restart can't renew a rejected refresh token, only a new login can
+        remote_client = get_remote_client()
+        connect(remote_client)
+        body, status = get_health(remote_client, True, MAX_FAILURES, api_authenticated=False)
+        self.assertEqual(200, status)
+        self.assertFalse(body["api_authenticated"])
 
     def test_healthy_without_client(self):
         _, status = get_health(None, True, MAX_FAILURES)

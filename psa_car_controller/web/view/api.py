@@ -7,6 +7,7 @@ from oauth2_client.credentials_manager import OAuthError
 
 from psa_car_controller.common.utils import AuthenticationRequiredException, RateLimitException
 from psa_car_controller.psacc.application.car_controller import PSACarController
+from psa_car_controller.psacc.application.health import get_health, get_max_mqtt_auth_failures
 from psa_car_controller.psacc.repository.db import Database
 from psa_car_controller.web.app import app
 
@@ -53,6 +54,15 @@ def handle_oauth_error(error):
         "error": "authentication_required",
         "message": f"OAuth error, please reconnect from the config web page: {error}",
     }), 503
+
+
+@app.route('/health')
+def health():
+    # myp is not set yet when the app waits for its first configuration (--web-conf)
+    myp = getattr(APP, "myp", None)
+    body, status = get_health(myp.remote_client if myp else None, APP.remote_control,
+                              get_max_mqtt_auth_failures())
+    return jsonify(body), status
 
 
 @app.route('/get_vehicles')

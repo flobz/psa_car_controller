@@ -5,6 +5,7 @@ from dash import callback_context, html, dcc
 from dash.exceptions import PreventUpdate
 
 from psa_car_controller.psa.otp.otp import new_otp_session
+from psa_car_controller.psa.RemoteClient import SmsRequestException
 from psa_car_controller.psa.setup.headless_oauth import HeadlessOAuthError, get_oauth_code_headless
 from psa_car_controller.psacc.application.car_controller import PSACarController
 from psa_car_controller.psa.setup.app_decoder import InitialSetup
@@ -212,6 +213,11 @@ def askCode(n_clicks):  # pylint: disable=unused-argument
         try:
             app.myp.remote_client.get_sms_otp_code()
             return dbc.Alert("SMS sent", color="success")
+        except SmsRequestException as e:
+            return dbc.Alert([html.H5("The SMS could not be requested", className="alert-heading"),
+                              html.P(e.hint, className="mb-1"),
+                              html.Small(e.details, className="text-muted")],
+                             color="warning")
         except Exception as e:
             res = str(e)
             return dbc.Alert(res, color="danger")

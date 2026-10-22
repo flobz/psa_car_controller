@@ -7,7 +7,7 @@ from typing import Optional
 import time
 
 import paho.mqtt.client as mqtt
-from requests import RequestException
+from requests import RequestException, Timeout
 
 from psa_car_controller.psacc.model.car import Cars
 from psa_car_controller.psa.AccountInformation import AccountInformation
@@ -41,10 +41,21 @@ MAX_REFRESH_DELAY = 120
 # so it must run well within that lifetime: 8h keeps the chain rotating forever and
 # survives one missed cycle.
 KEEPALIVE_PERIOD = 3600 * 8
+# the SMS endpoint regularly takes longer than the default timeout to answer
+SMS_TIMEOUT_IN_S = 20
 
 
 class RemoteException(Exception):
     pass
+
+
+class SmsRequestException(RemoteException):
+    """The SMS code could not be requested: hint tells the user what to do, details what happened."""
+
+    def __init__(self, hint: str, details: str):
+        super().__init__(f"{hint} ({details})")
+        self.hint = hint
+        self.details = details
 
 
 class RemoteClient:
@@ -297,13 +308,25 @@ class RemoteClient:
                 return False
 
     def get_sms_otp_code(self):
-        res = self.manager.post(
-            "https://api.groupe-psa.com/applications/cvs/v4/mobile/smsCode?client_id=" + self.account_info.client_id,
-            headers=self.headers, timeout=TIMEOUT_IN_S)
+        url = "https://api.groupe-psa.com/applications/cvs/v4/mobile/smsCode?client_id=" + self.account_info.client_id
+        try:
+            res = self.manager.post(url, headers=self.headers, timeout=SMS_TIMEOUT_IN_S)
+        except Timeout as e:
+            logger.error("SMS code request timed out: %s", e)
+            raise SmsRequestException(f"PSA didn't answer within {SMS_TIMEOUT_IN_S} seconds. Its servers are slow "
+                                      "at times, please try again in a few minutes.", str(e)) from e
+        except RequestException as e:
+            logger.error("SMS code request failed: %s", e)
+            raise SmsRequestException("PSA can't be reached. Check the internet connection of this server, "
+                                      "or try again later.", str(e)) from e
         logger.info("SMS code request: HTTP %s", res.status_code)
         if not res.ok:
             logger.error("SMS code request failed: HTTP %s %s", res.status_code, res.text)
-            raise RemoteException(f"SMS request failed: HTTP {res.status_code} {res.text}")
+            if res.status_code in (401, 403):
+                hint = "PSA refused the request. Reconnect from the User config tab first, then ask for the SMS again."
+            else:
+                hint = "PSA couldn't send the SMS, please try again later."
+            raise SmsRequestException(hint, f"HTTP {res.status_code} {res.text}")
         return res
 
     # 6 otp by day

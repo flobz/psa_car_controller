@@ -114,6 +114,32 @@ class InitialSetup:
             raise ConnectionError(msg) from ex
         return res_dict
 
+    @staticmethod
+    def __read_charge_settings(file_name) -> dict:
+        try:
+            with open(file_name, "r", encoding="utf-8") as f:
+                settings = json.load(f)
+        except FileNotFoundError:
+            return {}
+        except (OSError, ValueError):
+            logger.warning("Can't read %s, charge control settings will be reset", file_name, exc_info=True)
+            return {}
+        if not isinstance(settings, dict):
+            logger.warning("Unexpected content in %s, charge control settings will be reset", file_name)
+            return {}
+        return settings
+
+    def __new_charge_control(self, vin, settings) -> ChargeControl:
+        if settings is not None:
+            if isinstance(settings, dict) and isinstance(settings.get("percentage_threshold", 100), int):
+                try:
+                    return ChargeControl(self.psacc, vin, settings.get("percentage_threshold", 100),
+                                         settings.get("stop_hour", [0, 0]))
+                except (ValueError, TypeError, IndexError):
+                    pass
+            logger.warning("Invalid charge control settings for %s will be reset: %s", vin, settings)
+        return ChargeControl(self.psacc, vin, 100, [0, 0])
+
     def connect(self, code, config_prefix=""):
         self.psacc.connect(code)
         self.psacc.save_config(name=config_prefix + "config.json")
@@ -132,11 +158,12 @@ class InitialSetup:
 
         logger.info("\nYour vehicles: %s", res)
 
-        # Charge control
-        charge_controls = ChargeControls(config_prefix + "charge_config.json")
+        # Charge control: keep the settings of cars already configured, new cars start with charge control off
+        charge_config_name = config_prefix + "charge_config.json"
+        previous_settings = self.__read_charge_settings(charge_config_name)
+        charge_controls = ChargeControls(charge_config_name)
         for vehicle in res:
-            chc = ChargeControl(self.psacc, vehicle.vin, 100, [0, 0])
-            charge_controls[vehicle.vin] = chc
+            charge_controls[vehicle.vin] = self.__new_charge_control(vehicle.vin, previous_settings.get(vehicle.vin))
         charge_controls.save_config()
         app = PSACarController()
         app.load_app()

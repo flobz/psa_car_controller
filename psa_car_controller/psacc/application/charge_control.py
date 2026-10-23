@@ -164,3 +164,8 @@ class ChargeControls(dict):
     def init(self):
         for charge_control in self.values():
             charge_control.psacc.info_callback.append(charge_control.process)
+
+    def stop(self):
+        for charge_control in self.values():
+            if charge_control.process in charge_control.psacc.info_callback:
+                charge_control.psacc.info_callback.remove(charge_control.process)

@@ -22,6 +22,7 @@ logger = logging.getLogger(__name__)
 NEW_BATTERY_COLUMNS = [["price", "INTEGER"], ["charging_mode", "TEXT"], ["mileage", "REAL"]]
 NEW_POSITION_COLUMNS = [["level_fuel", "INTEGER"], ["altitude", "INTEGER"]]
 NEW_BATTERY_CURVE_COLUMNS = [["rate", "INTEGER"], ["autonomy", "INTEGER"]]
+WAL_SIZE_LIMIT_IN_BYTES = 8 * 1024 * 1024
 
 
 def convert_sql_res(rows):
@@ -41,6 +42,7 @@ class CustomSqliteConnection(sqlite3.Connection):
         super().__init__(*args, **kwargs)
         self.callbacks = set()
         self.execute("PRAGMA journal_mode=WAL;")
+        self.execute(f"PRAGMA journal_size_limit={WAL_SIZE_LIMIT_IN_BYTES};")
         self.change_since_last_close = 0
 
     def execute_callbacks(self):

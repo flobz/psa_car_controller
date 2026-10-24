@@ -1,8 +1,10 @@
+import os
+import tempfile
 import unittest
 from sqlite3.dbapi2 import IntegrityError
 
 from psa_car_controller.psacc.model.battery_soh import BatterySoh
-from psa_car_controller.psacc.repository.db import Database
+from psa_car_controller.psacc.repository.db import CustomSqliteConnection, Database, WAL_SIZE_LIMIT_IN_BYTES
 from tests.utils import get_new_test_db, compare_dict, get_date, vehicule_list
 
 
@@ -25,3 +27,12 @@ class TestUnit(unittest.TestCase):
         car = vehicule_list[0]
         Database.record_battery_soh(car.vin, get_date(0), 99.0)
         self.assertRaises(IntegrityError, Database.record_battery_soh, car.vin, get_date(0), 99.0)
+
+    def test_wal_size_is_limited(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            conn = CustomSqliteConnection(os.path.join(tmp, "info.db"))
+            try:
+                self.assertEqual("wal", conn.execute("PRAGMA journal_mode;").fetchone()[0])
+                self.assertEqual(WAL_SIZE_LIMIT_IN_BYTES, conn.execute("PRAGMA journal_size_limit;").fetchone()[0])
+            finally:
+                conn.close_db()

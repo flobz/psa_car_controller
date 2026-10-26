@@ -63,7 +63,11 @@ class PSACarController(metaclass=Singleton):
             try:
                 self.myp.remote_client.start()
                 if self.args.charge_control:
-                    self.chc = ChargeControls.load_config(self.myp, name=self.args.charge_control)
+                    chc = ChargeControls.load_config(self.myp, name=self.args.charge_control)
+                    # called again after a login or an OTP config: the previous charge controls must stop
+                    if self.chc is not None:
+                        self.chc.stop()
+                    self.chc = chc
                     self.chc.init()
                     self.myp.start_refresh_thread()
             except (socket.timeout, ConnectionResetError):

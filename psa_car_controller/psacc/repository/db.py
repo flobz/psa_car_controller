@@ -115,13 +115,16 @@ class Database:
         if not new_db and Database.battery_check_constraint_missing(conn):
             Database.backup(conn)
             conn.execute("ALTER TABLE battery RENAME TO battery_old;")
+        if not new_db and Database.battery_soh_unique_level(conn):
+            Database.backup(conn)
+            conn.execute("ALTER TABLE battery_soh RENAME TO battery_soh_old;")
         conn.execute("CREATE TABLE IF NOT EXISTS battery (start_at DATETIME PRIMARY KEY,stop_at DATETIME,VIN TEXT, "
                      "start_level INTEGER, end_level INTEGER, co2 INTEGER, kw INTEGER, "
                      "CHECK(stop_at IS NULL OR stop_at > start_at));")
         conn.execute("""CREATE TABLE IF NOT EXISTS battery_curve (start_at DATETIME, VIN TEXT, date DATETIME,
                         level INTEGER, UNIQUE(start_at, VIN, level));""")
         conn.execute("""CREATE TABLE IF NOT EXISTS
-                        battery_soh(date DATETIME, VIN TEXT, level FLOAT, UNIQUE(VIN, level));""")
+                        battery_soh(date DATETIME, VIN TEXT, level FLOAT, UNIQUE(VIN, date));""")
         table_to_update = [["position", NEW_POSITION_COLUMNS],
                            ["battery", NEW_BATTERY_COLUMNS],
                            ["battery_curve", NEW_BATTERY_CURVE_COLUMNS]]
@@ -133,6 +136,7 @@ class Database:
                 except sqlite3.OperationalError:
                     pass
         Database.finish_battery_check_constraint_migration(conn)
+        Database.finish_battery_soh_migration(conn)
         conn.commit()
         if not new_db and make_backup:
             Database.backup(conn)
@@ -205,6 +209,27 @@ class Database:
         if dropped:
             logger.warning("Dropped %s battery row(s) with stop_at <= start_at", dropped)
         conn.execute("DROP TABLE battery_old;")
+        return True
+
+    @staticmethod
+    def battery_soh_unique_level(conn):
+        # battery_soh used to be UNIQUE(VIN, level): a SOH value could only be stored once per car, so when the
+        # SOH went back to a value already seen (e.g. 91 -> 100 -> 91) the new record was rejected and the last
+        # SOH stayed wrong. The table is renamed so that init_db recreates it, then rows are copied back by
+        # finish_battery_soh_migration.
+        sql = conn.execute("SELECT sql FROM sqlite_master WHERE type='table' AND name='battery_soh'").fetchone()
+        if sql is None or "UNIQUE(VIN,level)" not in "".join(sql["sql"].split()):
+            return False
+        logger.info("Migrating battery_soh table to allow recording a SOH value again")
+        return True
+
+    @staticmethod
+    def finish_battery_soh_migration(conn):
+        old = conn.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='battery_soh_old'").fetchone()
+        if old is None:
+            return False
+        conn.execute("INSERT OR IGNORE INTO battery_soh SELECT date, VIN, level FROM battery_soh_old;")
+        conn.execute("DROP TABLE battery_soh_old;")
         return True
 
     @staticmethod
@@ -349,6 +374,9 @@ class Database:
 
     @staticmethod
     def record_battery_soh(vin: str, date: datetime, level: float):
+        # only changes are recorded, but a value already seen can be recorded again (e.g. 91 -> 100 -> 91)
+        if Database.get_last_soh_by_vin(vin) == level:
+            raise sqlite3.IntegrityError("SOH already recorded")
         conn = Database.get_db()
         conn.execute("INSERT INTO battery_soh(date, VIN, level) VALUES(?,?,?)", (date, vin, level))
         conn.commit()

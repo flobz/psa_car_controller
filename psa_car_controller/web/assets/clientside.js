@@ -118,8 +118,8 @@ function updateMap (data, oldFigure, x, y, lastPos) {
       figure.data[0].hovertext.push(...Array(xPos.length).fill(trip[yLabel[1]]), null)
     }
     if (trip) {
-      figure.layout.mapbox.center.lat = lastPos.lat
-      figure.layout.mapbox.center.lon = lastPos.lon
+      figure.layout.map.center.lat = lastPos.lat
+      figure.layout.map.center.lon = lastPos.lon
       figure.data[1].lat = [lastPos.lat]
       figure.data[1].lon = [lastPos.lon]
     }

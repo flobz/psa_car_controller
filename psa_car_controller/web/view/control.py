@@ -76,5 +76,17 @@ def get_control_tabs(config):
         if not config.offline:
             buttons_row.append(Switch(ABRP_SWITCH, car.vin, "Send data to ABRP", myp.abrp.enable_abrp,
                                       car.vin in config.myp.abrp.abrp_enable_vin).get_html())
-        tabs.append(dbc.Tab(label=label, id="tab-" + car.vin, children=[dbc.Row(buttons_row), *el]))
-    return dbc.Tabs(id="control-tabs", children=tabs)
+        tabs.append(
+            dbc.Tab(
+                label=label,
+                id="tab-" + car.vin,
+                tab_id="tab-" + car.vin,
+                children=[dbc.Row(buttons_row), *el],
+            )
+        )
+
+    return dbc.Tabs(
+        id="control-tabs",
+        active_tab="tab-" + config.myp.vehicles_list[0].vin,
+        children=tabs,
+    )

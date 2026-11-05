@@ -152,3 +152,9 @@ certs/
 *.log.*
 
 .vscode/
+
+tests/data/otp_test2.bin
+tests/data/test_car.json
+tests/mypeugeot.apk
+tests/mypeugeot.apk.bz2
+tests/test_charge_control.json

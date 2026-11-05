@@ -54,3 +54,6 @@ def my_logger(handler_level=logging.INFO):
     stream_handler.setLevel(handler_level)
     stream_handler.setFormatter(formatter)
     logger.addHandler(stream_handler)
+    # werkzeug logs HTTP access lines at INFO; only show them in debug mode
+    werkzeug_logger = logging.getLogger("werkzeug")
+    werkzeug_logger.setLevel(handler_level if handler_level <= logging.DEBUG else logging.WARNING)

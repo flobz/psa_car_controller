@@ -81,6 +81,7 @@ class TestUnit(unittest.TestCase):
         assert CarModelRepository().find_model_by_vin("VR3UHZKXZL").name == "e-208"
         assert CarModelRepository().find_model_by_vin("VR3UKZKXZM").name == "e-2008"
         assert CarModelRepository().find_model_by_vin("VXKUHZKXZL").name == "corsa-e"
+        assert CarModelRepository().find_model_by_vin("VXKUKZKW0S").name == "Mokka-e 2024+"
 
     def test_c02_signal_cache(self):
         start = datetime.utcnow().replace(tzinfo=UTC) - timedelta(minutes=30)
@@ -253,6 +254,12 @@ class TestUnit(unittest.TestCase):
                "stop_at": date3.strftime('%Y-%m-%dT%H:%M:%S.000Z'), "start_level": start_level, "end_level": end_level}
         battery_curve_fix = get_battery_curve_fig(row, car)
         assert battery_curve_fix is not None
+        # The clientside JS rewrites start_at/stop_at to millisecond timestamps (date.getTime()),
+        # so the callback receives ints, not ISO strings.
+        row_ms = {"start_at": int(date0.timestamp() * 1000),
+                  "stop_at": int(date3.timestamp() * 1000), "start_level": start_level, "end_level": end_level}
+        battery_curve_fix_ms = get_battery_curve_fig(row_ms, car)
+        assert battery_curve_fix_ms is not None
         assert get_altitude_fig(trip) is not None
 
     def test_fuel_car(self):
@@ -305,6 +312,18 @@ class TestUnit(unittest.TestCase):
                                    'id': 1,
                                    'consumption': 1.32,
                                    'consumption_fuel_km': 4.53}])
+
+    def test_elec_consumption_none_level(self):
+        from psa_car_controller.psacc.application.trip_parser import TripParser
+        start = {5: 50, 8: None}
+        end = {5: None, 8: None}
+        assert TripParser.get_elec_consumption(start, end) == [0, 0]
+
+    def test_thermal_consumption_none_level(self):
+        from psa_car_controller.psacc.application.trip_parser import TripParser
+        start = {5: None, 8: 80}
+        end = {5: None, 8: None}
+        assert TripParser.get_thermal_consumption(start, end) == [0, 0]
 
     def test_db_callback(self):
         old_dummy_value = dummy_value

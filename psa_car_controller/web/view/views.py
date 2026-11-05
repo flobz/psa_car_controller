@@ -56,14 +56,13 @@ def add_header(el):
                              color="secondary",
                              className="me-1 bi bi-github",
                              external_link=True, href=github_url)
-    prefix = dash_app.config.requests_pathname_prefix or ""
-    return dbc.Row([dbc.Col(dcc.Link(html.H1('My car info'), href=prefix,
+    return dbc.Row([dbc.Col(dcc.Link(html.H1('My car info'), href=dash_app.get_relative_path("/"),
                                      style={"TextDecoration": "none"})),
                     dbc.Col(html.Div([dbc_version,
                                       dcc.Link(
                                           html.Img(src=dash_app.get_asset_url("images/settings.svg"),
                                                    width="30veh"),
-                                          href=prefix + "config",
+                                          href=dash_app.get_relative_path("/config"),
                                           className="float-end")],
                                      className="d-grid gap-2 d-md-flex justify-content-md-end",))],
                    className='align-items-center'), el
@@ -77,12 +76,12 @@ def display_page(pathname, search):
     pathname = pathname[len(prefix) - 1:]
     query_params = parse_qs(urlparse(search).query)
     no_header = query_params.get("header", None) == ["false"]
-    if not APP.is_good or pathname == "/config_login":
+    if pathname == "/config_connect":
+        page = get_oauth_config_layout(query_params["url"][0])
+    elif not APP.is_good or pathname == "/config_login":
         page = config_layout("login")
     elif pathname == "/config":
         page = config_layout()
-    elif pathname == "/config_connect":
-        page = get_oauth_config_layout(query_params["url"][0])
     elif pathname == "/log":
         page = log_layout()
     elif pathname == "/config_otp":

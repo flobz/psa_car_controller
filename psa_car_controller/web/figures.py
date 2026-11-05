@@ -59,8 +59,15 @@ def get_figures(car: Car):
     lats = [42, 41]
     lons = [1, 2]
     names = ["undefined", "undefined"]
-    trips_map = px.line_mapbox(lat=lats, lon=lons, hover_name=names, zoom=12, mapbox_style="style.json")
-    trips_map.add_trace(go.Scattermapbox(
+    trips_map = go.Figure(go.Scattermap(
+        mode="lines",
+        lat=lats, lon=lons,
+        hovertext=names,
+        showlegend=False))
+    trips_map.update_layout(map={"style": "style.json", "zoom": 12,
+                                 "center": {"lat": lats[0], "lon": lons[0]}},
+                            margin={"t": 0, "b": 0, "l": 0, "r": 0})
+    trips_map.add_trace(go.Scattermap(
         mode="markers",
         marker={"symbol": "marker", "size": 20},
         lon=[lons[0]], lat=[lats[0]],

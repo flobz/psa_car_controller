@@ -20,6 +20,13 @@
   reg: VR3KCZKZ2R 
   max_elec_consumption: 70
 - !ElecModel
+  name: E-5008 73 kWh GT
+  battery_power: 73
+  fuel_capacity: 0
+  abrp_name: peugeot:e5008:25:77
+  reg: VR3KCZKZXS 
+  max_elec_consumption: 70
+- !ElecModel
   name: e-5008
   battery_power: 73
   fuel_capacity: 0
@@ -349,6 +356,14 @@
   max_elec_consumption: 70
   max_fuel_consumption: 30
 - !CarModel
+  name: 508 SW II Hybrid 180CV
+  battery_power: 12.4
+  fuel_capacity: 43
+  abrp_name:
+  reg: VR3F4DGL1R 
+  max_elec_consumption: 70
+  max_fuel_consumption: 30
+- !CarModel
   name: 508 Hybrid
   battery_power: 11.5
   fuel_capacity: 43
@@ -436,6 +451,14 @@
   reg: VR3F3DGXTP 
   max_elec_consumption: 70
   max_fuel_consumption: 30  
+- !CarModel
+  name: 308 Hybrid
+  battery_power: 12.4
+  fuel_capacity: 40
+  abrp_name:
+  reg: VR3F3DGXTN 
+  max_elec_consumption: 70
+  max_fuel_consumption: 30
 - !CarModel
   name: 308 SW Hybrid
   battery_power: 12.4
@@ -687,6 +710,14 @@
   abrp_name:
   reg: VR7ARHNSSP 
   max_elec_consumption: 70
+  max_fuel_consumption: 30
+- !CarModel
+  name: C5 Aircross 1.5 BlueHDi 130
+  battery_power: 0
+  fuel_capacity: 53
+  abrp_name:
+  reg: VR7ACYHZ7T
+  max_elec_consumption: 0
   max_fuel_consumption: 30
 - !ElecModel
   name: Combo-e Cargo XL
@@ -1075,4 +1106,19 @@
   fuel_capacity: 0
   abrp_name: citroen:ec5:25:75:aircross
   reg: VR7KCZKZ9S 
+  max_elec_consumption: 70
+- !CarModel
+  name: Grandland Electric 73kWh AWD
+  battery_power: 73
+  fuel_capacity: 0
+  abrp_name: vauxhall:grandland:25:74:awd
+  reg: VXKKCZKZ6T
+  max_elec_consumption: 70
+  max_fuel_consumption: 0
+- !ElecModel
+  name: Mokka-e 2024+
+  battery_power: 51
+  fuel_capacity: 0
+  abrp_name:
+  reg: VXKUKZKW0S
   max_elec_consumption: 70

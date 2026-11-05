@@ -66,8 +66,16 @@ class Charging:
         if charging_status == "InProgress":
             last_charge = Database.get_last_charge(car.vin)
             if Charging.is_charge_ended(last_charge):
-                conn.execute("INSERT INTO battery(start_at,start_level,charging_mode,VIN,mileage) VALUES(?,?,?,?,?)",
-                             (charge_date, level, charging_mode, car.vin, mileage))
+                try:
+                    conn.execute(
+                        "INSERT INTO battery(start_at,start_level,charging_mode,VIN,mileage) VALUES(?,?,?,?,?)",
+                        (charge_date,
+                         level,
+                         charging_mode,
+                         car.vin,
+                         mileage))
+                except IntegrityError:
+                    logger.debug("battery record already stored")
                 start_at = charge_date
             else:
                 start_at = last_charge.start_at

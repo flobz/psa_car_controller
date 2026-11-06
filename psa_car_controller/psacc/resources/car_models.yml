@@ -90,6 +90,13 @@
   reg: VR7EMZKU5T
   max_elec_consumption: 70
 - !ElecModel
+  name: e-Expert panel van L2 75kWh Facelift 2024+
+  battery_power: 68
+  fuel_capacity: 0
+  abrp_name: peugeot:eexpert:21:75:l
+  reg: VF3VTZKU7R
+  max_elec_consumption: 70
+- !ElecModel
   name: e-jumpy
   battery_power: 68
   fuel_capacity: 0

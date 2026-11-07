@@ -1,0 +1,4 @@
+kw_ptr="\xc0\x0c"
+kw_lbl="\x03www"
+kw_srv="\x04_srv"
+kw_txt="\x04_txt"

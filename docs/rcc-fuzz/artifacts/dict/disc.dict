@@ -1,0 +1,7 @@
+kw_appList="<appList>"
+kw_app="<app "
+kw_name="<name>"
+kw_icon="<icon>"
+kw_id="id=\""
+kw_end="</appList>"
+kw_xml="<?xml"

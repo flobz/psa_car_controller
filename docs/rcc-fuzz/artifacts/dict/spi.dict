@@ -1,0 +1,7 @@
+kw_sbp="SBP"
+kw_cdb="CDB_1.0"
+kw_type="T"
+kw_len=""
+id_navi1="\x66\xc4\x77\xa3"
+id_navi2="\x8b\xc8\x3c\xa3"
+id_navi3="\xc2\x04\x04\x05"

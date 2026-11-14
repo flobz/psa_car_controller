@@ -1,5 +1,6 @@
 import json
 import logging
+import re
 import threading
 from datetime import datetime
 from os import environ
@@ -55,6 +56,7 @@ class RemoteClient:
         self.remoteCredentials: RemoteCredentials = remoteCredentials
         self.manager = manager
         self.precond_programs = {}
+        self.precond_programs_date = {}
         self.precond_asap = {}
         self.remote_results = {}
         self.lock_state = {}
@@ -116,13 +118,39 @@ class RemoteClient:
                 charge_info = data["charging_state"]
                 programs = data["precond_state"].get("programs", None)
                 if programs:
-                    self.precond_programs[data["vin"]] = data["precond_state"]["programs"]
+                    self._update_precond_programs(data["vin"], programs, parse_api_date(data.get("date")))
                 if "asap" in data["precond_state"]:
                     self.precond_asap[data["vin"]] = data["precond_state"]["asap"] == 1
                 self._store_lock_state(data)
             self._fix_not_updated_api(charge_info, data["vin"])
         except KeyError:
             logger.exception("on_mqtt_message:")
+
+    def _update_precond_programs(self, vin, programs, date: Optional[datetime]):
+        # mqtt events can arrive late or be repeated, so only a newer state may replace the stored one
+        known_date = self.precond_programs_date.get(vin)
+        if date is not None and known_date is not None and date <= known_date:
+            return
+        self.precond_programs[vin] = programs
+        self.precond_programs_date[vin] = date
+
+    def apply_status_programs(self, vin, status):
+        """Take the preconditioning programs from a rest api status.
+
+        The rest api follows changes made in the car or in the official app within minutes,
+        while mqtt only reports them when the car is woken up.
+        """
+        try:
+            air_conditioning = status.preconditionning.air_conditioning
+        except AttributeError:
+            return
+        if air_conditioning is None or not air_conditioning.programs:
+            return
+        programs = programs_from_api(air_conditioning.programs)
+        if programs is None:
+            logger.debug("unexpected preconditioning programs in status: %s", air_conditioning.programs)
+            return
+        self._update_precond_programs(vin, programs, air_conditioning.updated_at)
 
     def _store_remote_result(self, topic, data):
         if "return_code" not in data or "vin" not in data:
@@ -388,6 +416,7 @@ class RemoteClient:
         if not self.publish(msg):
             return False
         self.precond_programs[vin] = programs
+        self.precond_programs_date[vin] = datetime.now().astimezone()
         return True
 
     def load_otp(self, force_new=False):
@@ -422,6 +451,34 @@ class RemoteClient:
 
 
 PRECONDITIONING_PROGRAM_NAMES = ("program1", "program2", "program3", "program4")
+API_WEEK_DAYS = ("Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun")
+API_START_PATTERN = re.compile(r"^PT(?:(\d+)H)?(?:(\d+)M)?$")
+
+
+def parse_api_date(value) -> Optional[datetime]:
+    try:
+        return datetime.fromisoformat(value.replace("Z", "+00:00"))
+    except (AttributeError, ValueError):
+        return None
+
+
+def programs_from_api(api_programs) -> Optional[dict]:
+    """Convert rest api programs (slot, start "PT9H10M", day names) to the mqtt format."""
+    programs = {}
+    try:
+        for api_program in api_programs:
+            start = API_START_PATTERN.match(api_program["start"])
+            days = api_program.get("occurence", {}).get("day", [])
+            programs["program%d" % api_program["slot"]] = {
+                "day": [1 if day in days else 0 for day in API_WEEK_DAYS],
+                "hour": int(start.group(1) or 0),
+                "minute": int(start.group(2) or 0),
+                "on": 1 if api_program["enabled"] else 0,
+            }
+        validate_preconditioning_programs(programs)
+    except (KeyError, TypeError, AttributeError, ValueError):
+        return None
+    return programs
 
 
 def validate_preconditioning_programs(programs: dict):

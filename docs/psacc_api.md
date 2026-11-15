@@ -70,3 +70,23 @@ These links will work only if PSACC is on your computer, if it isn't please repl
 17. Get the vehicle trips:
    
    http://localhost:5000/vehicles/trips
+
+18. Get the preconditioning programs (returns 404 until the car has sent them, wake up the car first)
+
+    http://localhost:5000/preconditioning_programs/YOURVIN
+
+19. Save the preconditioning programs. All four programs are required, `day` has one 0/1 value per weekday.
+    A running preconditioning is not stopped.
+
+    ```
+    curl -X POST http://localhost:5000/preconditioning_programs/YOURVIN \
+      -H "Content-Type: application/json" \
+      -d '{"program1": {"hour": 7, "minute": 30, "on": 1, "day": [1, 1, 1, 1, 1, 0, 0]},
+           "program2": {"hour": 9, "minute": 0, "on": 0, "day": [0, 0, 0, 0, 0, 1, 1]},
+           "program3": {"hour": 0, "minute": 0, "on": 0, "day": [0, 0, 0, 0, 0, 0, 0]},
+           "program4": {"hour": 0, "minute": 0, "on": 0, "day": [0, 0, 0, 0, 0, 0, 0]}}'
+    ```
+
+20. Get the car's last answer to each remote command (`return_code` "0" means accepted)
+
+    http://localhost:5000/remote_results/YOURVIN

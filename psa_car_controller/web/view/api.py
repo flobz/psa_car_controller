@@ -89,6 +89,28 @@ def preconditioning(vin, activate):
     return jsonify(APP.myp.remote_client.preconditioning(vin, activate))
 
 
+@app.route('/preconditioning_programs/<string:vin>', methods=['GET'])
+def get_preconditioning_programs(vin):
+    programs = APP.myp.remote_client.get_preconditioning_programs(vin)
+    if programs is None:
+        return jsonify({"error": "programs not received from car yet, wake up the car first"}), 404
+    return jsonify(programs)
+
+
+@app.route('/preconditioning_programs/<string:vin>', methods=['POST'])
+def set_preconditioning_programs(vin):
+    try:
+        sent = APP.myp.remote_client.set_preconditioning_programs(vin, request.get_json(force=True))
+    except ValueError as e:
+        return jsonify({"error": str(e)}), 400
+    return jsonify(sent)
+
+
+@app.route('/remote_results/<string:vin>')
+def get_remote_results(vin):
+    return jsonify(APP.myp.remote_client.get_remote_results(vin))
+
+
 @app.route('/position/<string:vin>')
 def get_position(vin):
     res = APP.myp.get_vehicle_info(vin)

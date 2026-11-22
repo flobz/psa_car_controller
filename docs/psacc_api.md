@@ -76,7 +76,8 @@ These links will work only if PSACC is on your computer, if it isn't please repl
     http://localhost:5000/preconditioning_programs/YOURVIN
 
 19. Save the preconditioning programs. All four programs are required, `day` has one 0/1 value per weekday.
-    A running preconditioning is not stopped.
+    A running preconditioning is not stopped. The new programs are returned by the GET request once the car accepted them,
+    check the result with the remote results request below.
 
     ```
     curl -X POST http://localhost:5000/preconditioning_programs/YOURVIN \

@@ -128,12 +128,24 @@ PROGRAMS = {
 }
 
 
+def mock_publish(remote_client):
+    remote_client.account_info.get_mqtt_customer_id = MagicMock(return_value="cid")
+    remote_client.publish = MagicMock(side_effect=lambda request: request.get_message("token") and True)
+    remote_client._fix_not_updated_api = MagicMock()
+    return remote_client
+
+
+def car_answer(remote_client, return_code, correlation_id=None):
+    request = remote_client.publish.call_args[0][0]
+    msg = MQTTMessage(topic=b"psa/RemoteServices/to/cid/cid/ThermalPrecond")
+    msg.payload = json.dumps({"vin": "vin", "return_code": return_code,
+                              "correlation_id": correlation_id or request.data["correlation_id"]}).encode("utf-8")
+    remote_client._on_mqtt_message(None, None, msg)
+
+
 class TestPreconditioningPrograms(unittest.TestCase):
     def _rc_with_mocked_publish(self):
-        remote_client = get_rc()
-        remote_client.account_info.get_mqtt_customer_id = MagicMock(return_value="cid")
-        remote_client.publish = MagicMock(return_value=True)
-        return remote_client
+        return mock_publish(get_rc())
 
     def test_event_stores_programs_and_asap(self):
         remote_client = get_rc()
@@ -150,7 +162,26 @@ class TestPreconditioningPrograms(unittest.TestCase):
         self.assertTrue(remote_client.set_preconditioning_programs("vin", PROGRAMS))
         request = remote_client.publish.call_args[0][0]
         self.assertEqual(request.req_parameters, {"asap": "activate", "programs": PROGRAMS})
+
+    def test_programs_are_stored_once_the_car_accepts_them(self):
+        remote_client = self._rc_with_mocked_publish()
+        remote_client.set_preconditioning_programs("vin", PROGRAMS)
+        self.assertIsNone(remote_client.get_preconditioning_programs("vin"))
+        car_answer(remote_client, "0")
         self.assertEqual(remote_client.get_preconditioning_programs("vin"), PROGRAMS)
+
+    def test_programs_are_dropped_when_the_car_does_not_accept_them(self):
+        remote_client = self._rc_with_mocked_publish()
+        remote_client.set_preconditioning_programs("vin", PROGRAMS)
+        car_answer(remote_client, "300")
+        car_answer(remote_client, "0")
+        self.assertIsNone(remote_client.get_preconditioning_programs("vin"))
+
+    def test_answer_to_another_request_is_ignored(self):
+        remote_client = self._rc_with_mocked_publish()
+        remote_client.set_preconditioning_programs("vin", PROGRAMS)
+        car_answer(remote_client, "0", correlation_id="other")
+        self.assertIsNone(remote_client.get_preconditioning_programs("vin"))
 
     def test_set_programs_defaults_to_deactivate(self):
         remote_client = self._rc_with_mocked_publish()
@@ -167,7 +198,7 @@ class TestPreconditioningPrograms(unittest.TestCase):
 
     def test_failed_publish_keeps_old_programs(self):
         remote_client = self._rc_with_mocked_publish()
-        remote_client.publish.return_value = False
+        remote_client.publish = MagicMock(return_value=False)
         self.assertFalse(remote_client.set_preconditioning_programs("vin", PROGRAMS))
         self.assertIsNone(remote_client.get_preconditioning_programs("vin"))
 
@@ -244,9 +275,8 @@ class TestPreconditioningProgramsFromStatus(unittest.TestCase):
         self.assertEqual(self.remote_client.get_preconditioning_programs("vin")["program3"]["on"], 1)
 
     def test_older_status_does_not_overwrite_saved_programs(self):
-        remote_client = self.remote_client
-        remote_client.account_info.get_mqtt_customer_id = MagicMock(return_value="cid")
-        remote_client.publish = MagicMock(return_value=True)
+        remote_client = mock_publish(self.remote_client)
         remote_client.set_preconditioning_programs("vin", PROGRAMS)
+        car_answer(remote_client, "0")
         remote_client.apply_status_programs("vin", status_with_programs(API_PROGRAMS, "2026-11-14T21:00:05Z"))
         self.assertEqual(remote_client.get_preconditioning_programs("vin"), PROGRAMS)

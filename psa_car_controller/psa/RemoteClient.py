@@ -57,6 +57,7 @@ class RemoteClient:
         self.manager = manager
         self.precond_programs = {}
         self.precond_programs_date = {}
+        self.pending_precond_programs = {}
         self.precond_asap = {}
         self.remote_results = {}
         self.lock_state = {}
@@ -101,6 +102,7 @@ class RemoteClient:
             charge_info = None
             if msg.topic.startswith(MQTT_RESP_TOPIC):
                 self._store_remote_result(msg.topic, data)
+                self._resolve_pending_programs(data)
                 if "return_code" not in data:
                     logger.debug("mqtt msg hasn't return code")
                 elif data["return_code"] == "400":
@@ -162,6 +164,20 @@ class RemoteClient:
             "reason": data.get("reason"),
             "date": datetime.now().astimezone().isoformat(timespec="seconds"),
         }
+
+    def _resolve_pending_programs(self, data):
+        pending = self.pending_precond_programs.get(data.get("vin"))
+        if pending is None or "return_code" not in data:
+            return
+        request, programs = pending
+        if data.get("correlation_id") != request.data.get("correlation_id"):
+            return
+        if data["return_code"] == "0":
+            del self.pending_precond_programs[data["vin"]]
+            self._update_precond_programs(data["vin"], programs, datetime.now().astimezone())
+        elif data["return_code"] != "400":
+            del self.pending_precond_programs[data["vin"]]
+            logger.warning("car rejected preconditioning programs: %s", data.get("reason"))
 
     def get_remote_results(self, vin) -> dict:
         return self.remote_results.get(vin, {})
@@ -415,8 +431,8 @@ class RemoteClient:
         logger.info("Preconditioning programs: %s", msg)
         if not self.publish(msg):
             return False
-        self.precond_programs[vin] = programs
-        self.precond_programs_date[vin] = datetime.now().astimezone()
+        # only take the programs over once the car accepted them, a sleeping or unreachable car drops them
+        self.pending_precond_programs[vin] = (msg, programs)
         return True
 
     def load_otp(self, force_new=False):

@@ -109,6 +109,7 @@ class PSAClient:
                         car.status = res
                         # a new status wipes anything mqtt filled in, so put it back
                         self.remote_client.apply_lock_state(car)
+                        self.remote_client.apply_status_programs(car.vin, res)
                         if self._record_enabled:
                             self.record_info(car)
                         return res

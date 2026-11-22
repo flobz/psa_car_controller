@@ -1,16 +1,17 @@
+import json
 from unittest.mock import MagicMock, patch
 
 from psa_car_controller.psa.connected_car_api import Vehicles, ApiClient
 from psa_car_controller.psa.connected_car_api.models.doors_state import DoorsState
 from psa_car_controller.psa.constants import DISCONNECTED
 from psa_car_controller.psacc.model.car import Car, Cars
-from tests.data.car_status import ELECTRIC_CAR_STATUS
+from tests.data.car_status import ELECTRIC_CAR_STATUS, ELECTRIC_CAR_STATUS_V2
 
 import unittest
 
 from paho.mqtt.client import MQTTMessage
 
-from psa_car_controller.psa.RemoteClient import MQTT_EVENT_TOPIC
+from psa_car_controller.psa.RemoteClient import MQTT_EVENT_TOPIC, programs_from_api
 from tests.utils import get_rc
 
 message_without_precond = b'{"date":"2022-03-30T12:00:52Z","etat_res_elec":0,"precond_state":{},"charging_state":{"program":{' \
@@ -117,3 +118,165 @@ class TestMqttLockState(unittest.TestCase):
         self.car.status.doors_state = DoorsState(locked_state=["Locked"])
         self._send_event(3)
         self.assertEqual(["Unlocked"], self.car.status.doors_state.locked_state)
+
+
+PROGRAMS = {
+    "program1": {"hour": 8, "minute": 40, "on": 1, "day": [1, 1, 1, 1, 1, 0, 0]},
+    "program2": {"hour": 9, "minute": 10, "on": 0, "day": [0, 0, 0, 0, 1, 0, 0]},
+    "program3": {"hour": 9, "minute": 30, "on": 0, "day": [1, 0, 0, 0, 0, 0, 0]},
+    "program4": {"hour": 9, "minute": 0, "on": 0, "day": [0, 0, 0, 1, 0, 0, 0]},
+}
+
+
+def mock_publish(remote_client):
+    remote_client.account_info.get_mqtt_customer_id = MagicMock(return_value="cid")
+    remote_client.publish = MagicMock(side_effect=lambda request: request.get_message("token") and True)
+    remote_client._fix_not_updated_api = MagicMock()
+    return remote_client
+
+
+def car_answer(remote_client, return_code, correlation_id=None):
+    request = remote_client.publish.call_args[0][0]
+    msg = MQTTMessage(topic=b"psa/RemoteServices/to/cid/cid/ThermalPrecond")
+    msg.payload = json.dumps({"vin": "vin", "return_code": return_code,
+                              "correlation_id": correlation_id or request.data["correlation_id"]}).encode("utf-8")
+    remote_client._on_mqtt_message(None, None, msg)
+
+
+class TestPreconditioningPrograms(unittest.TestCase):
+    def _rc_with_mocked_publish(self):
+        return mock_publish(get_rc())
+
+    def test_event_stores_programs_and_asap(self):
+        remote_client = get_rc()
+        msg = MQTTMessage(topic=MQTT_EVENT_TOPIC.encode("utf-8"))
+        msg.payload = message_without_charge_info
+        remote_client._on_mqtt_message(None, None, msg)
+        vin = next(iter(remote_client.precond_programs))
+        self.assertIn("program1", remote_client.get_preconditioning_programs(vin))
+        self.assertIn(vin, remote_client.precond_asap)
+
+    def test_set_programs_keeps_running_preconditioning(self):
+        remote_client = self._rc_with_mocked_publish()
+        remote_client.precond_asap["vin"] = True
+        self.assertTrue(remote_client.set_preconditioning_programs("vin", PROGRAMS))
+        request = remote_client.publish.call_args[0][0]
+        self.assertEqual(request.req_parameters, {"asap": "activate", "programs": PROGRAMS})
+
+    def test_programs_are_stored_once_the_car_accepts_them(self):
+        remote_client = self._rc_with_mocked_publish()
+        remote_client.set_preconditioning_programs("vin", PROGRAMS)
+        self.assertIsNone(remote_client.get_preconditioning_programs("vin"))
+        car_answer(remote_client, "0")
+        self.assertEqual(remote_client.get_preconditioning_programs("vin"), PROGRAMS)
+
+    def test_programs_are_dropped_when_the_car_does_not_accept_them(self):
+        remote_client = self._rc_with_mocked_publish()
+        remote_client.set_preconditioning_programs("vin", PROGRAMS)
+        car_answer(remote_client, "300")
+        car_answer(remote_client, "0")
+        self.assertIsNone(remote_client.get_preconditioning_programs("vin"))
+
+    def test_answer_to_another_request_is_ignored(self):
+        remote_client = self._rc_with_mocked_publish()
+        remote_client.set_preconditioning_programs("vin", PROGRAMS)
+        car_answer(remote_client, "0", correlation_id="other")
+        self.assertIsNone(remote_client.get_preconditioning_programs("vin"))
+
+    def test_set_programs_defaults_to_deactivate(self):
+        remote_client = self._rc_with_mocked_publish()
+        remote_client.set_preconditioning_programs("vin", PROGRAMS)
+        self.assertEqual(remote_client.publish.call_args[0][0].req_parameters["asap"], "deactivate")
+
+    def test_invalid_programs_are_rejected(self):
+        remote_client = self._rc_with_mocked_publish()
+        invalid = dict(PROGRAMS, program1={"hour": 25, "minute": 0, "on": 1, "day": [0] * 7})
+        for programs in (invalid, {"program1": PROGRAMS["program1"]}):
+            with self.assertRaises(ValueError):
+                remote_client.set_preconditioning_programs("vin", programs)
+        remote_client.publish.assert_not_called()
+
+    def test_failed_publish_keeps_old_programs(self):
+        remote_client = self._rc_with_mocked_publish()
+        remote_client.publish = MagicMock(return_value=False)
+        self.assertFalse(remote_client.set_preconditioning_programs("vin", PROGRAMS))
+        self.assertIsNone(remote_client.get_preconditioning_programs("vin"))
+
+    def test_remote_results_are_stored_per_service(self):
+        remote_client = get_rc()
+        msg = MQTTMessage(topic=b"psa/RemoteServices/to/cid/CID/VehCharge/state")
+        msg.payload = b'{"vin":"vin","return_code":"300","reason":"[Vehicle.request.time.out]"}'
+        remote_client._on_mqtt_message(None, None, msg)
+        progress = MQTTMessage(topic=b"psa/RemoteServices/to/cid/CID/ThermalPrecond/ProcessManagement")
+        progress.payload = b'{"vin":"vin","process_code":"900"}'
+        remote_client._on_mqtt_message(None, None, progress)
+        results = remote_client.get_remote_results("vin")
+        self.assertEqual(list(results), ["VehCharge/state"])
+        self.assertEqual(results["VehCharge/state"]["return_code"], "300")
+
+
+API_PROGRAMS = [
+    {"enabled": True, "slot": 1, "recurrence": "Daily", "start": "PT10H10M", "occurence": {"day": ["Sun"]}},
+    {"enabled": False, "slot": 2, "recurrence": "Daily", "start": "PT9H10M",
+     "occurence": {"day": ["Mon", "Tue", "Wed", "Fri"]}},
+    {"enabled": False, "slot": 3, "recurrence": "Daily", "start": "PT9H30M", "occurence": {"day": ["Mon"]}},
+    {"enabled": False, "slot": 4, "recurrence": "Daily", "start": "PT9H", "occurence": {"day": ["Thu"]}},
+]
+
+
+def status_with_programs(programs, updated_at):
+    status = dict(ELECTRIC_CAR_STATUS)
+    status["preconditioning"] = {"airConditioning": {"updatedAt": updated_at, "status": "Disabled",
+                                                     "programs": programs}}
+    return ApiClient()._ApiClient__deserialize(status, "Status")
+
+
+def program_event(on, date):
+    programs = {name: {"hour": 9, "minute": 0, "on": on, "day": [1, 0, 0, 0, 0, 0, 0]}
+                for name in ("program1", "program2", "program3", "program4")}
+    msg = MQTTMessage(topic=MQTT_EVENT_TOPIC.encode("utf-8"))
+    msg.payload = json.dumps({"date": date, "vin": "vin", "charging_state": {},
+                              "precond_state": {"programs": programs, "asap": 0}}).encode("utf-8")
+    return msg
+
+
+class TestPreconditioningProgramsFromStatus(unittest.TestCase):
+    def setUp(self):
+        self.remote_client = get_rc()
+        self.remote_client._fix_not_updated_api = MagicMock()
+
+    def test_api_programs_are_converted_to_mqtt_format(self):
+        programs = programs_from_api(API_PROGRAMS)
+        self.assertEqual(programs["program1"], {"day": [0, 0, 0, 0, 0, 0, 1], "hour": 10, "minute": 10, "on": 1})
+        self.assertEqual(programs["program2"], {"day": [1, 1, 1, 0, 1, 0, 0], "hour": 9, "minute": 10, "on": 0})
+        self.assertEqual(programs["program4"], {"day": [0, 0, 0, 1, 0, 0, 0], "hour": 9, "minute": 0, "on": 0})
+
+    def test_incomplete_api_programs_are_ignored(self):
+        self.assertIsNone(programs_from_api(API_PROGRAMS[:1]))
+        self.assertIsNone(programs_from_api([dict(API_PROGRAMS[0], start="tomorrow")] + API_PROGRAMS[1:]))
+
+    def test_status_programs_are_applied(self):
+        self.remote_client.apply_status_programs("vin", status_with_programs(API_PROGRAMS, "2026-11-14T21:00:05Z"))
+        self.assertEqual(self.remote_client.get_preconditioning_programs("vin"), programs_from_api(API_PROGRAMS))
+
+    def test_status_without_programs_changes_nothing(self):
+        self.remote_client.apply_status_programs("vin", ApiClient()._ApiClient__deserialize(
+            ELECTRIC_CAR_STATUS_V2, "Status"))
+        self.assertIsNone(self.remote_client.get_preconditioning_programs("vin"))
+
+    def test_older_mqtt_event_does_not_overwrite_newer_status(self):
+        self.remote_client.apply_status_programs("vin", status_with_programs(API_PROGRAMS, "2026-11-14T21:00:05Z"))
+        self.remote_client._on_mqtt_message(None, None, program_event(0, "2026-11-14T20:59:12Z"))
+        self.assertEqual(self.remote_client.get_preconditioning_programs("vin"), programs_from_api(API_PROGRAMS))
+
+    def test_newer_mqtt_event_overwrites_status(self):
+        self.remote_client.apply_status_programs("vin", status_with_programs(API_PROGRAMS, "2026-11-14T21:00:05Z"))
+        self.remote_client._on_mqtt_message(None, None, program_event(1, "2026-11-14T21:05:00Z"))
+        self.assertEqual(self.remote_client.get_preconditioning_programs("vin")["program3"]["on"], 1)
+
+    def test_older_status_does_not_overwrite_saved_programs(self):
+        remote_client = mock_publish(self.remote_client)
+        remote_client.set_preconditioning_programs("vin", PROGRAMS)
+        car_answer(remote_client, "0")
+        remote_client.apply_status_programs("vin", status_with_programs(API_PROGRAMS, "2026-11-14T21:00:05Z"))
+        self.assertEqual(remote_client.get_preconditioning_programs("vin"), PROGRAMS)

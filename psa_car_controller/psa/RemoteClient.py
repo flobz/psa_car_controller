@@ -41,6 +41,12 @@ MAX_REFRESH_DELAY = 120
 # so it must run well within that lifetime: 8h keeps the chain rotating forever and
 # survives one missed cycle.
 KEEPALIVE_PERIOD = 3600 * 8
+# CONNACK codes for a refused sign-in: 4 bad user name or password, 5 not authorised. The broker has been seen
+# refusing every reconnect with 5 for hours, even after the token was refreshed; only a new client (an app restart)
+# got in. So the first refusal refreshes the token, and a refusal after that rebuilds the client.
+MQTT_REFUSED_CODES = (4, 5)
+# A rebuild runs start(), which also wakes the car (__keep_mqtt), so at most one per 30 minutes.
+MQTT_REBUILD_DELAY = 1800
 
 
 class RemoteException(Exception):
@@ -68,9 +74,16 @@ class RemoteClient:
         self._lock = threading.Lock()
         self.update_thread: threading.Timer = None
         self.remote_token_last_update: Optional[datetime] = None
+        self.mqtt_refusals = 0
+        self.mqtt_rebuilt_at: Optional[float] = None
 
-    def __on_mqtt_connect(self, client, userdata, result_code, _):  # pylint: disable=unused-argument
+    def __on_mqtt_connect(self, client, userdata, flags, result_code):  # pylint: disable=unused-argument
+        # paho calls this for a refused sign-in too, followed by _on_mqtt_disconnect with the same code.
+        if result_code != 0:
+            logger.warning("MQTT sign-in refused: %s", mqtt.connack_string(result_code))
+            return
         logger.info("Connected with result code %s", result_code)
+        self.mqtt_refusals = 0
         topics = [MQTT_RESP_TOPIC + self.account_info.get_mqtt_customer_id() + "/#"]
         for car in self.vehicles_list:
             topics.append(MQTT_EVENT_TOPIC + car.vin)
@@ -87,8 +100,31 @@ class RemoteClient:
             # paho then retries forever with the same stale token unless it is refreshed here.
             # Throttling is handled inside _refresh_remote_token.
             self._refresh_remote_token(force=True)
+        elif result_code in MQTT_REFUSED_CODES:
+            self._on_mqtt_refused()
         else:
             logger.warning(mqtt.error_string(result_code))
+
+    def _on_mqtt_refused(self):
+        self.mqtt_refusals += 1
+        if self.mqtt_refusals == 1:
+            self._refresh_remote_token(force=True)
+            return
+        now = time.time()
+        if self.mqtt_rebuilt_at is not None and now - self.mqtt_rebuilt_at < MQTT_REBUILD_DELAY:
+            return
+        self.mqtt_rebuilt_at = now
+        self.mqtt_refusals = 0
+        logger.warning("MQTT sign-in still refused after a token refresh: starting a new MQTT client")
+        # Not from paho's own thread, which stop() would be waiting on.
+        threading.Thread(target=self._rebuild_mqtt, daemon=True).start()
+
+    def _rebuild_mqtt(self):
+        try:
+            self.stop()
+            self.start()
+        except Exception:  # pylint: disable=broad-except
+            logger.exception("Can't start a new MQTT client")
 
     def _on_mqtt_message(self, client, userdata, msg):  # pylint: disable=unused-argument
         try:
@@ -172,6 +208,9 @@ class RemoteClient:
             if environ.get("MQTT_LOG", "0") == "1":
                 self.mqtt_client.enable_logger(logger=logger)
             if self._refresh_remote_token():
+                # The refresh skips a token under MQTT_TOKEN_TTL old and then doesn't sign the new client in,
+                # so a client started soon after a refresh (as by a rebuild) was refused with rc 5.
+                self.mqtt_client.username_pw_set("IMA_OAUTH_ACCESS_TOKEN", self.remoteCredentials.access_token)
                 self.mqtt_client.tls_set_context()
                 self.mqtt_client.on_connect = self.__on_mqtt_connect
                 self.mqtt_client.on_message = self._on_mqtt_message
